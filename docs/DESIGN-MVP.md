@@ -33,20 +33,22 @@ margin after the taker fee.
 
 ## Preset sources
 
-Built-in community presets live in `presets/` as JSON. Each one carries
-source URLs and states that it is an unofficial community preset and that
-a simulated result is not an official evaluation. Firm names stay in those
-JSON files, this document, and the README. They are not strings inside
-`packages/`.
+Built-in teaching presets live in `presets/` as JSON. The desk shows the
+teaching `displayName` and does not print a firm name. Each file carries
+source URLs and states that it is an unofficial preset and that a simulated
+result is not an official evaluation. Max drawdown is `maxDrawdownUsd`: a
+static floor at the starting balance minus that amount. Firm names may
+remain in source URLs, this document, and the README. They are not strings
+inside `packages/` or in the preset strings the desk renders as text.
 
-| Source                        | URL                                                             | Status                                                                                                              |
-| ----------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Vest Capital plans            | https://next.vestmarkets.com/vest-capital                       | 13 plan files in `presets/plan-*.json`, checked 2026-10-26.                                                         |
-| MyFundedPerps challenge notes | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | Unofficial community JSON in `presets/`. Fee notes: https://docs.myfundedperpetuals.com/guides/commissions-and-fees |
-| Tradeify Perps                | https://tradeifyperps.co/                                       | Unverified on 2026-10-26 (public waitlist, no rule table found). Do not invent numbers.                             |
+| Source                        | URL                                                             | Status                                                                                              |
+| ----------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Vest Capital plans            | https://next.vestmarkets.com/vest-capital                       | 13 plan files in `presets/plan-*.json`, checked 2026-10-26.                                         |
+| MyFundedPerps challenge notes | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | Not shipped as a preset. Fee notes: https://docs.myfundedperpetuals.com/guides/commissions-and-fees |
+| Tradeify Perps                | https://tradeifyperps.co/                                       | Unverified on 2026-10-26 (public waitlist, no rule table found). Do not invent numbers.             |
 
-Firm names stay in this document and the README. They are not product
-strings, logos, or palette tokens.
+Firm names stay in this document and the README source table. They are not
+product strings, logos, or palette tokens, and they are not preset labels.
 
 ## Desk chrome
 

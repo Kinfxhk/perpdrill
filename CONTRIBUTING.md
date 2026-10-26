@@ -32,8 +32,9 @@ palette are original.
 
 You may read public documentation when a change adds a preset. Do not
 invent unpublished rule numbers. Do not put venue or firm names, logos,
-or brand colors in `packages/`. Names belong in `presets/`, `docs/`, or
-the README, and only with a URL and a non-official disclaimer.
+or brand colors in `packages/`. Preset `displayName`, `group`, `disclaimer`,
+and `note` are shown in the desk and must not name a firm. Source URLs may
+stay in the JSON. Docs and the README may keep source links.
 
 ## Checks
 

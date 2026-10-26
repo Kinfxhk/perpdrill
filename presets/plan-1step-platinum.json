@@ -26,16 +26,17 @@
     "ETH-PERP": 15
   },
   "markets": ["BTC-PERP", "ETH-PERP"],
-  "group": "1-Step evaluation",
-  "displayName": "1-Step Platinum — $25,000",
+  "group": "Evaluation",
+  "displayName": "Teaching · Eval Platinum",
   "startingBalanceUsd": 25000,
   "maxDrawdownPct": 6,
+  "maxDrawdownUsd": 1500,
   "profitTargetPct": 10,
   "dailyLossLimitPct": null,
   "choices": {
     "profitTargetPct": [10, 20],
     "dailyLossLimitPct": [null, 3, 4]
   },
-  "note": "$25,000 capital. Static max drawdown 6% ($1,500, floor $23,500) on equity. Profit target 10% or 20%. Daily loss limit none, 3% or 4%: reset 20:00 New York, measured from the realized balance plus reserved margin, checked against equity. Taker 1 bp, maker 0. Funding is a 0 stub. Leverage caps BTC 25×, ETH 15×. Profit split (80% or 90%) and the one-time fee are not simulated.",
+  "note": "$25,000 capital. Static max drawdown $1,500 (starting balance minus that amount; it does not trail) on equity. Profit target 10% or 20%. Daily loss limit none, 3% or 4%: reset 20:00 New York, measured from the realized balance plus reserved margin, checked against equity. Taker 1 bp, maker 0. Funding is a 0 stub. Leverage caps BTC 25×, ETH 15×. Profit split (80% or 90%) and the one-time fee are not simulated.",
   "id": "plan-1step-platinum"
 }
