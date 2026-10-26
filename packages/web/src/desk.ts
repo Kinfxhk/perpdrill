@@ -1,5 +1,7 @@
 import {
   BUYING_POWER_PCTS,
+  DEFAULT_BOLLINGER_DEVIATIONS,
+  DEFAULT_BOLLINGER_PERIOD,
   DEFAULT_REALIZED_IMPACT_BPS,
   DEFAULT_SLIP_TOLERANCE_BPS,
   ENGINE_STATUS,
@@ -13,12 +15,16 @@ import {
   SAMPLE_MARKETS,
   TEACHING_MAX_LEVERAGE,
   TEACHING_MIN_LEVERAGE,
+  bollingerBands,
+  closesThrough,
+  exponentialMovingAverage,
   isBuyingPowerPct,
   quoteClose,
   quoteOpen,
   replaySession,
   resolvedTakerBps,
   sampleSeries,
+  simpleMovingAverage,
   type BuyingPowerPct,
   type FillKind,
   type Frame,
@@ -29,7 +35,13 @@ import {
   type SessionAction,
   type Side,
 } from "@perpdrill/core";
-import { mountChart, type ChartLine } from "./chart.ts";
+import {
+  mountChart,
+  type ChartBand,
+  type ChartLine,
+  type ChartOverlay,
+  type IndicatorStroke,
+} from "./chart.ts";
 import { formatNumber, formatPct, formatQty, signedNumber } from "./format.ts";
 import {
   LANG_CHOICES,
@@ -46,6 +58,30 @@ const SOURCE_URL = "https://github.com/Kinfxhk/perpdrill";
 
 type Tab = "positions" | "history" | "fills" | "rules";
 
+type MovingAverageKind = "sma" | "ema";
+
+type MovingAverageInstance = {
+  readonly id: string;
+  readonly kind: MovingAverageKind;
+  period: number;
+  visible: boolean;
+  readonly stroke: IndicatorStroke;
+};
+
+const MIN_INDICATOR_PERIOD = 1;
+const MAX_INDICATOR_PERIOD = 500;
+
+function defaultMovingAverages(): MovingAverageInstance[] {
+  return [
+    { id: "sma-9", kind: "sma", period: 9, visible: true, stroke: "text-dim" },
+    { id: "sma-20", kind: "sma", period: 20, visible: true, stroke: "accent" },
+    { id: "sma-50", kind: "sma", period: 50, visible: true, stroke: "line" },
+    { id: "ema-9", kind: "ema", period: 9, visible: true, stroke: "short" },
+    { id: "ema-21", kind: "ema", period: 21, visible: true, stroke: "danger" },
+    { id: "ema-50", kind: "ema", period: 50, visible: true, stroke: "prop" },
+  ];
+}
+
 type DeskState = {
   lang: Lang;
   market: MarketId;
@@ -61,6 +97,8 @@ type DeskState = {
   presetStatus: "loading" | "ready" | "error";
   tab: Tab;
   playing: boolean;
+  movingAverages: MovingAverageInstance[];
+  bollingerVisible: boolean;
 };
 
 type Attrs = Record<string, string>;
@@ -211,6 +249,8 @@ export function mountDesk(root: HTMLElement): void {
     presetStatus: "loading",
     tab: "positions",
     playing: false,
+    movingAverages: defaultMovingAverages(),
+    bollingerVisible: false,
   };
   let timer = 0;
 
@@ -532,6 +572,118 @@ export function mountDesk(root: HTMLElement): void {
     return el("p", { className: "disclaimer", text: active.disclaimer });
   }
 
+  function kindLabel(kind: MovingAverageKind): string {
+    switch (kind) {
+      case "sma":
+        return t("indicator.sma");
+      case "ema":
+        return t("indicator.ema");
+      default: {
+        const unexpected: never = kind;
+        return unexpected;
+      }
+    }
+  }
+
+  function movingAveragePoints(
+    kind: MovingAverageKind,
+    closes: readonly number[],
+    period: number,
+  ): readonly (number | null)[] {
+    switch (kind) {
+      case "sma":
+        return simpleMovingAverage(closes, period);
+      case "ema":
+        return exponentialMovingAverage(closes, period);
+      default: {
+        const unexpected: never = kind;
+        return unexpected;
+      }
+    }
+  }
+
+  function mountIndicatorControls(): HTMLElement {
+    const row = el("div", {
+      className: "indicator-controls",
+      attrs: { role: "group", "aria-label": t("indicator.label") },
+    });
+    for (const instance of state.movingAverages) {
+      const label = `${kindLabel(instance.kind)} ${instance.period}`;
+      const toggle = el(
+        "button",
+        {
+          className: instance.visible ? "chip indicator-toggle is-on" : "chip indicator-toggle",
+          attrs: {
+            type: "button",
+            "aria-pressed": instance.visible ? "true" : "false",
+            title: t("indicator.revealed"),
+          },
+        },
+        [
+          el("span", {
+            className: `swatch swatch-${instance.stroke}`,
+            attrs: { "aria-hidden": "true" },
+          }),
+          el("span", { text: label }),
+        ],
+      );
+      toggle.addEventListener("click", () => {
+        instance.visible = !instance.visible;
+        render();
+      });
+      const period = el("input", {
+        className: "indicator-period",
+        attrs: {
+          id: `indicator-${instance.id}`,
+          type: "number",
+          min: String(MIN_INDICATOR_PERIOD),
+          max: String(MAX_INDICATOR_PERIOD),
+          step: "1",
+          value: String(instance.period),
+          "aria-label": `${kindLabel(instance.kind)} ${t("indicator.period")}`,
+          title: t("indicator.revealed"),
+        },
+      });
+      period.addEventListener("change", () => {
+        instance.period = clampInt(
+          period.valueAsNumber,
+          MIN_INDICATOR_PERIOD,
+          MAX_INDICATOR_PERIOD,
+          instance.period,
+        );
+        render();
+      });
+      row.append(el("div", { className: "indicator-instance" }, [toggle, period]));
+    }
+
+    const bollinger = el(
+      "button",
+      {
+        className: state.bollingerVisible ? "chip indicator-toggle is-on" : "chip indicator-toggle",
+        attrs: {
+          type: "button",
+          "aria-pressed": state.bollingerVisible ? "true" : "false",
+          title: t("indicator.revealed"),
+        },
+      },
+      [
+        el("span", {
+          className: "swatch swatch-line-strong",
+          attrs: { "aria-hidden": "true" },
+        }),
+        el("span", {
+          text: `${t("indicator.bollinger")} ${DEFAULT_BOLLINGER_PERIOD}`,
+        }),
+      ],
+    );
+    bollinger.addEventListener("click", () => {
+      state.bollingerVisible = !state.bollingerVisible;
+      render();
+    });
+    row.append(bollinger);
+    return row;
+  }
+
   function mountChartSection(
     series: ReturnType<typeof sampleSeries>,
     frame: Frame,
@@ -550,10 +702,36 @@ export function mountDesk(root: HTMLElement): void {
     if (frame.dailyFailPrice !== null) {
       lines.push({ price: frame.dailyFailPrice, kind: "daily" });
     }
+    const closes = closesThrough(series, state.cursor);
+    const revealed = series.slice(0, closes.length);
+    const overlays: ChartOverlay[] = [];
+    for (const instance of state.movingAverages) {
+      if (!instance.visible) {
+        continue;
+      }
+      overlays.push({
+        points: movingAveragePoints(instance.kind, closes, instance.period),
+        stroke: instance.stroke,
+      });
+    }
+    const bands: ChartBand[] = [];
+    if (state.bollingerVisible) {
+      const band = bollingerBands(closes, DEFAULT_BOLLINGER_PERIOD, DEFAULT_BOLLINGER_DEVIATIONS);
+      overlays.push({
+        points: band.map((point) => point.mid),
+        stroke: "line-strong",
+      });
+      bands.push({
+        upper: band.map((point) => point.upper),
+        lower: band.map((point) => point.lower),
+      });
+    }
     const stage = el("div", { className: "chart-stage" });
     mountChart(stage, {
-      candles: series.slice(0, state.cursor + 1),
+      candles: revealed,
       lines,
+      overlays,
+      bands,
       label: `${t("chart.sample")} ${state.cursor + 1}/${series.length}`,
       formatPrice: money,
     });
@@ -572,6 +750,7 @@ export function mountDesk(root: HTMLElement): void {
           text: `${t("replay.bar")} ${state.cursor + 1}/${series.length} · ${t("teaching.mark")}`,
         }),
       ]),
+      mountIndicatorControls(),
       stage,
     ]);
   }

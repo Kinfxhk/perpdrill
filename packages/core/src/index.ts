@@ -22,6 +22,15 @@ export {
 export type { CloseQuote, OpenQuote, RejectReason, SlipSettings } from "./fill.ts";
 export { ENGINE_STATUS, PRODUCT_NAME, PRODUCT_VERSION } from "./identity.ts";
 export {
+  DEFAULT_BOLLINGER_DEVIATIONS,
+  DEFAULT_BOLLINGER_PERIOD,
+  bollingerBands,
+  closesThrough,
+  exponentialMovingAverage,
+  simpleMovingAverage,
+} from "./indicators.ts";
+export type { BollingerPoint } from "./indicators.ts";
+export {
   estimatedLiqPrice,
   initialMargin,
   isolatedShouldLiquidate,
