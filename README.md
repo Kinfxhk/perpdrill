@@ -2,7 +2,7 @@
 
 本機優先的教育用模擬／回放練習台骨架，用來對照加密永續合約、類 prop 規則做練習。這不是交易所客戶端，也不會下真單。
 
-**狀態：0.1.1 練習台。** 可以安裝、檢查，並在本機或 Pages 上下市價單、看持倉與損益。強平是隔離教學近似，不是交易所公式，也不是官方評測結果。
+**狀態：0.2.0 回測台。** 生成合成數據、設定規則（自訂／社群預設／無）、每組數據第一次開始前倒數 3 秒，然後逐根播放、下市價單、設停利停損，結束後看檢討報告。強平是隔離教學近似，不是交易所公式，也不是官方評測結果。
 
 儲存庫：<https://github.com/Kinfxhk/perpdrill>
 
@@ -79,7 +79,7 @@ npm start
 
 Local-first educational simulator and replay desk for crypto perpetuals and prop-style rules. It is not an exchange client and it does not send live orders.
 
-**Status: 0.1.1 practice desk.** Install, check, and place simulated market orders with a position and PnL. Liquidation is an isolated teaching approximation, not an exchange formula and not an official evaluation result.
+**Status: 0.2.0 backtest desk.** Generate synthetic data, set rules (custom, community preset, or none), count down 3 seconds on the first run of each data set, then play bar by bar with market orders, stop loss and take profit, and read the review when the session ends. Liquidation is an isolated teaching approximation, not an exchange formula and not an official evaluation result.
 
 Repository: <https://github.com/Kinfxhk/perpdrill>
 

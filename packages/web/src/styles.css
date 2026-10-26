@@ -766,7 +766,7 @@ td.empty {
   color: var(--accent);
 }
 
-@media (min-width: 861px) {
+@media (min-width: 861px) and (min-height: 700px) {
   .shell {
     height: 100dvh;
     overflow: hidden;
@@ -843,5 +843,560 @@ td.empty {
 @media (prefers-reduced-motion: reduce) {
   * {
     scroll-behavior: auto;
+  }
+}
+
+/* Stop and target lines on the chart */
+.line-sl,
+.line-tp {
+  stroke-width: 1.5;
+  stroke-dasharray: 6 3;
+}
+
+.line-sl {
+  stroke: var(--danger);
+}
+
+.line-tp {
+  stroke: var(--long);
+}
+
+.legend-sl::before {
+  border-top-style: dashed;
+  border-top-color: var(--danger);
+}
+
+.legend-tp::before {
+  border-top-style: dashed;
+  border-top-color: var(--long);
+}
+
+.bracket-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.bracket-row > * {
+  min-width: 0;
+}
+
+.bracket-row input {
+  width: 100%;
+  min-width: 0;
+}
+
+.ticket-scroll {
+  overflow-x: hidden;
+}
+
+.chart-stage {
+  min-height: 260px;
+}
+
+.price-grid {
+  stroke: var(--line);
+  stroke-opacity: 0.35;
+}
+
+.price-tick {
+  fill: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.speed-row {
+  display: flex;
+  gap: 4px;
+}
+
+/* Setup screen */
+.setup {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  max-width: 980px;
+  width: 100%;
+  margin: 0 auto;
+  overflow: auto;
+}
+
+.setup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.setup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.setup-card h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.setup-card select,
+.setup-card input {
+  background: var(--bg-inset);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: var(--text);
+}
+
+.seed-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.seed-row .field {
+  flex: 1;
+}
+
+.setup-start {
+  align-self: center;
+  min-width: 240px;
+  font-size: 16px;
+}
+
+/* 3-2-1 countdown */
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: rgb(6 16 19 / 78%);
+}
+
+.countdown-label {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 18px;
+}
+
+.countdown-num {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 1.2em;
+  font-family: var(--mono);
+  font-size: clamp(7rem, 22vw, 11rem);
+  font-weight: 700;
+  line-height: 0.9;
+  color: var(--accent);
+  user-select: none;
+}
+
+.countdown-num::after {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  border: 4px solid var(--accent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.countdown-pop {
+  animation: countdown-pop 900ms ease-out both;
+}
+
+.countdown-pop::after {
+  animation: countdown-ring 900ms ease-out both;
+}
+
+.countdown-skip {
+  padding: 6px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+@keyframes countdown-pop {
+  0% {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+
+  45% {
+    transform: scale(1.16);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes countdown-ring {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+/* Review tab */
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.verdict {
+  margin: 0;
+  font-size: 18px;
+}
+
+.verdict-target {
+  color: var(--long);
+}
+
+.verdict-drawdown,
+.verdict-daily,
+.verdict-liquidated {
+  color: var(--danger);
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.equity-spark {
+  width: 100%;
+  height: 70px;
+  background: var(--bg-inset);
+  border-radius: 8px;
+}
+
+.spark-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.spark-base {
+  stroke: var(--line-strong);
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Feel: press feedback, toasts, PnL flash, verdict pop */
+button:not(:disabled) {
+  cursor: pointer;
+  transition:
+    transform 80ms ease-out,
+    background-color 120ms ease-out,
+    border-color 120ms ease-out,
+    filter 120ms ease-out;
+}
+
+button:not(:disabled):hover {
+  filter: brightness(1.12);
+}
+
+button:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+button:disabled {
+  opacity: 0.45;
+}
+
+.countdown-skip {
+  min-width: 7rem;
+  min-height: 44px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.toast-host {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--bg-raised);
+  box-shadow: var(--shadow);
+  font-family: var(--mono);
+  font-size: 13px;
+  white-space: nowrap;
+  animation:
+    toast-in 180ms ease-out both,
+    toast-out 300ms ease-in 2.1s both;
+}
+
+.toast-up {
+  color: var(--long);
+  border-color: var(--long);
+}
+
+.toast-down {
+  color: var(--short);
+  border-color: var(--short);
+}
+
+.toast-warn {
+  color: var(--danger);
+  border-color: var(--danger);
+  font-family: var(--font);
+  white-space: normal;
+  max-width: min(92vw, 420px);
+  text-align: center;
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+}
+
+@keyframes toast-out {
+  to {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+}
+
+.flash-up,
+.flash-down {
+  border-radius: 8px;
+}
+
+.flash-up {
+  animation: flash-up 700ms ease-out;
+}
+
+.flash-down {
+  animation: flash-down 700ms ease-out;
+}
+
+@keyframes flash-up {
+  from {
+    background: rgb(143 217 209 / 30%);
+  }
+}
+
+@keyframes flash-down {
+  from {
+    background: rgb(224 176 180 / 30%);
+  }
+}
+
+.verdict-pop {
+  animation: verdict-pop 500ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@keyframes verdict-pop {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+.health-fill {
+  transition: width 200ms ease-out;
+}
+
+/* Phone and tablet: playback stays reachable at the bottom of the screen */
+@media (max-width: 860px) {
+  .replay {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 24px rgb(4 12 14 / 45%);
+  }
+
+  .replay-controls {
+    flex: 1 1 100%;
+  }
+
+  .replay-controls button {
+    min-height: 44px;
+    flex: 1 0 auto;
+  }
+
+  .replay-meters {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .topnav,
+  .market {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .topnav nav {
+    order: 3;
+    flex: 1 1 100%;
+  }
+
+  .stats {
+    gap: 12px;
+  }
+
+  .indicator-controls {
+    flex-wrap: wrap;
+  }
+
+  .legend {
+    flex-wrap: wrap;
+    max-width: calc(100% - 80px);
+  }
+
+  button,
+  select,
+  input {
+    min-height: 44px;
+  }
+
+  .indicator-period {
+    min-height: 36px;
+  }
+
+  .side,
+  .submit {
+    min-height: 48px;
+  }
+
+  .ticket {
+    max-width: 640px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .ticket-pin {
+    position: static;
+  }
+
+  .tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .setup {
+    padding: 12px;
+  }
+
+  .setup-start {
+    width: 100%;
+    min-height: 52px;
+  }
+
+  input,
+  select {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .countdown-pop,
+  .countdown-pop::after,
+  .toast,
+  .flash-up,
+  .flash-down,
+  .verdict-pop {
+    animation: none;
+  }
+
+  button:not(:disabled):active {
+    transform: none;
+  }
+}
+
+/* Phone: get the chart onto the first screen */
+@media (max-width: 600px) {
+  .banner {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  .topnav,
+  .market {
+    gap: 8px;
+    padding: 6px 10px;
+  }
+
+  .brand-kicker,
+  .market .toolbar-note,
+  .chart-toolbar .toolbar-note {
+    display: none;
+  }
+
+  /* Index repeats Mid on synthetic data; OI and Vol are always empty here. */
+  .stats .stat:nth-child(n + 4) {
+    display: none;
+  }
+
+  .indicator-controls {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .indicator-instance {
+    flex: none;
+  }
+
+  .chart-stage {
+    min-height: 300px;
+  }
+
+  .legend {
+    font-size: 10px;
+    gap: 6px;
   }
 }
