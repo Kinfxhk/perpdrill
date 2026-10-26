@@ -1,7 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { leverageCap, parsePracticePreset } from "@perpdrill/core";
-import { applyPresetChoices, customPreset, dataKey, sanitizeSetup, takeFirstRun } from "./setup.ts";
+import {
+  applyPresetChoices,
+  countdownPending,
+  customPreset,
+  dataKey,
+  markCountdownPlayed,
+  sanitizeSetup,
+  takeFirstRun,
+} from "./setup.ts";
 
 describe("session setup", () => {
   it("clamps hostile stored values", () => {
@@ -99,5 +107,13 @@ describe("first-run countdown", () => {
     expect(takeFirstRun("a")).toBe(false);
     store.set("perpdrill.countdown", "1");
     expect(takeFirstRun("a")).toBe(true);
+  });
+
+  it("stays pending until playback actually starts", () => {
+    expect(countdownPending("btc")).toBe(true);
+    expect(countdownPending("btc")).toBe(true);
+    markCountdownPlayed("btc");
+    expect(countdownPending("btc")).toBe(false);
+    expect(countdownPending("eth")).toBe(true);
   });
 });
