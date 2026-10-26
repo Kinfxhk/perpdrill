@@ -68,33 +68,170 @@ for (const file of files) {
 
 const desk = await readFile(path.join(root, "packages/web/src/desk.ts"), "utf8");
 const labelSource = await readFile(path.join(root, "packages/core/src/types.ts"), "utf8");
-for (const phrase of ["Trading Power", "Liq. Price (Mark)", "Account Health"]) {
+const constants = await readFile(path.join(root, "packages/core/src/constants.ts"), "utf8");
+const i18n = await readFile(path.join(root, "packages/web/src/i18n.ts"), "utf8");
+for (const phrase of ["Trading Power", "Liq. Price (Mark)", "Account Health", "Liq Risk"]) {
   if (!labelSource.includes(phrase)) {
     failures.push(`packages/core/src/types.ts is missing label ${phrase}`);
   }
 }
-for (const phrase of [
-  "TRADING_POWER_LABEL",
-  "LIQ_PRICE_MARK_LABEL",
-  "ACCOUNT_HEALTH_LABEL",
-  "Liquidation",
-  "BUYING_POWER_PCTS",
-  "disabled: true",
-]) {
+for (const phrase of ["BUYING_POWER_PCTS", "disabled: true", "legend-liq", "AGPL"]) {
   if (!desk.includes(phrase)) {
-    failures.push(`packages/web/src/desk.ts is missing placeholder ${phrase}`);
+    failures.push(`packages/web/src/desk.ts is missing ${phrase}`);
   }
 }
-if (desk.includes("Liq Risk") || labelSource.includes("Liq Risk")) {
-  failures.push("Liq Risk is not an M0 label");
+if (!constants.includes("DEFAULT_SLIP_TOLERANCE_BPS = 75")) {
+  failures.push("majors slip tolerance default must be 75 bps");
+}
+if (!constants.includes("DEFAULT_REALIZED_IMPACT_BPS = 25")) {
+  failures.push("majors realized impact default must be 25 bps");
+}
+if (constants.includes("DEFAULT_SLIP_TOLERANCE_BPS = 500")) {
+  failures.push("majors slip tolerance must not default to 5%");
+}
+for (const phrase of [
+  "SUPPORTED_LANGS",
+  "zh-Hant",
+  "zh-Hans",
+  "ja",
+  "ko",
+  "Liquidation",
+  "Liq Risk",
+]) {
+  if (!i18n.includes(phrase)) {
+    failures.push(`packages/web/src/i18n.ts is missing ${phrase}`);
+  }
 }
 
 const html = await readFile(path.join(root, "packages/web/index.html"), "utf8");
 if (!html.includes("default-src 'self'")) {
   failures.push("packages/web/index.html is missing CSP default-src 'self'");
 }
-if (!desk.includes("AGPL")) {
-  failures.push("packages/web/src/desk.ts is missing the AGPL source link label");
+
+await assertPresets(root, failures);
+await assertNoPropFirmMatch(root, failures);
+
+async function assertPresets(repoRoot, sink) {
+  const dir = path.join(repoRoot, "presets");
+  const index = JSON.parse(await readFile(path.join(dir, "index.json"), "utf8"));
+  const files = index.files;
+  if (!Array.isArray(files) || files.length !== 2) {
+    sink.push("presets/index.json must list the two community presets");
+    return;
+  }
+  const loaded = new Map();
+  for (const name of files) {
+    if (typeof name !== "string" || !/^[a-z0-9-]+\.json$/.test(name)) {
+      sink.push(`presets/index.json has an unsafe file name ${String(name)}`);
+      continue;
+    }
+    loaded.set(name, JSON.parse(await readFile(path.join(dir, name), "utf8")));
+  }
+  const prime = loaded.get("community-a.json");
+  const gold = loaded.get("community-b.json");
+  if (prime === undefined || gold === undefined) {
+    sink.push("presets/index.json must name community-a.json and community-b.json");
+    return;
+  }
+  const unofficial = "Unofficial community preset — verify against current official docs.";
+  for (const file of [prime, gold]) {
+    if (typeof file.disclaimer !== "string" || !file.disclaimer.includes(unofficial)) {
+      sink.push(`${file.id ?? "preset"} is missing the unofficial disclaimer`);
+    }
+    if (!Array.isArray(file.sourceUrls) || file.sourceUrls.length === 0) {
+      sink.push(`${file.id ?? "preset"} is missing source URLs`);
+    }
+  }
+  expectFields(sink, "community-a", prime, {
+    displayName: "MyFundedPerps — 1-Step Prime (community)",
+    profitTargetPct: 12,
+    dailyLossLimitPct: 3,
+    maxDrawdownPct: 5,
+    equityIncludesUPnL: true,
+    costModel: "swap",
+    takerBps: 30,
+    makerBps: 30,
+    swapDailyRatePct: 0.03,
+    venueFundingChangesBalance: false,
+  });
+  if (prime.dailyReset?.timeZone !== "America/New_York" || prime.dailyReset?.hour !== 0) {
+    sink.push("community-a daily reset must be 00:00 America/New_York");
+  }
+  if (
+    !JSON.stringify(prime.sourceUrls).includes(
+      "https://docs.myfundedperpetuals.com/guides/challenges-and-rules",
+    )
+  ) {
+    sink.push("community-a is missing its challenge source URL");
+  }
+  if (
+    !JSON.stringify(prime.sourceUrls).includes(
+      "https://docs.myfundedperpetuals.com/guides/commissions-and-fees",
+    )
+  ) {
+    sink.push("community-a is missing its fee source URL");
+  }
+  expectFields(sink, "community-b", gold, {
+    displayName: "Vest Capital — Eval Gold-like (community)",
+    startingBalanceUsd: 10000,
+    maxDrawdownPct: 6,
+    dailyLossLimitPct: 3,
+    profitTargetPct: 10,
+    costModel: "funding",
+    fundingRatePerHour: 0,
+    venueFundingChangesBalance: true,
+  });
+  if (gold.dailyReset?.timeZone !== "America/New_York" || gold.dailyReset?.hour !== 20) {
+    sink.push("community-b daily reset must be 20:00 America/New_York");
+  }
+  if (
+    !JSON.stringify(gold.sourceUrls).includes(
+      "https://docs.vestmarkets.com/vest-capital/overview.md",
+    )
+  ) {
+    sink.push("community-b is missing its overview source URL");
+  }
+  if ("takerBps" in gold) {
+    sink.push("community-b must not invent a taker fee");
+  }
+}
+
+function expectFields(sink, id, file, expected) {
+  for (const [key, value] of Object.entries(expected)) {
+    if (file[key] !== value) {
+      sink.push(`${id} ${key} must be ${JSON.stringify(value)}`);
+    }
+  }
+}
+
+async function assertNoPropFirmMatch(repoRoot, sink) {
+  const skip = new Set(["node_modules", "dist", "coverage", ".git", "uploads"]);
+  const extensions = new Set([...textExtensions, ".md"]);
+  const blocked = "PropFirm" + " Match";
+  const files = await walkText(repoRoot, skip, extensions);
+  for (const file of files) {
+    const text = await readFile(file, "utf8");
+    if (text.toLowerCase().includes(blocked.toLowerCase())) {
+      sink.push(`${path.relative(repoRoot, file)} mentions a blocked directory phrase`);
+    }
+  }
+}
+
+async function walkText(dir, skip, extensions) {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (skip.has(entry.name)) {
+      continue;
+    }
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await walkText(full, skip, extensions)));
+    } else if (entry.isFile() && extensions.has(path.extname(entry.name))) {
+      files.push(full);
+    }
+  }
+  return files;
 }
 
 if (failures.length > 0) {

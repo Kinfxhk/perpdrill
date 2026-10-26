@@ -1,8 +1,8 @@
 {
   "name": "perpdrill",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "Local-first educational replay desk for crypto perps prop-style rules. M0 scaffold: no trading engine.",
+  "description": "Local-first educational replay desk for crypto perps prop-style rules. Teaching liquidation, slippage gate, and a practice desk.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "engines": {

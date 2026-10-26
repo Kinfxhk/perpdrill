@@ -47,7 +47,7 @@ for (const relativePath of manifests) {
     fail(`${relativePath} license must be AGPL-3.0-or-later`);
   }
   if (manifest.private !== true) {
-    fail(`${relativePath} must stay private in M0`);
+    fail(`${relativePath} must stay private`);
   }
 }
 

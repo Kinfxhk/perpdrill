@@ -1,53 +1,56 @@
 # MVP design pointer
 
-M0 is a scaffold. This page only points at decisions already made in the
-2026-10-26 research note. It does not specify formulas, and the app does
-not compute them.
+The practice desk computes an isolated teaching model. It is not an
+exchange formula and not an official prop evaluation.
 
 ## Liquidation line versus prop drawdown lines
 
-Keep three meanings apart:
+Keep the meanings apart:
 
-- **Liquidation** is an exchange-style margin close. M0 chart legend says
-  Liquidation and does not draw the line. The ticket label is
-  **Liq. Price (Mark)**, value not computed.
-- **Liq Risk** is not an M0 label. Add it only after a later note defines
-  the scale.
-- **Max drawdown floor** is a prop-account line. It is not the same line
-  as liquidation.
-- **Daily loss floor** is a third line (timezone and reset rules belong
-  to the preset).
+- **Est. Liq. Price (Mark)** is the isolated teaching estimate. Maintenance
+  is half of initial margin. With the position margin fully in that one
+  position and no extra wallet buffer, long ≈ entry × (1 − 0.5 / leverage)
+  and short ≈ entry × (1 + 0.5 / leverage). Mark is `(high + low) / 2`.
+  The position liquidates when isolated equity is at or under maintenance.
+- **Liq Risk** is `|mark − liq| / mark`, shown as a percent away from the
+  estimate. The health meter is the remaining cushion above maintenance.
+- **Max drawdown floor** and **daily loss floor** are prop-account equity
+  floors. Their chart prices are solved from those floors. They are not
+  the liquidation line. A session can fail a floor without being liquidated.
 
-M0 shows the words only. Prices stay em dashes. A session can fail a prop
-floor without being liquidated; the copy for that lesson comes later.
+## Slippage
+
+Majors tolerance defaults to 75 bps and the ticket allows 50–100. Realized
+impact defaults to 25 bps and is what the fill uses. If impact is above
+tolerance, the order is rejected. Taker bps are a separate fee.
 
 ## Percent sizing
 
-Order size will be a share of trading power: 25%, 50%, 75%, and 100%,
-plus a slider kept in step with those four stops. The ticket label is
-**Trading Power**. M0 renders the four buttons and the slider disabled.
-It does not multiply a balance. The core constant is still the four
-percent stops.
+Order size is a share of trading power: 25%, 50%, 75%, and 100%, plus a
+slider kept in step with those four stops. The ticket label is
+**Trading Power**. One hundred percent posts the free cash as initial
+margin after the taker fee.
 
-## Preset sources (later, not shipped)
+## Preset sources
 
-M0 has the preset schema version (`perps-prop-profile` v1) and no preset
-documents. When presets are added, each one needs a source URL and this
-unofficial disclaimer: results are not an official evaluation, and the
-reader must check the firm's current documents.
+Built-in community presets live in `presets/` as JSON. Each one carries
+source URLs and states that it is an unofficial community preset and that
+a simulated result is not an official evaluation. Firm names stay in those
+JSON files, this document, and the README. They are not strings inside
+`packages/`.
 
-| Source                        | URL                                                             | Status                                                                                                               |
-| ----------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Vest Capital rule notes       | https://docs.vestmarkets.com/vest-capital/overview.md           | Unofficial. Candidate for a later preset. Loss-limit notes: https://docs.vestmarkets.com/vest-capital/loss-limits.md |
-| MyFundedPerps challenge notes | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | Unofficial. Candidate for a later preset. Fee notes: https://docs.myfundedperpetuals.com/guides/commissions-and-fees |
-| Tradeify Perps                | https://tradeifyperps.co/                                       | Unverified on 2026-10-26 (public waitlist, no rule table found). Do not invent numbers.                              |
+| Source                        | URL                                                             | Status                                                                                                              |
+| ----------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Vest Capital rule notes       | https://docs.vestmarkets.com/vest-capital/overview.md           | Unofficial community JSON in `presets/`. Loss-limit notes: https://docs.vestmarkets.com/vest-capital/loss-limits.md |
+| MyFundedPerps challenge notes | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | Unofficial community JSON in `presets/`. Fee notes: https://docs.myfundedperpetuals.com/guides/commissions-and-fees |
+| Tradeify Perps                | https://tradeifyperps.co/                                       | Unverified on 2026-10-26 (public waitlist, no rule table found). Do not invent numbers.                             |
 
 Firm names stay in this document and the README. They are not product
 strings, logos, or palette tokens.
 
 ## Desk chrome
 
-The web package is a cool-teal dark wireframe: header, market strip,
-chart area, order ticket, positions table, account health, and a disabled
-replay bar. It is not a client of any venue. Amber slate (`#f2a93b` on
+The web package is a cool-teal dark desk: header, market strip, chart,
+order ticket, positions, account health, and a replay bar that steps a
+local sample. It is not a client of any venue. Amber slate (`#f2a93b` on
 `#11151c`) is out of bounds for this product.

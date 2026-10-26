@@ -4,12 +4,12 @@ perpdrill is AGPL-3.0-or-later. Contributions are accepted under that
 license. The intended public repository is
 https://github.com/Kinfxhk/perpdrill.
 
-## What M0 accepts
+## What the practice desk accepts
 
-Bug fixes to the scaffold, docs, and checks. Do not add fill, margin,
-liquidation, funding, or replay behavior under the label of a drive-by
-improvement. Those belong to a later milestone with tests that state the
-formula.
+Bug fixes, docs, and checks. Changes to liquidation, slippage, sizing,
+or carry need tests that state the formula. Do not invent firm numbers.
+Community preset JSON lives in `presets/` with a source URL and the
+unofficial disclaimer.
 
 ## AI-assisted changes
 
@@ -30,11 +30,10 @@ conceptual lineage only (see NOTICE): replay, OHLC fill, and
 rule-evaluation ideas. The perps ticket, liquidation labels, and this
 palette are original.
 
-You may read public documentation when a later change adds a preset.
-Do not invent unpublished rule numbers. Do not put venue or firm names,
-logos, or brand colors in `packages/`. Names belong in `docs/` or the
-README, and only as a preset source with a URL and a non-official
-disclaimer.
+You may read public documentation when a change adds a preset. Do not
+invent unpublished rule numbers. Do not put venue or firm names, logos,
+or brand colors in `packages/`. Names belong in `presets/`, `docs/`, or
+the README, and only with a URL and a non-official disclaimer.
 
 ## Checks
 
