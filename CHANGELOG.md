@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1 — 2026-10-26
+
+Layout already shipped as tag v0.1.1. Version strings now match that tag.
+
+- The practice ticket stays full height beside the blotter. Positions, history, and playback stay under the chart.
+- Below 860px the chart, ticket, and bottom band stack.
+- Package versions and the desk colophon read 0.1.1.
+
 ## 0.1.0 — 2026-10-26
 
 Playable practice desk. This note is not a GitHub Release.
