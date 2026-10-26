@@ -17,7 +17,7 @@ function bar(timeMs: number, open: number, high: number, low: number, close: num
 describe("chart resampling", () => {
   it("offers 1m, 3m, 5m, 15m, 1h, and 4h, including a real 3m series", () => {
     expect(SYNTHETIC_TIMEFRAMES_MIN).toEqual([1, 3, 5, 15, 60, 240]);
-    const three = syntheticSeries({ market: "ETH-PERP", seed: 4, bars: 120, timeframeMin: 3 });
+    const three = syntheticSeries({ market: "SYNTH-GC", seed: 4, bars: 120, timeframeMin: 3 });
     expect(seriesTimeframeMin(three)).toBe(3);
     expect(three[1]?.timeMs).toBe((three[0]?.timeMs ?? 0) + 3 * 60_000);
   });
@@ -51,7 +51,7 @@ describe("chart resampling", () => {
   });
 
   it("does not claim a timeframe the 1h sample cannot build, and clock-aligns 4h", () => {
-    const sample = sampleSeries("BTC-PERP");
+    const sample = sampleSeries("SYNTH-NQ");
     expect(seriesTimeframeMin(sample)).toBe(60);
     expect(resampleBars(sample, 60, 1)).toBeNull();
     expect(resampleBars(sample, 60, 3)).toBeNull();
@@ -72,7 +72,7 @@ describe("chart resampling", () => {
   });
 
   it("resamples a 3m series into 15m candles from the same path", () => {
-    const bars = syntheticSeries({ market: "BTC-PERP", seed: 11, bars: 121, timeframeMin: 3 });
+    const bars = syntheticSeries({ market: "SYNTH-NQ", seed: 11, bars: 121, timeframeMin: 3 });
     const quarter = resampleBars(bars, 3, 15);
     expect(quarter).toHaveLength(25);
     const group = bars.slice(0, 5);
