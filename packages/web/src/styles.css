@@ -771,8 +771,9 @@ td.empty {
 .replay {
   justify-content: space-between;
   flex-wrap: wrap;
-  border-top: 1px solid var(--line);
-  border-bottom: 0;
+  flex: none;
+  gap: 12px;
+  padding: 8px 12px;
 }
 
 .colophon {
@@ -805,7 +806,6 @@ td.empty {
 @media (max-width: 860px) {
   .topnav,
   .market,
-  .replay,
   .colophon {
     align-items: stretch;
     flex-direction: column;
@@ -1259,26 +1259,8 @@ button:disabled {
   transition: width 200ms ease-out;
 }
 
-/* Phone and tablet: playback stays reachable at the bottom of the screen */
+/* Phone and tablet: the replay row stays in the chart column, above the stage. */
 @media (max-width: 860px) {
-  /* Fixed, not sticky: sticky only holds inside .desk-bottom, which sits below the ticket. */
-  .shell {
-    padding-bottom: 150px;
-  }
-
-  .replay {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 20;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
-    box-shadow: 0 -8px 24px rgb(var(--shade-rgb) / 45%);
-  }
-
   .replay-controls {
     flex: 1 1 100%;
   }
