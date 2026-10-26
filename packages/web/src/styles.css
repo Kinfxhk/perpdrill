@@ -221,6 +221,7 @@ button {
 }
 
 .chart-toolbar,
+.indicator-controls,
 .tabs {
   padding: 8px 12px;
   border-bottom: 1px solid var(--line);
@@ -343,6 +344,157 @@ button {
   fill: var(--text-dim);
   font-size: 11px;
   font-family: var(--mono);
+}
+
+.indicator-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.indicator-instance {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.indicator-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.indicator-toggle.is-on {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: var(--bg-inset);
+}
+
+.indicator-period {
+  width: 4.5rem;
+  border: 1px solid var(--line);
+  background: var(--bg-inset);
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-family: var(--mono);
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: none;
+}
+
+.swatch-text-dim {
+  background: var(--text-dim);
+}
+
+.swatch-accent {
+  background: var(--accent);
+}
+
+.swatch-line {
+  background: var(--line);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.swatch-short {
+  background: var(--short);
+}
+
+.swatch-danger {
+  background: var(--danger);
+}
+
+.swatch-prop {
+  background: var(--prop);
+}
+
+.swatch-line-strong {
+  background: var(--line-strong);
+}
+
+.indicator-line,
+.indicator-point {
+  stroke-width: 1.6;
+}
+
+.indicator-line {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.indicator-point {
+  stroke: none;
+}
+
+.stroke-text-dim {
+  stroke: var(--text-dim);
+}
+
+.stroke-accent {
+  stroke: var(--accent);
+}
+
+.stroke-line {
+  stroke: var(--line);
+}
+
+.indicator-line.stroke-line {
+  stroke-width: 2.4;
+}
+
+.stroke-short {
+  stroke: var(--short);
+}
+
+.stroke-danger {
+  stroke: var(--danger);
+}
+
+.stroke-prop {
+  stroke: var(--prop);
+}
+
+.stroke-line-strong {
+  stroke: var(--line-strong);
+}
+
+.indicator-point.stroke-text-dim {
+  fill: var(--text-dim);
+}
+
+.indicator-point.stroke-accent {
+  fill: var(--accent);
+}
+
+.indicator-point.stroke-line {
+  fill: var(--line);
+}
+
+.indicator-point.stroke-short {
+  fill: var(--short);
+}
+
+.indicator-point.stroke-danger {
+  fill: var(--danger);
+}
+
+.indicator-point.stroke-prop {
+  fill: var(--prop);
+}
+
+.indicator-point.stroke-line-strong {
+  fill: var(--line-strong);
+}
+
+.indicator-band {
+  fill: var(--line-strong);
+  fill-opacity: 0.18;
+  stroke: none;
 }
 
 .ticket {

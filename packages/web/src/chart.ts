@@ -12,6 +12,29 @@ export type ChartLine = {
   readonly kind: ChartLineKind;
 };
 
+/** Stroke token. Colors live in the desk stylesheet, not in this module. */
+export const INDICATOR_STROKES = [
+  "text-dim",
+  "accent",
+  "line",
+  "short",
+  "danger",
+  "prop",
+  "line-strong",
+] as const;
+
+export type IndicatorStroke = (typeof INDICATOR_STROKES)[number];
+
+export type ChartOverlay = {
+  readonly points: readonly (number | null)[];
+  readonly stroke: IndicatorStroke;
+};
+
+export type ChartBand = {
+  readonly upper: readonly (number | null)[];
+  readonly lower: readonly (number | null)[];
+};
+
 export type CandleDirection = "up" | "down";
 
 export type PxRect = {
@@ -59,6 +82,29 @@ function lineClass(kind: ChartLineKind): string {
       return "line-daily";
     default: {
       const unexpected: never = kind;
+      return unexpected;
+    }
+  }
+}
+
+function strokeClass(stroke: IndicatorStroke): string {
+  switch (stroke) {
+    case "text-dim":
+      return "stroke-text-dim";
+    case "accent":
+      return "stroke-accent";
+    case "line":
+      return "stroke-line";
+    case "short":
+      return "stroke-short";
+    case "danger":
+      return "stroke-danger";
+    case "prop":
+      return "stroke-prop";
+    case "line-strong":
+      return "stroke-line-strong";
+    default: {
+      const unexpected: never = stroke;
       return unexpected;
     }
   }
@@ -264,6 +310,104 @@ function appendRect(parent: SVGElement, className: string, rect: PxRect): void {
   );
 }
 
+function collectPrices(prices: number[], points: readonly (number | null)[], limit: number): void {
+  const end = Math.min(limit, points.length);
+  for (let index = 0; index < end; index += 1) {
+    const price = points[index];
+    if (price !== null && price !== undefined && Number.isFinite(price)) {
+      prices.push(price);
+    }
+  }
+}
+
+function appendOverlay(
+  root: SVGSVGElement,
+  overlay: ChartOverlay,
+  limit: number,
+  xOf: (index: number) => number,
+  yOf: (price: number) => number,
+): void {
+  const stroke = strokeClass(overlay.stroke);
+  let run: { readonly x: number; readonly y: number }[] = [];
+  const flush = (): void => {
+    const first = run[0];
+    if (run.length >= 2) {
+      root.append(
+        svg("polyline", {
+          class: `indicator-line ${stroke}`,
+          points: run.map((point) => `${px(point.x)},${px(point.y)}`).join(" "),
+        }),
+      );
+    } else if (run.length === 1 && first !== undefined) {
+      root.append(
+        svg("circle", {
+          class: `indicator-point ${stroke}`,
+          cx: px(first.x),
+          cy: px(first.y),
+          r: "2.2",
+        }),
+      );
+    }
+    run = [];
+  };
+
+  const end = Math.min(limit, overlay.points.length);
+  for (let index = 0; index < end; index += 1) {
+    const price = overlay.points[index];
+    if (price === null || price === undefined || !Number.isFinite(price)) {
+      flush();
+      continue;
+    }
+    run.push({ x: xOf(index), y: yOf(price) });
+  }
+  flush();
+}
+
+function appendBand(
+  root: SVGSVGElement,
+  band: ChartBand,
+  limit: number,
+  xOf: (index: number) => number,
+  yOf: (price: number) => number,
+): void {
+  const end = Math.min(limit, band.upper.length, band.lower.length);
+  let top: string[] = [];
+  let bottom: string[] = [];
+  const flush = (): void => {
+    if (top.length >= 2) {
+      const points = top.concat(bottom.reverse());
+      root.append(
+        svg("polygon", {
+          class: "indicator-band",
+          points: points.join(" "),
+        }),
+      );
+    }
+    top = [];
+    bottom = [];
+  };
+
+  for (let index = 0; index < end; index += 1) {
+    const upper = band.upper[index];
+    const lower = band.lower[index];
+    if (
+      upper === null ||
+      upper === undefined ||
+      lower === null ||
+      lower === undefined ||
+      !Number.isFinite(upper) ||
+      !Number.isFinite(lower)
+    ) {
+      flush();
+      continue;
+    }
+    const x = px(xOf(index));
+    top.push(`${x},${px(yOf(upper))}`);
+    bottom.push(`${x},${px(yOf(lower))}`);
+  }
+  flush();
+}
+
 let activeHost: HTMLElement | null = null;
 let activePaint: (() => void) | null = null;
 const resizeObserver =
@@ -278,6 +422,8 @@ export function mountChart(
   input: {
     readonly candles: readonly Candle[];
     readonly lines: readonly ChartLine[];
+    readonly overlays: readonly ChartOverlay[];
+    readonly bands: readonly ChartBand[];
     readonly label: string;
     readonly formatPrice: (price: number) => string;
   },
@@ -291,6 +437,15 @@ export function mountChart(
     const ratio = deviceRatio(window.devicePixelRatio);
     const padLeft = 12;
     const padRight = 72;
+    const revealed = input.candles.length;
+    const extraPrices = input.lines.map((line) => line.price);
+    for (const overlay of input.overlays) {
+      collectPrices(extraPrices, overlay.points, revealed);
+    }
+    for (const band of input.bands) {
+      collectPrices(extraPrices, band.upper, revealed);
+      collectPrices(extraPrices, band.lower, revealed);
+    }
     const laid = layoutCandles({
       candles: input.candles,
       width,
@@ -298,7 +453,7 @@ export function mountChart(
       padLeft,
       padRight,
       pixelRatio: ratio,
-      extraPrices: input.lines.map((line) => line.price),
+      extraPrices,
     });
     const root = svg("svg", {
       class: "chart-svg",
@@ -321,6 +476,16 @@ export function mountChart(
       appendRect(bodies, partClass(candle.direction, "body"), candle.body);
     }
     root.append(wicks, bodies);
+
+    const plotWidth = laid.plotRight - laid.plotLeft;
+    const slot = plotWidth / Math.max(revealed, 1);
+    const xOf = (index: number): number => laid.plotLeft + index * slot + slot / 2;
+    for (const band of input.bands) {
+      appendBand(root, band, revealed, xOf, laid.yOf);
+    }
+    for (const overlay of input.overlays) {
+      appendOverlay(root, overlay, revealed, xOf, laid.yOf);
+    }
 
     for (const line of input.lines) {
       if (!finitePrice(line.price)) {
