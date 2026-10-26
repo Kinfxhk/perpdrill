@@ -19,8 +19,10 @@ version 3 or later (AGPL-3.0-or-later). perpsdrill is a separate work.
 It does not copy CandleDrill's interface, palette, or futures contract
 model, and it is not a release of that repository.
 
-M0 contains original stubs only. No fill, margin, or liquidation math
-is implemented.
+The teaching liquidation, slippage gate, and replay in this tree are
+original. They are an isolated approximation for practice. They are not
+CandleDrill's fill model, and they are not an exchange's closed-form
+liquidation price.
 
 No affiliation
 --------------
