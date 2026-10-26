@@ -272,7 +272,9 @@ export function replaySession(input: SessionInput): Frame {
     if (position === null) {
       return;
     }
-    const pricePnl = unrealizedPnl(position.side, position.qty, position.entry, price);
+    const rawPnl = unrealizedPnl(position.side, position.qty, position.entry, price);
+    // Isolated: a gap through liquidation cannot lose more than the position margin.
+    const pricePnl = kind === "liquidation" ? Math.max(rawPnl, -position.isolatedMargin) : rawPnl;
     const fee = kind === "liquidation" ? 0 : position.qty * price * (takerBps / 10_000);
     const back =
       kind === "liquidation"

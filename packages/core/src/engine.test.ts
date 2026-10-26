@@ -167,6 +167,27 @@ describe("brackets and rules", () => {
     expect(deeper.fills.at(-1)?.price).toBeCloseTo(100);
   });
 
+  it("caps a gapped liquidation loss at the isolated margin", () => {
+    const series = [ohlc(0, 100, 100, 100, 100), ohlc(1, 50, 50, 40, 45)];
+    const frame = replaySession({
+      market: "BTC-PERP",
+      series,
+      preset: null,
+      actions: [open({ leverage: 10, powerPct: 50 })],
+      cursor: 1,
+    });
+    const liq = frame.fills.at(-1);
+    expect(liq?.kind).toBe("liquidation");
+    expect(liq?.pricePnl).toBeCloseTo(-1_250);
+    expect(frame.equity).toBeCloseTo(1_250);
+    const stats = sessionStats({
+      fills: frame.fills,
+      equityCurve: frame.equityCurve,
+      startingBalance: 2_500,
+    });
+    expect(stats.netPnl).toBeCloseTo(frame.equity - 2_500);
+  });
+
   it("summarises trades and the equity curve", () => {
     const series = [
       ohlc(0, 100, 100, 100, 100),

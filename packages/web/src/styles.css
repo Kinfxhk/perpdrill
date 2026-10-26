@@ -1241,8 +1241,15 @@ button:disabled {
 
 /* Phone and tablet: playback stays reachable at the bottom of the screen */
 @media (max-width: 860px) {
+  /* Fixed, not sticky: sticky only holds inside .desk-bottom, which sits below the ticket. */
+  .shell {
+    padding-bottom: 150px;
+  }
+
   .replay {
-    position: sticky;
+    position: fixed;
+    left: 0;
+    right: 0;
     bottom: 0;
     z-index: 20;
     flex-direction: row;
