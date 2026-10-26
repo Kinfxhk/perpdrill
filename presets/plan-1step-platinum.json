@@ -1,0 +1,41 @@
+{
+  "format": "perps-prop-profile",
+  "version": 1,
+  "disclaimer": "Unofficial community preset — verify against current official docs. A simulated result is not an official evaluation.",
+  "sourceUrls": [
+    "https://next.vestmarkets.com/vest-capital",
+    "https://docs.vestmarkets.com/vest-capital/account-tiers.md",
+    "https://docs.vestmarkets.com/vest-capital/loss-limits.md",
+    "https://docs.vestmarkets.com/trading/cross-margin-and-leverage.md"
+  ],
+  "drawdownMode": "static",
+  "equityIncludesUPnL": true,
+  "dailyBase": "realized",
+  "dailyReset": {
+    "timeZone": "America/New_York",
+    "hour": 20,
+    "minute": 0
+  },
+  "costModel": "funding",
+  "fundingRatePerHour": 0,
+  "venueFundingChangesBalance": true,
+  "takerBps": 1,
+  "makerBps": 0,
+  "maxLeverage": {
+    "BTC-PERP": 25,
+    "ETH-PERP": 15
+  },
+  "markets": ["BTC-PERP", "ETH-PERP"],
+  "group": "1-Step evaluation",
+  "displayName": "1-Step Platinum — $25,000",
+  "startingBalanceUsd": 25000,
+  "maxDrawdownPct": 6,
+  "profitTargetPct": 10,
+  "dailyLossLimitPct": null,
+  "choices": {
+    "profitTargetPct": [10, 20],
+    "dailyLossLimitPct": [null, 3, 4]
+  },
+  "note": "$25,000 capital. Static max drawdown 6% ($1,500, floor $23,500) on equity. Profit target 10% or 20%. Daily loss limit none, 3% or 4%: reset 20:00 New York, measured from the realized balance plus reserved margin, checked against equity. Taker 1 bp, maker 0. Funding is a 0 stub. Leverage caps BTC 25×, ETH 15×. Profit split (80% or 90%) and the one-time fee are not simulated.",
+  "id": "plan-1step-platinum"
+}

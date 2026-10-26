@@ -26,6 +26,9 @@ function preset(overrides: Partial<PracticePreset> = {}): PracticePreset {
     maxDrawdownPct: 5,
     drawdownMode: "static",
     maxLeverage: null,
+    dailyBase: "equity",
+    group: "",
+    choices: { profitTargetPct: null, dailyLossLimitPct: null },
     dailyLossLimitPct: null,
     dailyReset: null,
     equityIncludesUPnL: true,
@@ -307,6 +310,47 @@ describe("brackets and rules", () => {
     expect(stats.wins).toBe(1);
     expect(stats.losses).toBe(0);
     expect(stats.profitFactor).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it("measures a realized daily base without unrealized PnL and allows no target", () => {
+    const day = 24 * HOUR;
+    const series: Bar[] = [
+      { timeMs: day - HOUR, open: 100, high: 100, low: 100, close: 100 },
+      { timeMs: day - 1, open: 110, high: 110, low: 110, close: 110 },
+      { timeMs: day + HOUR, open: 107, high: 107, low: 107, close: 107 },
+    ];
+    const run = (dailyBase: "equity" | "realized") =>
+      replaySession({
+        market: "BTC-PERP",
+        series,
+        preset: preset({
+          dailyBase,
+          dailyLossLimitPct: 3,
+          dailyReset: { timeZone: "UTC", hour: 0, minute: 0 },
+          profitTargetPct: null,
+          maxDrawdownPct: 50,
+        }),
+        actions: [open({ leverage: 1, powerPct: 100 })],
+        cursor: 2,
+      });
+    // Equity base: day starts at 11 000, floor 10 670, equity 10 700 survives barely.
+    expect(run("equity").dailyLossFloor).toBeCloseTo(10_670);
+    // Realized base: day starts at 10 000 (no closed PnL yet), floor 9 700.
+    const realized = run("realized");
+    expect(realized.dailyLossFloor).toBeCloseTo(9_700);
+    expect(realized.profitTarget).toBeNull();
+    expect(realized.phase).toBe("practice");
+  });
+
+  it("caps leverage per market", () => {
+    const frame = replaySession({
+      market: "ETH-PERP",
+      series: [ohlc(0, 100, 100, 100, 100)],
+      preset: preset({ maxLeverage: { "BTC-PERP": 25, "ETH-PERP": 15 } }),
+      actions: [open({ leverage: 20 })],
+      cursor: 0,
+    });
+    expect(frame.rejects[0]?.reason).toBe("invalid-leverage");
   });
 
   it("summarises trades and the equity curve", () => {

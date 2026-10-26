@@ -1,6 +1,6 @@
 {
   "name": "@perpdrill/web",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "license": "AGPL-3.0-or-later",
   "description": "Browser practice desk for simulated perps orders, margin, and teaching liquidation.",
@@ -11,7 +11,7 @@
     "preview": "vite preview --host 127.0.0.1 --port 43127 --strictPort"
   },
   "dependencies": {
-    "@perpdrill/core": "0.2.0"
+    "@perpdrill/core": "0.3.0"
   },
   "devDependencies": {
     "vite": "^6.4.1"

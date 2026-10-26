@@ -43,10 +43,17 @@ export type { Side } from "./liq.ts";
 export {
   DRAWDOWN_MODES,
   includeUnrealized,
+  leverageCap,
   parsePracticePreset,
   resolvedTakerBps,
 } from "./preset.ts";
-export type { DrawdownMode, PracticePreset, PresetParseResult } from "./preset.ts";
+export type {
+  DailyBase,
+  DrawdownMode,
+  PresetChoices,
+  PracticePreset,
+  PresetParseResult,
+} from "./preset.ts";
 export { pairTrades, sessionStats } from "./stats.ts";
 export type { SessionStats, Trade } from "./stats.ts";
 export {

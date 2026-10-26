@@ -1,0 +1,33 @@
+{
+  "format": "perps-prop-profile",
+  "version": 1,
+  "disclaimer": "Unofficial community preset — verify against current official docs. A simulated result is not an official evaluation.",
+  "sourceUrls": [
+    "https://next.vestmarkets.com/vest-capital",
+    "https://docs.vestmarkets.com/vest-capital/account-tiers.md",
+    "https://docs.vestmarkets.com/vest-capital/loss-limits.md",
+    "https://docs.vestmarkets.com/trading/cross-margin-and-leverage.md"
+  ],
+  "drawdownMode": "static",
+  "equityIncludesUPnL": true,
+  "dailyBase": "realized",
+  "dailyReset": null,
+  "costModel": "funding",
+  "fundingRatePerHour": 0,
+  "venueFundingChangesBalance": true,
+  "takerBps": 1,
+  "makerBps": 0,
+  "maxLeverage": {
+    "BTC-PERP": 25,
+    "ETH-PERP": 15
+  },
+  "markets": ["BTC-PERP", "ETH-PERP"],
+  "group": "Instant account",
+  "displayName": "Instant — $500",
+  "startingBalanceUsd": 500,
+  "maxDrawdownPct": 2,
+  "profitTargetPct": null,
+  "dailyLossLimitPct": null,
+  "note": "$500 capital, no evaluation and no profit target. Static max drawdown 2% ($10, floor $490) on equity. No daily loss limit. Taker 1 bp. Leverage caps BTC 25×, ETH 15×. Profit split 95% is not simulated.",
+  "id": "plan-instant-0-5k"
+}

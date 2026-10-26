@@ -39,6 +39,9 @@ export type SessionSetup = {
   seed: number;
   rulesMode: RulesMode;
   presetId: string | null;
+  /** Buyer options picked for the preset; `undefined` keeps the preset default. */
+  presetTargetPct?: number | null | undefined;
+  presetDailyPct?: number | null | undefined;
   custom: CustomRules;
 };
 
@@ -76,6 +79,38 @@ function num(value: unknown, min: number, max: number, fallback: number): number
     : fallback;
 }
 
+function optionalPct(value: unknown): number | null | undefined {
+  if (value === null) {
+    return null;
+  }
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100
+    ? value
+    : undefined;
+}
+
+/** Apply the buyer options, but only values the preset itself offers. */
+export function applyPresetChoices(preset: PracticePreset, setup: SessionSetup): PracticePreset {
+  const pick = (
+    allowed: readonly (number | null)[] | null,
+    wanted: number | null | undefined,
+    fallback: number | null,
+  ): number | null =>
+    allowed !== null && wanted !== undefined && allowed.includes(wanted) ? wanted : fallback;
+  return {
+    ...preset,
+    profitTargetPct: pick(
+      preset.choices.profitTargetPct,
+      setup.presetTargetPct,
+      preset.profitTargetPct,
+    ),
+    dailyLossLimitPct: pick(
+      preset.choices.dailyLossLimitPct,
+      setup.presetDailyPct,
+      preset.dailyLossLimitPct,
+    ),
+  };
+}
+
 /** Clamp every field so a hand-edited storage entry or form value cannot break the engine. */
 export function sanitizeSetup(raw: unknown): SessionSetup {
   const base = defaultSetup();
@@ -101,6 +136,8 @@ export function sanitizeSetup(raw: unknown): SessionSetup {
         ? value.rulesMode
         : base.rulesMode,
     presetId: typeof value.presetId === "string" ? value.presetId : null,
+    presetTargetPct: optionalPct(value.presetTargetPct),
+    presetDailyPct: optionalPct(value.presetDailyPct),
     custom: {
       startingBalanceUsd: num(custom.startingBalanceUsd, 100, 10_000_000, d.startingBalanceUsd),
       profitTargetPct: num(custom.profitTargetPct, 0.1, 100, d.profitTargetPct),
@@ -139,6 +176,9 @@ export function customPreset(rules: CustomRules): PracticePreset {
     startingBalanceUsd: rules.startingBalanceUsd,
     markets: null,
     note: "",
+    dailyBase: "equity",
+    group: "",
+    choices: { profitTargetPct: null, dailyLossLimitPct: null },
   };
 }
 

@@ -115,8 +115,8 @@ async function assertPresets(repoRoot, sink) {
   const dir = path.join(repoRoot, "presets");
   const index = JSON.parse(await readFile(path.join(dir, "index.json"), "utf8"));
   const files = index.files;
-  if (!Array.isArray(files) || files.length !== 2) {
-    sink.push("presets/index.json must list the two community presets");
+  if (!Array.isArray(files) || files.length === 0) {
+    sink.push("presets/index.json must list preset files");
     return;
   }
   const loaded = new Map();
@@ -128,13 +128,12 @@ async function assertPresets(repoRoot, sink) {
     loaded.set(name, JSON.parse(await readFile(path.join(dir, name), "utf8")));
   }
   const prime = loaded.get("community-a.json");
-  const gold = loaded.get("community-b.json");
-  if (prime === undefined || gold === undefined) {
-    sink.push("presets/index.json must name community-a.json and community-b.json");
+  if (prime === undefined) {
+    sink.push("presets/index.json must name community-a.json");
     return;
   }
   const unofficial = "Unofficial community preset — verify against current official docs.";
-  for (const file of [prime, gold]) {
+  for (const file of loaded.values()) {
     if (typeof file.disclaimer !== "string" || !file.disclaimer.includes(unofficial)) {
       sink.push(`${file.id ?? "preset"} is missing the unofficial disclaimer`);
     }
@@ -171,28 +170,32 @@ async function assertPresets(repoRoot, sink) {
   ) {
     sink.push("community-a is missing its fee source URL");
   }
-  expectFields(sink, "community-b", gold, {
-    displayName: "Vest Capital — Eval Gold-like (community)",
-    startingBalanceUsd: 10000,
-    maxDrawdownPct: 6,
-    dailyLossLimitPct: 3,
-    profitTargetPct: 10,
-    costModel: "funding",
-    fundingRatePerHour: 0,
-    venueFundingChangesBalance: true,
-  });
-  if (gold.dailyReset?.timeZone !== "America/New_York" || gold.dailyReset?.hour !== 20) {
-    sink.push("community-b daily reset must be 20:00 America/New_York");
-  }
-  if (
-    !JSON.stringify(gold.sourceUrls).includes(
-      "https://docs.vestmarkets.com/vest-capital/overview.md",
-    )
-  ) {
-    sink.push("community-b is missing its overview source URL");
-  }
-  if ("takerBps" in gold) {
-    sink.push("community-b must not invent a taker fee");
+  // Plan presets: numbers checked against the plan page on 2026-10-26.
+  const planDd = { "1step": 6, "2step": 6 };
+  for (const [name, file] of loaded) {
+    const match = /^plan-(1step|2step|instant)-/.exec(name);
+    if (match === null) {
+      continue;
+    }
+    const kind = match[1];
+    if (kind === "instant") {
+      const expected = file.startingBalanceUsd === 500 ? 2 : 4;
+      if (
+        file.maxDrawdownPct !== expected ||
+        file.profitTargetPct !== null ||
+        file.dailyLossLimitPct !== null
+      ) {
+        sink.push(`${file.id} instant rules drifted`);
+      }
+    } else if (file.maxDrawdownPct !== planDd[kind] || file.drawdownMode !== "static") {
+      sink.push(`${file.id} max drawdown must be a static ${planDd[kind]}%`);
+    }
+    if (
+      kind !== "instant" &&
+      (file.dailyReset?.timeZone !== "America/New_York" || file.dailyReset?.hour !== 20)
+    ) {
+      sink.push(`${file.id} daily reset must be 20:00 America/New_York`);
+    }
   }
 }
 

@@ -2,7 +2,7 @@
 
 本機優先的教育用模擬／回放練習台骨架，用來對照加密永續合約、類 prop 規則做練習。這不是交易所客戶端，也不會下真單。
 
-**狀態：0.2.0 回測台。** 生成合成數據、設定規則（自訂／社群預設／無）、每組數據第一次開始前倒數 3 秒，然後逐根播放、下市價單、設停利停損，結束後看檢討報告。強平是隔離教學近似，不是交易所公式，也不是官方評測結果。
+**狀態：0.3.0 回測台。** 生成合成數據、設定規則（自訂／社群預設／無）、每組數據第一次開始前倒數 3 秒，然後逐根播放、下市價單、設停利停損，結束後看檢討報告。強平是隔離教學近似，不是交易所公式，也不是官方評測結果。
 
 儲存庫：<https://github.com/Kinfxhk/perpdrill>
 
@@ -61,11 +61,11 @@ npm start
 
 `presets/` 有兩份非官方社群 JSON。數字與網址寫在檔案裡，並標明請對照該站現行文件。模擬結果不是官方評測。產品程式碼（`packages/`）不寫廠商名稱。沒有核到的規則不要補數字。
 
-| 來源                   | 網址                                                            | 說明                                                                                                      |
-| ---------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Vest Capital 規則筆記  | https://docs.vestmarkets.com/vest-capital/overview.md           | 非官方社群 JSON，見 `presets/`。虧損上限筆記：https://docs.vestmarkets.com/vest-capital/loss-limits.md    |
-| MyFundedPerps 挑戰筆記 | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | 非官方社群 JSON，見 `presets/`。費用筆記：https://docs.myfundedperpetuals.com/guides/commissions-and-fees |
-| Tradeify Perps         | https://tradeifyperps.co/                                       | 2026-10-26 未能核實公開規則（僅見 waitlist）。不要編造數字。                                              |
+| 來源                   | 網址                                                            | 說明                                                                                                                          |
+| ---------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Vest Capital 方案      | https://next.vestmarkets.com/vest-capital                       | 13 個方案 JSON（`presets/plan-*.json`）：1-Step／2-Step 評測 Silver–Emerald、Instant $500–$50k。2026-10-26 依官網與文件核對。 |
+| MyFundedPerps 挑戰筆記 | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | 非官方社群 JSON，見 `presets/`。費用筆記：https://docs.myfundedperpetuals.com/guides/commissions-and-fees                     |
+| Tradeify Perps         | https://tradeifyperps.co/                                       | 2026-10-26 未能核實公開規則（僅見 waitlist）。不要編造數字。                                                                  |
 
 細節與「強平線 ≠ prop 回撤線」見 [docs/DESIGN-MVP.md](docs/DESIGN-MVP.md)。
 
@@ -79,7 +79,7 @@ npm start
 
 Local-first educational simulator and replay desk for crypto perpetuals and prop-style rules. It is not an exchange client and it does not send live orders.
 
-**Status: 0.2.0 backtest desk.** Generate synthetic data, set rules (custom, community preset, or none), count down 3 seconds on the first run of each data set, then play bar by bar with market orders, stop loss and take profit, and read the review when the session ends. Liquidation is an isolated teaching approximation, not an exchange formula and not an official evaluation result.
+**Status: 0.3.0 backtest desk.** Generate synthetic data, set rules (custom, community preset, or none), count down 3 seconds on the first run of each data set, then play bar by bar with market orders, stop loss and take profit, and read the review when the session ends. Liquidation is an isolated teaching approximation, not an exchange formula and not an official evaluation result.
 
 Repository: <https://github.com/Kinfxhk/perpdrill>
 
@@ -130,11 +130,11 @@ npm start
 
 `presets/` ships two unofficial community JSON files. The numbers and URLs live in those files, with a line telling the reader to check the firm's current documents. A simulated result is not an official evaluation. Product code under `packages/` does not name firms. Do not invent numbers for a rule that was not verified.
 
-| Source                        | URL                                                             | Note                                                                                                           |
-| ----------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Vest Capital rule notes       | https://docs.vestmarkets.com/vest-capital/overview.md           | Unofficial community JSON in `presets/`. Loss limits: https://docs.vestmarkets.com/vest-capital/loss-limits.md |
-| MyFundedPerps challenge notes | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | Unofficial community JSON in `presets/`. Fees: https://docs.myfundedperpetuals.com/guides/commissions-and-fees |
-| Tradeify Perps                | https://tradeifyperps.co/                                       | Unverified on 2026-10-26 (waitlist only). Do not invent numbers.                                               |
+| Source                        | URL                                                             | Note                                                                                                                                                               |
+| ----------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Vest Capital plans            | https://next.vestmarkets.com/vest-capital                       | 13 plan JSON files (`presets/plan-*.json`): 1-Step / 2-Step evaluation Silver–Emerald and Instant $500–$50k. Checked against the plan page and docs on 2026-10-26. |
+| MyFundedPerps challenge notes | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | Unofficial community JSON in `presets/`. Fees: https://docs.myfundedperpetuals.com/guides/commissions-and-fees                                                     |
+| Tradeify Perps                | https://tradeifyperps.co/                                       | Unverified on 2026-10-26 (waitlist only). Do not invent numbers.                                                                                                   |
 
 See [docs/DESIGN-MVP.md](docs/DESIGN-MVP.md) for liquidation versus prop drawdown lines and the percent-sizing note.
 

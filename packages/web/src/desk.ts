@@ -23,6 +23,7 @@ import {
   isBuyingPowerPct,
   isMarketId,
   isSyntheticTimeframe,
+  leverageCap,
   pairTrades,
   quoteClose,
   quoteOpen,
@@ -53,16 +54,21 @@ import {
 import { formatNumber, formatPct, formatQty, signedNumber } from "./format.ts";
 import {
   LANG_CHOICES,
+  THEMES,
   numberLocale,
   readStoredLang,
+  readStoredTheme,
   translate,
   writeStoredLang,
+  writeStoredTheme,
   type Lang,
   type MessageKey,
+  type Theme,
 } from "./i18n.ts";
 import { loadCommunityPresets } from "./preset-loader.ts";
 import {
   MAX_RULE_DRAWDOWN_PCT,
+  applyPresetChoices,
   customPreset,
   dataKey,
   readStoredSetup,
@@ -115,6 +121,7 @@ function defaultMovingAverages(): MovingAverageInstance[] {
 
 type DeskState = {
   lang: Lang;
+  theme: Theme;
   screen: "setup" | "play";
   setup: SessionSetup;
   series: readonly Bar[];
@@ -283,6 +290,7 @@ export function mountDesk(root: HTMLElement): void {
   const stored = readStoredSetup();
   const state: DeskState = {
     lang: readStoredLang(),
+    theme: readStoredTheme(),
     screen: "setup",
     setup: stored,
     series: [],
@@ -331,8 +339,10 @@ export function mountDesk(root: HTMLElement): void {
         return null;
       case "custom":
         return customPreset(setup.custom);
-      case "preset":
-        return state.presets.find((item) => item.id === setup.presetId) ?? null;
+      case "preset": {
+        const found = state.presets.find((item) => item.id === setup.presetId);
+        return found === undefined ? null : applyPresetChoices(found, setup);
+      }
       default: {
         const unexpected: never = setup.rulesMode;
         return unexpected;
@@ -415,8 +425,8 @@ export function mountDesk(root: HTMLElement): void {
     sessionPreset = presetFor(setup);
     const allowed = setupMarkets(sessionPreset);
     state.market = allowed.includes(setup.market) ? setup.market : (allowed[0] ?? "BTC-PERP");
-    if (sessionPreset?.maxLeverage !== null && sessionPreset?.maxLeverage !== undefined) {
-      state.leverage = Math.min(state.leverage, sessionPreset.maxLeverage);
+    {
+      state.leverage = Math.min(state.leverage, leverageCap(sessionPreset, state.market));
     }
     state.series = syntheticSeries({
       market: state.market,
@@ -456,6 +466,11 @@ export function mountDesk(root: HTMLElement): void {
     const active = document.activeElement;
     const restore = active instanceof HTMLInputElement && root.contains(active) ? active.id : "";
     document.documentElement.lang = state.lang;
+    if (state.theme === "teal") {
+      delete document.documentElement.dataset.theme;
+    } else {
+      document.documentElement.dataset.theme = state.theme;
+    }
     root.replaceChildren(build());
     if (restore.length > 0) {
       const next = root.querySelector(`#${CSS.escape(restore)}`);
@@ -898,14 +913,107 @@ export function mountDesk(root: HTMLElement): void {
         );
       } else {
         const chosen = setup.presetId ?? options[0]?.value ?? "";
+        const groups = new Map<string, { value: string; text: string }[]>();
+        for (const item of state.presets) {
+          const list = groups.get(item.group) ?? [];
+          list.push({ value: item.id, text: item.displayName });
+          groups.set(item.group, list);
+        }
+        const select = el("select", { attrs: { id: "rule-preset" } });
+        for (const [group, list] of groups) {
+          const parent = group.length > 0 ? el("optgroup", { attrs: { label: group } }) : select;
+          for (const option of list) {
+            const node = el("option", { text: option.text, attrs: { value: option.value } });
+            node.selected = option.value === chosen;
+            parent.append(node);
+          }
+          if (parent !== select) {
+            select.append(parent);
+          }
+        }
+        select.addEventListener("change", () => {
+          state.setup = {
+            ...state.setup,
+            presetId: select.value,
+            presetTargetPct: undefined,
+            presetDailyPct: undefined,
+          };
+          render();
+        });
         ruleFields.push(
-          selectField("rule-preset", t("preset.label"), options, chosen, (value) => {
-            state.setup = { ...state.setup, presetId: value };
-          }),
+          el("label", { className: "field" }, [el("span", { text: t("preset.label") }), select]),
         );
         const active = state.presets.find((item) => item.id === chosen);
         if (active !== undefined) {
+          const applied = applyPresetChoices(active, setup);
+          const pctText = (value: number | null): string =>
+            value === null ? t("setup.optNone") : `${value}%`;
+          const choiceRow = (
+            label: string,
+            allowed: readonly (number | null)[] | null,
+            current: number | null,
+            set: (value: number | null) => void,
+          ): HTMLElement | null => {
+            if (allowed === null) {
+              return null;
+            }
+            return el("div", { className: "field" }, [
+              el("span", { text: label }),
+              el(
+                "div",
+                { className: "pct-row", attrs: { role: "group", "aria-label": label } },
+                allowed.map((value) => {
+                  const node = actionButton(
+                    pctText(value),
+                    value === current ? "pct is-selected" : "pct",
+                    () => {
+                      set(value);
+                      render();
+                    },
+                  );
+                  node.setAttribute("aria-pressed", value === current ? "true" : "false");
+                  return node;
+                }),
+              ),
+            ]);
+          };
+          const targetRow = choiceRow(
+            t("rules.target"),
+            active.choices.profitTargetPct,
+            applied.profitTargetPct,
+            (value) => {
+              state.setup = { ...state.setup, presetTargetPct: value };
+            },
+          );
+          const dailyRow = choiceRow(
+            t("setup.daily"),
+            active.choices.dailyLossLimitPct,
+            applied.dailyLossLimitPct,
+            (value) => {
+              state.setup = { ...state.setup, presetDailyPct: value };
+            },
+          );
+          const capital = applied.startingBalanceUsd ?? 0;
+          const money0 = (value: number): string => formatNumber(value, locale(), 0);
+          const summary = el("div", { className: "preset-summary" }, [
+            quoteRow(t("setup.balance"), money0(capital)),
+            quoteRow(
+              t("rules.maxDd"),
+              `${money0(capital * (applied.maxDrawdownPct / 100))} (${applied.maxDrawdownPct}%, ${applied.drawdownMode === "trailing" ? t("setup.ddTrailing") : t("setup.ddStatic")})`,
+            ),
+            quoteRow(t("rules.target"), pctText(applied.profitTargetPct)),
+            quoteRow(t("setup.daily"), pctText(applied.dailyLossLimitPct)),
+            quoteRow(
+              t("setup.maxLev"),
+              SAMPLE_MARKETS.map(
+                (market) => `${market.replace("-PERP", "")} ${leverageCap(applied, market)}×`,
+              ).join(" · "),
+            ),
+            quoteRow(t("setup.fee"), `${applied.takerBps ?? 0} ${t("slip.bps")}`),
+          ]);
           ruleFields.push(
+            ...[targetRow, dailyRow].filter((node): node is HTMLElement => node !== null),
+            summary,
             el("p", { className: "hint", text: active.disclaimer }),
             el("p", { className: "hint", text: active.note }),
           );
@@ -985,6 +1093,24 @@ export function mountDesk(root: HTMLElement): void {
       }
     });
 
+    const theme = el("select", {
+      className: "lang-select",
+      attrs: { id: "theme", "aria-label": t("theme.label") },
+    });
+    for (const choice of THEMES) {
+      const option = el("option", { text: t(`theme.${choice}`), attrs: { value: choice } });
+      option.selected = choice === state.theme;
+      theme.append(option);
+    }
+    theme.addEventListener("change", () => {
+      const value = THEMES.find((item) => item === theme.value);
+      if (value !== undefined) {
+        state.theme = value;
+        writeStoredTheme(value);
+        render();
+      }
+    });
+
     return el("header", { className: "topnav" }, [
       el("div", { className: "brand" }, [
         el("p", { className: "brand-kicker", text: t("kicker") }),
@@ -1019,7 +1145,7 @@ export function mountDesk(root: HTMLElement): void {
           }
         }),
       ]),
-      el("div", { className: "top-actions" }, [lang]),
+      el("div", { className: "top-actions" }, [theme, lang]),
     ]);
   }
 
@@ -1290,7 +1416,7 @@ export function mountDesk(root: HTMLElement): void {
     dash: string;
   }): HTMLElement {
     const active = preset();
-    const levCap = active?.maxLeverage ?? TEACHING_MAX_LEVERAGE;
+    const levCap = leverageCap(active, state.market);
     const priceInput = (id: string, label: string, value: string, set: (v: string) => void) => {
       const input = el("input", {
         className: "mono",
@@ -1514,9 +1640,7 @@ export function mountDesk(root: HTMLElement): void {
         el("label", { className: "field" }, [el("span", { text: t("field.leverage") }), leverage]),
         el("p", {
           className: "hint",
-          text: active?.maxLeverage
-            ? `${t("setup.maxLev")}: ${active.maxLeverage}×`
-            : t("field.leverageHint"),
+          text: active?.maxLeverage ? `${t("setup.maxLev")}: ${levCap}×` : t("field.leverageHint"),
         }),
         el("label", { className: "field" }, [
           el("span", { text: t("field.maxSlip") }),
@@ -1788,7 +1912,7 @@ export function mountDesk(root: HTMLElement): void {
           t("rules.daily"),
           frame.dailyLossFloor === null ? dash : money(frame.dailyLossFloor),
         ),
-        quoteRow(t("setup.maxLev"), `${active.maxLeverage ?? TEACHING_MAX_LEVERAGE}×`),
+        quoteRow(t("setup.maxLev"), `${leverageCap(active, state.market)}×`),
         quoteRow(t("setup.fee"), `${active.takerBps ?? 0} ${t("slip.bps")}`),
         quoteRow(t("rules.carry"), money(frame.carryPaid)),
         quoteRow(t("phase.practice"), t(phaseKey(frame.phase))),
@@ -1812,7 +1936,8 @@ export function mountDesk(root: HTMLElement): void {
       el("h2", { text: active.displayName }),
       el("p", { text: active.disclaimer }),
       el("p", { text: upnl }),
-      quoteRow(t("rules.target"), money(frame.profitTarget ?? 0)),
+      quoteRow(t("rules.target"), frame.profitTarget === null ? dash : money(frame.profitTarget)),
+      quoteRow(t("setup.maxLev"), `${leverageCap(active, state.market)}×`),
       quoteRow(
         t("rules.maxDd"),
         frame.maxDrawdownFloor === null ? dash : money(frame.maxDrawdownFloor),
