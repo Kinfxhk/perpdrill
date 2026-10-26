@@ -6,7 +6,7 @@
 
 儲存庫：<https://github.com/Kinfxhk/perpdrill>
 
-線上版面（GitHub Pages，與本機同一張停用的 M0 骨架）：<https://kinfxhk.github.io/perpdrill/>。由 `main` 的 Pages workflow 部署，內容安全政策仍是 `default-src 'self'`。
+線上版面（GitHub Pages，與本機同一張 0.1 練習台：可下市價單、看持倉與損益；強平是教學近似）：<https://kinfxhk.github.io/perpdrill/>。由 `main` 的 Pages workflow 部署，內容安全政策仍是 `default-src 'self'`。
 
 ## 這是什麼
 
@@ -83,7 +83,7 @@ Local-first educational simulator and replay desk for crypto perpetuals and prop
 
 Repository: <https://github.com/Kinfxhk/perpdrill>
 
-Online desk (GitHub Pages, the same disabled M0 scaffold): <https://kinfxhk.github.io/perpdrill/>. The Pages workflow on `main` deploys it. The page policy stays `default-src 'self'`.
+Online desk (GitHub Pages, the same 0.1 practice desk: market orders, position, and PnL; liquidation is a teaching approximation): <https://kinfxhk.github.io/perpdrill/>. The Pages workflow on `main` deploys it. The page policy stays `default-src 'self'`.
 
 ## What it is
 
