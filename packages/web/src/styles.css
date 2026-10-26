@@ -1,3 +1,4 @@
+/* Cool-teal dark desk. The accent is an original cool green. */
 :root {
   color-scheme: dark;
   --bg: #0e1f24;
@@ -9,7 +10,7 @@
   --text: #e7f4f5;
   --text-dim: #9ec0c6;
   --text-faint: #7f9ea4;
-  --accent: #49c7be;
+  --accent: #3cba9a;
   --accent-ink: #08312e;
   --long: #8fd9d1;
   --long-bg: #173c38;
@@ -25,12 +26,13 @@
   --panel-deep: #12282e;
   --long-line: #2f6d66;
   --short-line: #6d454b;
-  --accent-rgb: 73 199 190;
+  --accent-rgb: 60 186 154;
   --grid-rgb: 42 85 96;
   --bg-rgb: 14 31 36;
   --long-rgb: 143 217 209;
   --short-rgb: 224 176 180;
   --shade-rgb: 4 12 14;
+  --overlay: rgb(var(--shade-rgb) / 78%);
 }
 
 * {
@@ -642,6 +644,7 @@ output {
 }
 
 .lang-select,
+.theme-select,
 .market-select,
 .ticket select {
   max-width: 100%;
@@ -998,7 +1001,7 @@ td.empty {
   align-items: center;
   justify-content: center;
   gap: 18px;
-  background: rgb(var(--shade-rgb) / 78%);
+  background: var(--overlay);
 }
 
 .countdown-label {
@@ -1428,141 +1431,129 @@ button:disabled {
   }
 }
 
-/* Desk themes. Palettes echo common perps venues; no venue names or logos. */
+/* Original alternate palettes. Tokens only: no firm or venue colors. */
 [data-theme="midnight"] {
-  /* Neutral black with green / red, the most common venue look. */
-  --bg: #0b0e11;
-  --bg-raised: #181a20;
-  --bg-inset: #0b0e11;
-  --bg-header: #12161c;
-  --line: #2b3139;
-  --line-strong: #474d57;
-  --text: #eaecef;
-  --text-dim: #b7bdc6;
-  --text-faint: #9aa4b2;
-  --accent: #3dd6a3;
-  --accent-ink: #062a1e;
-  --long: #0ecb81;
-  --long-bg: #0f2e23;
-  --short: #f6465d;
-  --short-bg: #35141b;
-  --danger: #f6465d;
-  --prop: #b9a7ff;
-  --banner-bg: #12161c;
-  --panel-deep: #12161c;
-  --long-line: #0ecb81;
-  --short-line: #f6465d;
-  --accent-rgb: 61 214 163;
-  --grid-rgb: 43 49 57;
-  --bg-rgb: 11 14 17;
-  --long-rgb: 14 203 129;
-  --short-rgb: 246 70 93;
-  --shade-rgb: 0 0 0;
+  /* Grove: forest night, cool green accent. */
+  --bg: #14261c;
+  --bg-raised: #1e3428;
+  --bg-inset: #0e1c15;
+  --bg-header: #183026;
+  --line: #3d5c4c;
+  --line-strong: #5a806c;
+  --text: #e8f6ee;
+  --text-dim: #c5e0d2;
+  --text-faint: #9ec4b0;
+  --accent: #6dce8a;
+  --accent-ink: #062414;
+  --long: #b6ebc8;
+  --long-bg: #1a4030;
+  --short: #f0b4c0;
+  --short-bg: #3a2229;
+  --danger: #e7b08a;
+  --prop: #d2c4f6;
+  --banner-bg: #183026;
+  --panel-deep: #12241c;
+  --long-line: #2f6a48;
+  --short-line: #8a4a56;
+  --accent-rgb: 109 206 138;
+  --grid-rgb: 61 92 76;
+  --bg-rgb: 20 38 28;
+  --long-rgb: 182 235 200;
+  --short-rgb: 240 180 192;
+  --shade-rgb: 6 14 10;
 }
 
 [data-theme="aqua"] {
-  /* Deep navy with mint, like on-chain order-book perps. */
-  --bg: #04141c;
-  --bg-raised: #0b2430;
-  --bg-inset: #031018;
-  --bg-header: #071c26;
-  --line: #163a48;
-  --line-strong: #24566a;
-  --text: #f6fefd;
-  --text-dim: #a9c6cc;
-  --text-faint: #8fb0b8;
-  --accent: #50d2c1;
-  --accent-ink: #042a26;
-  --long: #1fa67d;
-  --long-bg: #0b3326;
-  --short: #ed7088;
-  --short-bg: #3a1621;
-  --danger: #ed7088;
-  --prop: #a9b4ff;
-  --banner-bg: #071c26;
-  --panel-deep: #071c26;
-  --long-line: #1fa67d;
-  --short-line: #ed7088;
-  --accent-rgb: 80 210 193;
-  --grid-rgb: 22 58 72;
-  --bg-rgb: 4 20 28;
-  --long-rgb: 31 166 125;
-  --short-rgb: 237 112 136;
-  --shade-rgb: 0 6 10;
+  /* Lagoon: deep teal water, mint accent. */
+  --bg: #071e28;
+  --bg-raised: #0f3140;
+  --bg-inset: #04161e;
+  --bg-header: #0a2834;
+  --line: #1e5468;
+  --line-strong: #2f7a90;
+  --text: #e7f7f8;
+  --text-dim: #b7dbe0;
+  --text-faint: #8fc0c8;
+  --accent: #5ddec0;
+  --accent-ink: #042824;
+  --long: #9ee6c4;
+  --long-bg: #0f3a30;
+  --short: #f0b0be;
+  --short-bg: #3a1e28;
+  --danger: #e8b090;
+  --prop: #c9c4f4;
+  --banner-bg: #0a2834;
+  --panel-deep: #0a2430;
+  --long-line: #1f6e56;
+  --short-line: #8a4554;
+  --accent-rgb: 93 222 192;
+  --grid-rgb: 30 84 104;
+  --bg-rgb: 7 30 40;
+  --long-rgb: 158 230 196;
+  --short-rgb: 240 176 190;
+  --shade-rgb: 2 10 16;
 }
 
 [data-theme="violet"] {
-  /* Purple-black, the DeFi perps look. */
-  --bg: #0f0d1a;
-  --bg-raised: #1b1830;
-  --bg-inset: #0b0a14;
-  --bg-header: #151227;
-  --line: #2e2a4a;
-  --line-strong: #4a4470;
-  --text: #f1effa;
-  --text-dim: #bdb7d9;
-  --text-faint: #a29cc2;
-  --accent: #8b7bff;
-  --accent-ink: #160f3d;
-  --long: #3fd8a0;
-  --long-bg: #12302a;
-  --short: #ff5c84;
-  --short-bg: #3a1528;
-  --danger: #ff5c84;
-  --prop: #f2b8ff;
-  --banner-bg: #151227;
-  --panel-deep: #151227;
-  --long-line: #3fd8a0;
-  --short-line: #ff5c84;
-  --accent-rgb: 139 123 255;
-  --grid-rgb: 46 42 74;
-  --bg-rgb: 15 13 26;
-  --long-rgb: 63 216 160;
-  --short-rgb: 255 92 132;
-  --shade-rgb: 4 3 10;
+  /* Iris: purple night with the same cool-green accent. */
+  --bg: #16141f;
+  --bg-raised: #262038;
+  --bg-inset: #100e18;
+  --bg-header: #1e1a30;
+  --line: #433c62;
+  --line-strong: #645a8c;
+  --text: #f4f1fb;
+  --text-dim: #d0c9e6;
+  --text-faint: #b2aacb;
+  --accent: #7dcea0;
+  --accent-ink: #0e2418;
+  --long: #b7ebc9;
+  --long-bg: #1c3a2c;
+  --short: #f0b3c4;
+  --short-bg: #3c2234;
+  --danger: #e8b298;
+  --prop: #e0c8f8;
+  --banner-bg: #1e1a30;
+  --panel-deep: #1a1730;
+  --long-line: #3d6e54;
+  --short-line: #8a4a62;
+  --accent-rgb: 125 206 160;
+  --grid-rgb: 67 60 98;
+  --bg-rgb: 22 20 31;
+  --long-rgb: 183 235 201;
+  --short-rgb: 240 179 196;
+  --shade-rgb: 8 6 14;
 }
 
 [data-theme="daylight"] {
-  /* Light terminal for bright rooms. */
+  /* Bright room. Darker green so accent text stays readable. */
   color-scheme: light;
-  --bg: #f5f6f8;
+  --bg: #f4f7f5;
   --bg-raised: #ffffff;
-  --bg-inset: #eef0f3;
+  --bg-inset: #e7eee9;
   --bg-header: #ffffff;
-  --line: #dde1e6;
-  --line-strong: #b8bfc8;
-  --text: #1e2329;
-  --text-dim: #3a4049;
-  --text-faint: #5b6574;
-  --accent: #0b8f6a;
+  --line: #b7c9bf;
+  --line-strong: #7f9c90;
+  --text: #1a2822;
+  --text-dim: #2c4038;
+  --text-faint: #3e564c;
+  --accent: #0c6e45;
   --accent-ink: #ffffff;
-  --long: #089a6a;
-  --long-bg: #e2f6ee;
-  --short: #d9304e;
-  --short-bg: #fbe5e9;
-  --danger: #d9304e;
-  --prop: #6a4fd8;
-  --banner-bg: #eef0f3;
-  --panel-deep: #f0f2f5;
-  --long-line: #089a6a;
-  --short-line: #d9304e;
-  --accent-rgb: 11 143 106;
-  --grid-rgb: 200 206 214;
-  --bg-rgb: 245 246 248;
-  --long-rgb: 8 154 106;
-  --short-rgb: 217 48 78;
-  --shade-rgb: 30 35 41;
-}
-
-/* Venue themes: plain chart floor, accent only on selection edges. */
-[data-theme] .chart-stage {
-  background-image: none;
-}
-
-[data-theme] .chip.is-current,
-[data-theme] .tab.is-current {
-  color: var(--text);
-  background: transparent;
-  border-color: transparent;
-  box-shadow: inset 0 -2px 0 var(--accent);
+  --long: #3a6414;
+  --long-bg: #d7f3e4;
+  --short: #a61e38;
+  --short-bg: #f8dfe4;
+  --danger: #9a3412;
+  --prop: #5b3fbf;
+  --banner-bg: #e7eee9;
+  --panel-deep: #eef3f0;
+  --long-line: #6a8a38;
+  --short-line: #c45a6e;
+  --accent-rgb: 12 110 69;
+  --grid-rgb: 127 156 144;
+  --bg-rgb: 244 247 245;
+  --long-rgb: 58 100 20;
+  --short-rgb: 166 30 56;
+  --shade-rgb: 20 32 26;
+  --overlay: rgb(244 247 245 / 94%);
 }
