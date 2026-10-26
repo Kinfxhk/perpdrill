@@ -8,6 +8,7 @@
   "engines": {
     "node": ">=22"
   },
+  "homepage": "https://kinfxhk.github.io/perpdrill/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Kinfxhk/perpdrill.git"

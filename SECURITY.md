@@ -7,14 +7,11 @@ version string and, only with `listen`, accepts connections on
 
 ## Reporting
 
-Use GitHub private vulnerability reporting on the intended repository
-once it exists:
+Use GitHub private vulnerability reporting:
 
 https://github.com/Kinfxhk/perpdrill/security/advisories/new
 
-Until that repository is public, contact the maintainer KINFX / Kinfxhk
-out of band. Please do not file a public issue for an unfixed
-vulnerability.
+Please do not file a public issue for an unfixed vulnerability.
 
 ## In scope
 

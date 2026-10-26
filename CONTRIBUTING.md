@@ -2,7 +2,7 @@
 
 perpdrill is AGPL-3.0-or-later. Contributions are accepted under that
 license. The intended public repository is
-https://github.com/Kinfxhk/perpdrill (it may not be published yet).
+https://github.com/Kinfxhk/perpdrill.
 
 ## What M0 accepts
 

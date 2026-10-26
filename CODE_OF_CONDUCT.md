@@ -14,6 +14,5 @@ The maintainer may edit or remove comments and reject changes that break
 these expectations, including repeated off-topic promotion.
 
 Reports can go to the maintainer KINFX / Kinfxhk, or to a private
-advisory on https://github.com/Kinfxhk/perpdrill once that repository
-exists. Reports should describe what happened and where. They should not
-include secrets.
+advisory on https://github.com/Kinfxhk/perpdrill. Reports should describe
+what happened and where. They should not include secrets.
