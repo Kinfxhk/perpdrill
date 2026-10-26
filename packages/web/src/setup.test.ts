@@ -13,7 +13,7 @@ describe("session setup", () => {
       rulesMode: "custom",
       custom: { maxDrawdownPct: 500, maxLeverage: 999, drawdownMode: "weird" },
     });
-    expect(setup.market).toBe("BTC-PERP");
+    expect(setup.market).toBe("SYNTH-NQ");
     expect(setup.timeframeMin).toBe(15);
     expect(setup.bars).toBe(5_000);
     expect(setup.seed).toBe(0);
@@ -68,8 +68,8 @@ describe("plan presets", () => {
     expect(picked.dailyLossLimitPct).toBe(4);
     const bogus = applyPresetChoices(parsed.preset, { ...base, presetDailyPct: 7 });
     expect(bogus.dailyLossLimitPct).toBeNull();
-    expect(leverageCap(parsed.preset, "BTC-PERP")).toBe(25);
-    expect(leverageCap(parsed.preset, "ETH-PERP")).toBe(15);
+    expect(leverageCap(parsed.preset, "SYNTH-NQ")).toBe(25);
+    expect(leverageCap(parsed.preset, "SYNTH-GC")).toBe(15);
   });
 });
 

@@ -74,7 +74,7 @@ describe("practice preset parser", () => {
       makerBps: 30,
       swapDailyRatePct: 0.03,
       venueFundingChangesBalance: false,
-      markets: ["BTC-PERP"],
+      markets: ["SYNTH-NQ"],
     });
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) {

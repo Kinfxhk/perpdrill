@@ -16,7 +16,8 @@ export const MAX_REALIZED_IMPACT_BPS = 1_000;
 
 export const MAINTENANCE_OF_INITIAL = 0.5;
 
-export const SAMPLE_MARKETS = ["BTC-PERP", "ETH-PERP"] as const;
+/** Practice ids shown in the desk. Not exchange tickers. */
+export const SAMPLE_MARKETS = ["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES"] as const;
 
 export type MarketId = (typeof SAMPLE_MARKETS)[number];
 

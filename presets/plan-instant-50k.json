@@ -18,10 +18,10 @@
   "takerBps": 1,
   "makerBps": 0,
   "maxLeverage": {
-    "BTC-PERP": 25,
-    "ETH-PERP": 15
+    "SYNTH-NQ": 25,
+    "SYNTH-GC": 15
   },
-  "markets": ["BTC-PERP", "ETH-PERP"],
+  "markets": ["SYNTH-NQ", "SYNTH-GC"],
   "group": "Instant",
   "displayName": "Teaching · Instant 50k",
   "startingBalanceUsd": 50000,
@@ -29,6 +29,6 @@
   "maxDrawdownUsd": 2000,
   "profitTargetPct": null,
   "dailyLossLimitPct": null,
-  "note": "$50,000 capital, no evaluation and no profit target. Static max drawdown $2,000 (starting balance minus that amount; it does not trail) on equity. No daily loss limit. Taker 1 bp. Leverage caps BTC 25×, ETH 15×. Profit split 95% is not simulated.",
+  "note": "$50,000 capital, no evaluation and no profit target. Static max drawdown $2,000 (starting balance minus that amount; it does not trail) on equity. No daily loss limit. Taker 1 bp. Leverage caps SYNTH-NQ 25×, SYNTH-GC 15×. Profit split 95% is not simulated.",
   "id": "plan-instant-50k"
 }

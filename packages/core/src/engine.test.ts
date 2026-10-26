@@ -60,8 +60,35 @@ function open(extra: Partial<Extract<SessionAction, { kind: "open" }>> = {}): Se
 }
 
 describe("synthetic series", () => {
+  it("keeps the previous anchors under SYNTH-NQ and SYNTH-GC", () => {
+    const spec = { seed: 42, bars: 120, timeframeMin: 15 } as const;
+    const nq = syntheticSeries({ ...spec, market: "SYNTH-NQ" });
+    const gc = syntheticSeries({ ...spec, market: "SYNTH-GC" });
+    expect(nq[0]).toEqual({
+      timeMs: 1_767_571_200_000,
+      open: 67628.7,
+      high: 67649,
+      low: 67493.3,
+      close: 67572.6,
+    });
+    expect(nq[50]).toEqual({
+      timeMs: 1_767_616_200_000,
+      open: 67286.4,
+      high: 67917.3,
+      low: 67246.4,
+      close: 67603.7,
+    });
+    expect(gc[0]?.close).toBe(3325.96);
+    expect(gc[50]?.close).toBe(3327.86);
+    const es = syntheticSeries({ ...spec, market: "SYNTH-ES" });
+    expect(es[0]?.close).not.toBe(nq[0]?.close);
+    expect(es[0]?.close).not.toBe(gc[0]?.close);
+    expect(es[0]?.low).toBeLessThanOrEqual(Math.min(es[0]?.open ?? 0, es[0]?.close ?? 0));
+    expect(es[0]?.high).toBeGreaterThanOrEqual(Math.max(es[0]?.open ?? 0, es[0]?.close ?? 0));
+  });
+
   it("is deterministic per seed and keeps OHLC ordered", () => {
-    const spec = { market: "BTC-PERP", seed: 42, bars: 500, timeframeMin: 15 } as const;
+    const spec = { market: "SYNTH-NQ", seed: 42, bars: 500, timeframeMin: 15 } as const;
     const a = syntheticSeries(spec);
     const b = syntheticSeries(spec);
     expect(a).toEqual(b);
@@ -79,10 +106,10 @@ describe("synthetic series", () => {
 
   it("rejects bad specs", () => {
     expect(() =>
-      syntheticSeries({ market: "ETH-PERP", seed: -1, bars: 500, timeframeMin: 5 }),
+      syntheticSeries({ market: "SYNTH-GC", seed: -1, bars: 500, timeframeMin: 5 }),
     ).toThrow();
     expect(() =>
-      syntheticSeries({ market: "ETH-PERP", seed: 1, bars: 10, timeframeMin: 5 }),
+      syntheticSeries({ market: "SYNTH-GC", seed: 1, bars: 10, timeframeMin: 5 }),
     ).toThrow();
   });
 });
@@ -96,7 +123,7 @@ describe("brackets and rules", () => {
       ohlc(3, 97, 110, 96, 105),
     ];
     const frame = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: null,
       actions: [open({ stopLoss: 95, takeProfit: 120 }), open({ barIndex: 2, takeProfit: 108 })],
@@ -112,7 +139,7 @@ describe("brackets and rules", () => {
   it("fills a gapped stop at the open and picks the stop over the target in one bar", () => {
     const series = [ohlc(0, 100, 100, 100, 100), ohlc(1, 90, 130, 88, 125)];
     const frame = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: null,
       actions: [open({ stopLoss: 95, takeProfit: 120 })],
@@ -125,7 +152,7 @@ describe("brackets and rules", () => {
   it("rejects a bracket on the wrong side and a leverage over the preset cap", () => {
     const series = [ohlc(0, 100, 100, 100, 100)];
     const wrong = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: null,
       actions: [open({ stopLoss: 105 })],
@@ -133,7 +160,7 @@ describe("brackets and rules", () => {
     });
     expect(wrong.rejects[0]?.reason).toBe("invalid-bracket");
     const capped = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: preset({ maxLeverage: 1 }),
       actions: [open()],
@@ -150,7 +177,7 @@ describe("brackets and rules", () => {
     ];
     const run = (mode: "static" | "trailing") =>
       replaySession({
-        market: "BTC-PERP",
+        market: "SYNTH-NQ",
         series,
         preset: preset({ drawdownMode: mode, profitTargetPct: 50 }),
         actions: [open({ leverage: 1, powerPct: 100 })],
@@ -161,7 +188,7 @@ describe("brackets and rules", () => {
     expect(trailing.phase).toBe("practice");
     expect(run("static").maxDrawdownFloor).toBeCloseTo(9_500);
     const deeper = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series: [...series.slice(0, 2), ohlc(2, 110, 110, 99, 101)],
       preset: preset({ drawdownMode: "trailing", profitTargetPct: 50 }),
       actions: [open({ leverage: 1, powerPct: 100 })],
@@ -174,7 +201,7 @@ describe("brackets and rules", () => {
   it("caps a gapped liquidation loss at the isolated margin", () => {
     const series = [ohlc(0, 100, 100, 100, 100), ohlc(1, 50, 50, 40, 45)];
     const frame = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: null,
       actions: [open({ leverage: 10, powerPct: 50 })],
@@ -195,7 +222,7 @@ describe("brackets and rules", () => {
   it("liquidates instead of stopping when a gap passes both levels", () => {
     const series = [ohlc(0, 100, 100, 100, 100), ohlc(1, 80, 82, 79, 81)];
     const frame = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: null,
       actions: [open({ leverage: 10, powerPct: 100, stopLoss: 96 })],
@@ -208,7 +235,7 @@ describe("brackets and rules", () => {
   it("keeps a stop that slips past liquidation inside the margin", () => {
     const series = [ohlc(0, 100, 100, 100, 100), ohlc(1, 95.2, 95.2, 95.2, 95.2)];
     const frame = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: null,
       actions: [open({ leverage: 10, powerPct: 100, stopLoss: 95.5, realizedImpactBps: 75 })],
@@ -220,7 +247,7 @@ describe("brackets and rules", () => {
   it("fills the target at the open when the bar gaps past it", () => {
     const series = [ohlc(0, 100, 100, 100, 100), ohlc(1, 112, 113, 97, 100)];
     const frame = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: null,
       actions: [open({ stopLoss: 98, takeProfit: 110 })],
@@ -238,7 +265,7 @@ describe("brackets and rules", () => {
       { timeMs: day + HOUR, open: 103, high: 103, low: 103, close: 103 },
     ];
     const frame = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: preset({
         equityIncludesUPnL: false,
@@ -262,7 +289,7 @@ describe("brackets and rules", () => {
         {
           barIndex: 0,
           timeMs: 0,
-          market: "BTC-PERP",
+          market: "SYNTH-NQ",
           side: "long",
           kind: "open",
           price: 1,
@@ -273,7 +300,7 @@ describe("brackets and rules", () => {
         {
           barIndex: 1,
           timeMs: 1,
-          market: "BTC-PERP",
+          market: "SYNTH-NQ",
           side: "long",
           kind: "close",
           price: 2,
@@ -284,7 +311,7 @@ describe("brackets and rules", () => {
         {
           barIndex: 2,
           timeMs: 2,
-          market: "BTC-PERP",
+          market: "SYNTH-NQ",
           side: "long",
           kind: "open",
           price: 2,
@@ -295,7 +322,7 @@ describe("brackets and rules", () => {
         {
           barIndex: 3,
           timeMs: 3,
-          market: "BTC-PERP",
+          market: "SYNTH-NQ",
           side: "long",
           kind: "close",
           price: 2,
@@ -322,7 +349,7 @@ describe("brackets and rules", () => {
     ];
     const run = (dailyBase: "equity" | "realized") =>
       replaySession({
-        market: "BTC-PERP",
+        market: "SYNTH-NQ",
         series,
         preset: preset({
           dailyBase,
@@ -345,9 +372,9 @@ describe("brackets and rules", () => {
 
   it("caps leverage per market", () => {
     const frame = replaySession({
-      market: "ETH-PERP",
+      market: "SYNTH-GC",
       series: [ohlc(0, 100, 100, 100, 100)],
-      preset: preset({ maxLeverage: { "BTC-PERP": 25, "ETH-PERP": 15 } }),
+      preset: preset({ maxLeverage: { "SYNTH-NQ": 25, "SYNTH-GC": 15 } }),
       actions: [open({ leverage: 20 })],
       cursor: 0,
     });
@@ -368,7 +395,7 @@ describe("brackets and rules", () => {
       realizedImpactBps: 0,
     });
     const frame = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: null,
       actions: [

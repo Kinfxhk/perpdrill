@@ -3,10 +3,19 @@ import {
   ACCOUNT_HEALTH_LABEL,
   LIQ_PRICE_MARK_LABEL,
   LIQ_RISK_LABEL,
+  SAMPLE_MARKETS,
   TRADING_POWER_LABEL,
 } from "@perpdrill/core";
 import { readFileSync } from "node:fs";
-import { SUPPORTED_LANGS, THEMES, catalogKeys, catalogValue, isLang, translate } from "./i18n.ts";
+import {
+  SUPPORTED_LANGS,
+  THEMES,
+  catalogKeys,
+  catalogValue,
+  isLang,
+  sampleMarketLabel,
+  translate,
+} from "./i18n.ts";
 
 describe("desk i18n", () => {
   it("ships the five languages with the same keys", () => {
@@ -30,6 +39,18 @@ describe("desk i18n", () => {
     expect(translate("en", "health.title")).toBe(ACCOUNT_HEALTH_LABEL);
     expect(translate("en", "legend.liquidation")).toBe("Liquidation");
     expect(translate("en", "footer.source")).toContain("AGPL");
+  });
+
+  it("labels every sample market SYNTH-* in every language", () => {
+    const bare = ["NQ", "GC", "ES", "BTC", "ETH", "BTC-PERP", "ETH-PERP"];
+    for (const lang of SUPPORTED_LANGS) {
+      const labels = SAMPLE_MARKETS.map((market) => sampleMarketLabel(lang, market));
+      expect(labels).toEqual(["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES"]);
+      for (const label of labels) {
+        expect(bare).not.toContain(label);
+        expect(translate(lang, "setup.dataHint")).toContain(label);
+      }
+    }
   });
 
   it("names every theme and styles every non-default theme", () => {

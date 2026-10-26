@@ -40,7 +40,7 @@ function preset(overrides: Partial<PracticePreset> = {}): PracticePreset {
     fundingRatePerHour: null,
     venueFundingChangesBalance: false,
     startingBalanceUsd: 10_000,
-    markets: ["BTC-PERP", "ETH-PERP"],
+    markets: ["SYNTH-NQ", "SYNTH-GC"],
     note: "",
     ...overrides,
   };
@@ -66,7 +66,7 @@ describe("replay", () => {
   it("keeps the prop fail price off the liquidation line", () => {
     const series = [bar(0, 10_000), bar(3_600_000, 9_950)];
     const opened = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: preset(),
       actions: [open(0, 100)],
@@ -79,7 +79,7 @@ describe("replay", () => {
     expect(opened.phase).toBe("practice");
 
     const breached = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: preset(),
       actions: [open(0, 100)],
@@ -98,7 +98,7 @@ describe("replay", () => {
     const liq = estimatedLiqPrice(entry, 10, "long");
     const series = [bar(0, entry), bar(3_600_000, liq)];
     const frame = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: preset({ maxDrawdownPct: 90, profitTargetPct: 50 }),
       actions: [open(0, 100)],
@@ -113,7 +113,7 @@ describe("replay", () => {
 
   it("rejects an over-tolerance market order without opening", () => {
     const frame = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series: [bar(0, 10_000)],
       preset: null,
       actions: [
@@ -143,14 +143,14 @@ describe("replay", () => {
       venueFundingChangesBalance: false,
     });
     const long = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: swap,
       actions: [open(0, 25, "long")],
       cursor: 1,
     });
     const short = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: swap,
       actions: [open(0, 25, "short")],
@@ -161,7 +161,7 @@ describe("replay", () => {
     expect(long.cash).toBeLessThan(7_500);
 
     const funding = replaySession({
-      market: "BTC-PERP",
+      market: "SYNTH-NQ",
       series,
       preset: preset({
         costModel: "funding",
@@ -207,12 +207,13 @@ describe("replay", () => {
   });
 
   it("builds a deterministic synthetic sample whose mark is the close", () => {
-    const series = sampleSeries("BTC-PERP");
+    const series = sampleSeries("SYNTH-NQ");
     expect(series.length).toBeGreaterThan(12);
     expect(series[0]?.close).toBe(10_000);
     expect(series[1]?.timeMs).toBe((series[0]?.timeMs ?? 0) + 3_600_000);
-    const eth = sampleSeries("ETH-PERP");
+    const eth = sampleSeries("SYNTH-GC");
     expect(eth[0]?.close).toBe(2_500);
+    expect(sampleSeries("SYNTH-ES")[0]?.close).toBe(5_000);
     for (const bar of series) {
       expect(markPrice(bar)).toBe(bar.close);
       expect(bar.low).toBeLessThanOrEqual(bar.open);

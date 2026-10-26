@@ -1,3 +1,5 @@
+import type { MarketId } from "@perpdrill/core";
+
 export const SUPPORTED_LANGS = ["en", "zh-Hant", "zh-Hans", "ja", "ko"] as const;
 
 export type Lang = (typeof SUPPORTED_LANGS)[number];
@@ -26,6 +28,9 @@ const en = {
   "market.oi": "OI",
   "market.vol": "Vol",
   "market.synthetic": "Synthetic sample",
+  "sample.nq": "SYNTH-NQ",
+  "sample.gc": "SYNTH-GC",
+  "sample.es": "SYNTH-ES",
   "chart.empty": "Step the series. Candles are a local sample, not a live feed.",
   "chart.sample": "1h sample",
   "indicator.label": "Indicators",
@@ -183,7 +188,7 @@ const en = {
   "setup.dailyHint": "% · 0 = off · resets 00:00 UTC",
   "setup.data": "Generate data",
   "setup.dataHint":
-    "Seeded synthetic perps bars. Not any real market. The same seed always gives the same chart.",
+    "Seeded bars named SYNTH-NQ, SYNTH-GC, and SYNTH-ES. Not any real market. The same seed always gives the same chart.",
   "setup.ddMode": "Drawdown type",
   "setup.ddStatic": "Static",
   "setup.ddTrailing": "Trailing",
@@ -236,6 +241,9 @@ const zhHant = catalog({
   "market.oi": "未平倉",
   "market.vol": "成交量",
   "market.synthetic": "合成樣本",
+  "sample.nq": "SYNTH-NQ",
+  "sample.gc": "SYNTH-GC",
+  "sample.es": "SYNTH-ES",
   "chart.empty": "逐步播放樣本。K 線是本機資料，不是即時行情。",
   "chart.sample": "1小時樣本",
   "indicator.label": "指標",
@@ -390,7 +398,8 @@ const zhHant = catalog({
   "setup.daily": "每日虧損上限",
   "setup.dailyHint": "% · 0 為關閉 · UTC 00:00 重置",
   "setup.data": "生成數據",
-  "setup.dataHint": "以種子生成的合成永續 K 線，不是任何真實市場。同一個種子永遠得到同一張圖。",
+  "setup.dataHint":
+    "以種子生成的 SYNTH-NQ、SYNTH-GC、SYNTH-ES 合成 K 線，不是任何真實市場。同一個種子永遠得到同一張圖。",
   "setup.ddMode": "回撤類型",
   "setup.ddStatic": "固定",
   "setup.ddTrailing": "追蹤",
@@ -435,6 +444,9 @@ const zhHans = catalog({
   "market.oi": "未平仓",
   "market.vol": "成交量",
   "market.synthetic": "合成样本",
+  "sample.nq": "SYNTH-NQ",
+  "sample.gc": "SYNTH-GC",
+  "sample.es": "SYNTH-ES",
   "chart.empty": "逐步播放样本。K 线是本机数据，不是实时行情。",
   "chart.sample": "1小时样本",
   "indicator.label": "指标",
@@ -589,7 +601,8 @@ const zhHans = catalog({
   "setup.daily": "每日亏损上限",
   "setup.dailyHint": "% · 0 为关闭 · UTC 00:00 重置",
   "setup.data": "生成数据",
-  "setup.dataHint": "以种子生成的合成永续 K 线，不是任何真实市场。同一个种子永远得到同一张图。",
+  "setup.dataHint":
+    "以种子生成的 SYNTH-NQ、SYNTH-GC、SYNTH-ES 合成 K 线，不是任何真实市场。同一个种子永远得到同一张图。",
   "setup.ddMode": "回撤类型",
   "setup.ddStatic": "固定",
   "setup.ddTrailing": "追踪",
@@ -635,6 +648,9 @@ const ja = catalog({
   "market.oi": "建玉",
   "market.vol": "出来高",
   "market.synthetic": "合成サンプル",
+  "sample.nq": "SYNTH-NQ",
+  "sample.gc": "SYNTH-GC",
+  "sample.es": "SYNTH-ES",
   "chart.empty": "バーを進めます。ローソクはローカルのサンプルで、ライブ相場ではありません。",
   "chart.sample": "1時間サンプル",
   "indicator.label": "指標",
@@ -791,7 +807,7 @@ const ja = catalog({
   "setup.dailyHint": "% · 0 で無効 · UTC 00:00 リセット",
   "setup.data": "データ生成",
   "setup.dataHint":
-    "シードから作る合成の永久先物足です。実在の市場ではありません。同じシードは常に同じチャートになります。",
+    "シードから作る SYNTH-NQ、SYNTH-GC、SYNTH-ES の合成足です。実在の市場ではありません。同じシードは常に同じチャートになります。",
   "setup.ddMode": "ドローダウン種別",
   "setup.ddStatic": "固定",
   "setup.ddTrailing": "トレーリング",
@@ -838,6 +854,9 @@ const ko = catalog({
   "market.oi": "미결제약정",
   "market.vol": "거래량",
   "market.synthetic": "합성 샘플",
+  "sample.nq": "SYNTH-NQ",
+  "sample.gc": "SYNTH-GC",
+  "sample.es": "SYNTH-ES",
   "chart.empty": "봉을 진행합니다. 캔들은 로컬 샘플이며 실시간 시세가 아닙니다.",
   "chart.sample": "1시간 샘플",
   "indicator.label": "지표",
@@ -995,7 +1014,7 @@ const ko = catalog({
   "setup.dailyHint": "% · 0 = 끔 · UTC 00:00 초기화",
   "setup.data": "데이터 생성",
   "setup.dataHint":
-    "시드로 만든 합성 무기한 봉입니다. 실제 시장이 아닙니다. 같은 시드는 항상 같은 차트를 만듭니다.",
+    "시드로 만든 SYNTH-NQ, SYNTH-GC, SYNTH-ES 합성 봉입니다. 실제 시장이 아닙니다. 같은 시드는 항상 같은 차트를 만듭니다.",
   "setup.ddMode": "낙폭 유형",
   "setup.ddStatic": "고정",
   "setup.ddTrailing": "추적",
@@ -1036,6 +1055,17 @@ const catalogs: Record<Lang, Catalog> = {
 
 export function translate(lang: Lang, key: MessageKey): string {
   return catalogs[lang][key];
+}
+
+const SAMPLE_LABEL_KEYS = {
+  "SYNTH-NQ": "sample.nq",
+  "SYNTH-GC": "sample.gc",
+  "SYNTH-ES": "sample.es",
+} as const satisfies Record<MarketId, MessageKey>;
+
+/** Primary UI name for a sample. Always the SYNTH-* id, in every language. */
+export function sampleMarketLabel(lang: Lang, market: MarketId): string {
+  return translate(lang, SAMPLE_LABEL_KEYS[market]);
 }
 
 export function isLang(value: string): value is Lang {

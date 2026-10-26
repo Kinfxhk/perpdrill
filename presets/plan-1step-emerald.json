@@ -22,10 +22,10 @@
   "takerBps": 1,
   "makerBps": 0,
   "maxLeverage": {
-    "BTC-PERP": 25,
-    "ETH-PERP": 15
+    "SYNTH-NQ": 25,
+    "SYNTH-GC": 15
   },
-  "markets": ["BTC-PERP", "ETH-PERP"],
+  "markets": ["SYNTH-NQ", "SYNTH-GC"],
   "group": "Evaluation",
   "displayName": "Teaching · Eval Emerald",
   "startingBalanceUsd": 50000,
@@ -37,6 +37,6 @@
     "profitTargetPct": [10, 20],
     "dailyLossLimitPct": [null, 3, 4]
   },
-  "note": "$50,000 capital. Static max drawdown $3,000 (starting balance minus that amount; it does not trail) on equity. Profit target 10% or 20%. Daily loss limit none, 3% or 4%: reset 20:00 New York, measured from the realized balance plus reserved margin, checked against equity. Taker 1 bp, maker 0. Funding is a 0 stub. Leverage caps BTC 25×, ETH 15×. Profit split (80% or 90%) and the one-time fee are not simulated.",
+  "note": "$50,000 capital. Static max drawdown $3,000 (starting balance minus that amount; it does not trail) on equity. Profit target 10% or 20%. Daily loss limit none, 3% or 4%: reset 20:00 New York, measured from the realized balance plus reserved margin, checked against equity. Taker 1 bp, maker 0. Funding is a 0 stub. Leverage caps SYNTH-NQ 25×, SYNTH-GC 15×. Profit split (80% or 90%) and the one-time fee are not simulated.",
   "id": "plan-1step-emerald"
 }
