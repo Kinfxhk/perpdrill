@@ -7,19 +7,14 @@ export type LeverageLabel = {
   readonly multiple: number;
 };
 
-/** Visible ticket strings. M0 does not compute the values beside them. */
+/** Visible ticket strings. Prices come from the teaching engine, not these constants. */
 export const TRADING_POWER_LABEL = "Trading Power" as const;
-export const LIQ_PRICE_MARK_LABEL = "Liq. Price (Mark)" as const;
+export const LIQ_PRICE_MARK_LABEL = "Est. Liq. Price (Mark)" as const;
+export const LIQ_RISK_LABEL = "Liq Risk" as const;
 export const ACCOUNT_HEALTH_LABEL = "Account Health" as const;
 
-/** Mark liquidation slot. The price stays null until a later milestone. */
-export type LiquidationLabels = {
-  readonly liqPriceMark: null;
-};
-
-export const LIQUIDATION_LABELS = {
-  liqPriceMark: null,
-} as const satisfies LiquidationLabels;
+/** Isolated teaching model id. Not an exchange formula. */
+export const LIQUIDATION_MODEL = "isolated-teaching" as const;
 
 export const SETTLEMENT_POLICIES = ["funding", "swap", "off"] as const;
 
