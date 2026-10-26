@@ -5,6 +5,10 @@
 - Desk themes use original cool-green accents. Grove, Lagoon, and Iris
   replace the venue-like palettes. Daylight uses a darker green so accent
   text stays readable. The header theme menu still saves the choice.
+- Generate data names the samples SYNTH-NQ, SYNTH-GC, and SYNTH-ES. The seeded
+  generator is unchanged. SYNTH-NQ and SYNTH-GC keep the previous two price
+  anchors. Plan leverage stays 25× and 15× on those two names. SYNTH-ES is a
+  third anchor for custom rules and free practice.
 - Plan presets keep their v0.3.0 ids. The desk shows teaching names only
   (`Teaching · Instant …`, `Teaching · Eval …`, `Teaching · 2-Step …`).
   `community-a` is removed; a stored `community-a` or `community-b` id is

@@ -35,10 +35,12 @@ const SAMPLE_CLOSES = [
 
 function sampleScale(market: MarketId): number {
   switch (market) {
-    case "BTC-PERP":
+    case "SYNTH-NQ":
       return 1;
-    case "ETH-PERP":
+    case "SYNTH-GC":
       return 0.25;
+    case "SYNTH-ES":
+      return 0.5;
     default: {
       const unexpected: never = market;
       throw new Error(`unexpected market ${String(unexpected)}`);
