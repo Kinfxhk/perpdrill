@@ -2,7 +2,7 @@
 
 本機優先的教育用模擬／回放練習台骨架，用來對照加密永續合約、類 prop 規則做練習。這不是交易所客戶端，也不會下真單。
 
-**狀態：0.1.0 練習台。** 可以安裝、檢查，並在本機或 Pages 上下市價單、看持倉與損益。強平是隔離教學近似，不是交易所公式，也不是官方評測結果。
+**狀態：0.1.1 練習台。** 可以安裝、檢查，並在本機或 Pages 上下市價單、看持倉與損益。強平是隔離教學近似，不是交易所公式，也不是官方評測結果。
 
 儲存庫：<https://github.com/Kinfxhk/perpdrill>
 
@@ -79,7 +79,7 @@ npm start
 
 Local-first educational simulator and replay desk for crypto perpetuals and prop-style rules. It is not an exchange client and it does not send live orders.
 
-**Status: 0.1.0 practice desk.** Install, check, and place simulated market orders with a position and PnL. Liquidation is an isolated teaching approximation, not an exchange formula and not an official evaluation result.
+**Status: 0.1.1 practice desk.** Install, check, and place simulated market orders with a position and PnL. Liquidation is an isolated teaching approximation, not an exchange formula and not an official evaluation result.
 
 Repository: <https://github.com/Kinfxhk/perpdrill>
 
@@ -148,4 +148,4 @@ See [docs/DESIGN-MVP.md](docs/DESIGN-MVP.md) for liquidation versus prop drawdow
 | ------------------- | --------------------------------------------------------------------------------- |
 | `@perpdrill/core`   | Teaching margin, slippage gate, sizing, carry, replay, and the preset parser.     |
 | `@perpdrill/web`    | Practice desk. Content-Security-Policy `default-src 'self'`.                      |
-| `@perpdrill/server` | Prints `perpdrill 0.1.0 (teaching)`. Optional localhost listener. No trading API. |
+| `@perpdrill/server` | Prints `perpdrill 0.1.1 (teaching)`. Optional localhost listener. No trading API. |

@@ -1,6 +1,6 @@
 {
   "name": "@perpdrill/server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "license": "AGPL-3.0-or-later",
   "description": "Localhost stub that prints the perpsdrill version. No trading API.",
@@ -10,6 +10,6 @@
     "listen": "node --experimental-strip-types src/index.ts listen"
   },
   "dependencies": {
-    "@perpdrill/core": "0.1.0"
+    "@perpdrill/core": "0.1.1"
   }
 }
