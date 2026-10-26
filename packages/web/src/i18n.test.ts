@@ -5,7 +5,8 @@ import {
   LIQ_RISK_LABEL,
   TRADING_POWER_LABEL,
 } from "@perpdrill/core";
-import { SUPPORTED_LANGS, catalogKeys, catalogValue, isLang, translate } from "./i18n.ts";
+import { readFileSync } from "node:fs";
+import { SUPPORTED_LANGS, THEMES, catalogKeys, catalogValue, isLang, translate } from "./i18n.ts";
 
 describe("desk i18n", () => {
   it("ships the five languages with the same keys", () => {
@@ -29,5 +30,15 @@ describe("desk i18n", () => {
     expect(translate("en", "health.title")).toBe(ACCOUNT_HEALTH_LABEL);
     expect(translate("en", "legend.liquidation")).toBe("Liquidation");
     expect(translate("en", "footer.source")).toContain("AGPL");
+  });
+
+  it("names every theme and styles every non-default theme", () => {
+    const css = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+    for (const theme of THEMES) {
+      expect(translate("zh-Hant", `theme.${theme}`).length).toBeGreaterThan(0);
+      if (theme !== "teal") {
+        expect(css).toContain(`[data-theme="${theme}"]`);
+      }
+    }
   });
 });

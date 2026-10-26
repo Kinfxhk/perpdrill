@@ -7,7 +7,7 @@ import {
   type SlipSettings,
 } from "./fill.ts";
 import { liqDistance, maintenanceMargin, sideSign, unrealizedPnl, type Side } from "./liq.ts";
-import { includeUnrealized, resolvedTakerBps, type PracticePreset } from "./preset.ts";
+import { includeUnrealized, leverageCap, resolvedTakerBps, type PracticePreset } from "./preset.ts";
 import {
   logicalDayKey,
   priceForEquityFloor,
@@ -219,7 +219,10 @@ export function replaySession(input: SessionInput): Frame {
     input.preset === null ? null : starting * (input.preset.maxDrawdownPct / 100);
   const trailing = input.preset?.drawdownMode === "trailing";
   const profitTarget =
-    input.preset === null ? null : profitTargetEquity(starting, input.preset.profitTargetPct);
+    input.preset === null || input.preset.profitTargetPct === null
+      ? null
+      : profitTargetEquity(starting, input.preset.profitTargetPct);
+  const realizedDailyBase = input.preset?.dailyBase === "realized";
   const dailyPct = input.preset?.dailyLossLimitPct ?? null;
 
   let cash = starting;
@@ -411,8 +414,7 @@ export function replaySession(input: SessionInput): Frame {
             rejects.push({ barIndex: index, reason: "market-not-allowed" });
             continue;
           }
-          const cap = input.preset?.maxLeverage ?? null;
-          if (cap !== null && action.leverage > cap) {
+          if (action.leverage > leverageCap(input.preset, input.market)) {
             rejects.push({ barIndex: index, reason: "invalid-leverage" });
             continue;
           }
@@ -534,7 +536,10 @@ export function replaySession(input: SessionInput): Frame {
         targetHit = true;
       }
     }
-    lastCloseEquity = settledAssessed;
+    // Realized base: balance plus reserved margin, without unrealized PnL.
+    lastCloseEquity = realizedDailyBase
+      ? cash + ((position as WorkingPosition | null)?.isolatedMargin ?? 0)
+      : settledAssessed;
     equityCurve.push(settled.equity);
   }
 

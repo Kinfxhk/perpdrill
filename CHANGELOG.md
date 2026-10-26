@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.3.0 — 2026-10-26
+
+Plan presets and venue themes.
+
+- 13 plan presets copied from a perps prop plan page and its docs on
+  2026-10-26, grouped in the picker:
+  - 1-Step evaluation, $5k / $10k / $25k / $50k: static 6% max drawdown,
+    profit target 10% or 20%, daily loss limit none, 3%, or 4%.
+  - 2-Step evaluation, same sizes: 6% static drawdown, 3% daily limit, target
+    10% for step 1 and 5% for step 2 (run step 2 as a new session).
+  - Instant, $500 / $5k / $10k / $25k / $50k: static drawdown 2% on $500 and
+    4% on the rest, no target, no daily limit.
+  - All plans: daily reset 20:00 New York, measured from the realized
+    balance plus reserved margin and checked against equity; taker 1 bp,
+    maker 0; leverage caps BTC 25×, ETH 15×. Profit split and fees paid to
+    the firm are not simulated.
+- Presets may now offer buyer options (`choices`), a per-market
+  `maxLeverage`, a `dailyBase` of `equity` or `realized`, a `group`, and a
+  `profitTargetPct` of `null` for accounts with no target.
+- Teaching leverage range is now 1–50.
+- Themes: Teal (default), Midnight exchange, On-chain aqua, DeFi violet, and
+  Daylight. The choice is saved in the browser.
+- The old Gold-like community preset is replaced by the plan presets.
+
 ## 0.2.0 — 2026-10-26
 
 Playable backtest loop: generate data, set rules, count down, play, review.

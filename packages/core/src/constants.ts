@@ -3,7 +3,7 @@ export const PRACTICE_STARTING_BALANCE_USD = 2_500;
 
 /** Teaching desk cap. Not a firm leverage limit. */
 export const TEACHING_MIN_LEVERAGE = 1;
-export const TEACHING_MAX_LEVERAGE = 20;
+export const TEACHING_MAX_LEVERAGE = 50;
 
 /** Majors max-slip gate. The 5% venue IOC cap is not this default. */
 export const DEFAULT_SLIP_TOLERANCE_BPS = 75;

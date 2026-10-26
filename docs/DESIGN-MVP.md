@@ -41,7 +41,7 @@ JSON files, this document, and the README. They are not strings inside
 
 | Source                        | URL                                                             | Status                                                                                                              |
 | ----------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Vest Capital rule notes       | https://docs.vestmarkets.com/vest-capital/overview.md           | Unofficial community JSON in `presets/`. Loss-limit notes: https://docs.vestmarkets.com/vest-capital/loss-limits.md |
+| Vest Capital plans            | https://next.vestmarkets.com/vest-capital                       | 13 plan files in `presets/plan-*.json`, checked 2026-10-26.                                                         |
 | MyFundedPerps challenge notes | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | Unofficial community JSON in `presets/`. Fee notes: https://docs.myfundedperpetuals.com/guides/commissions-and-fees |
 | Tradeify Perps                | https://tradeifyperps.co/                                       | Unverified on 2026-10-26 (public waitlist, no rule table found). Do not invent numbers.                             |
 
