@@ -304,15 +304,12 @@ button {
   height: 100%;
 }
 
-.wick {
-  stroke: var(--text-dim);
-  stroke-width: 1;
-}
-
+.wick-up,
 .candle-up {
   fill: var(--long);
 }
 
+.wick-down,
 .candle-down {
   fill: var(--short);
 }
