@@ -12,7 +12,7 @@
 
 perpdrill 想成為一個開源、在瀏覽器裡就能用的永續合約練習台：歷史 K 線逐根前進、用保證金／槓桿／資金費或廠商 swap／強平來記帳，並套上可匯出的規則集。概念上承接 [CandleDrill](https://github.com/Kinfxhk/candledrill)（AGPL-3.0-or-later）的回放、OHLC 成交與規則評估想法。介面、色盤與期貨合約模型不沿用 CandleDrill。歸屬寫在 `NOTICE`。
 
-練習台可以逐步播放合成 1 小時樣本、用 Trading Power 的 25%／50%／75%／100% 下市價單、看持倉與損益、預估強平價（標記）與 Liq Risk，並在圖上畫進場線與強平線。滑點上限預設 75 bps（可調 50–100），模擬衝擊預設 25 bps，超過上限就拒絕。維持保證金是初始保證金的一半。Fail／回撤線不跟強平線共用。
+練習台可以逐步播放合成 K 線（1 分、3 分、5 分、15 分、1 小時、4 小時）、用 Trading Power 的 25%／50%／75%／100% 下市價單、看持倉與損益、預估強平價（標記）與 Liq Risk，並在圖上畫進場線與強平線。圖表可以把同一組 K 線往上合併，或上下分割成兩張；比樣本更細的週期不會假造。滑點上限預設 75 bps（可調 50–100），模擬衝擊預設 25 bps，超過上限就拒絕。維持保證金是初始保證金的一半。Fail／回撤線不跟強平線共用。
 
 ## 本地檢查
 
@@ -89,7 +89,7 @@ Online desk (GitHub Pages, the same 0.1 practice desk: market orders, position, 
 
 perpdrill aims to be an open-source browser desk: step historical bars, account with margin, leverage, funding or a firm swap, and liquidation, then evaluate an exportable rule set. Replay, OHLC-style fills, and rule evaluation are conceptual lineage from [CandleDrill](https://github.com/Kinfxhk/candledrill) (AGPL-3.0-or-later). The interface, palette, and futures contract model are not taken from CandleDrill. See `NOTICE`.
 
-The desk steps a synthetic 1 hour sample, sizes market orders at 25% / 50% / 75% / 100% of Trading Power, and shows the position, PnL, Est. Liq. Price (Mark), and Liq Risk. The chart draws Entry and Liquidation; Fail / drawdown stays on its own line. Max slip defaults to 75 bps (adjustable 50–100). Realized impact defaults to 25 bps and a larger impact is rejected. Maintenance is half of initial margin.
+The desk steps seeded synthetic bars at 1m, 3m, 5m, 15m, 1h, or 4h, sizes market orders at 25% / 50% / 75% / 100% of Trading Power, and shows the position, PnL, Est. Liq. Price (Mark), and Liq Risk. The chart can resample those bars to a coarser timeframe or split into two panes. It does not invent a finer timeframe than the sample. The chart draws Entry and Liquidation; Fail / drawdown stays on its own line. Max slip defaults to 75 bps (adjustable 50–100). Realized impact defaults to 25 bps and a larger impact is rejected. Maintenance is half of initial margin.
 
 ## Check locally
 

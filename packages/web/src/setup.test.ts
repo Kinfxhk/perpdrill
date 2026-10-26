@@ -23,6 +23,7 @@ describe("session setup", () => {
     });
     expect(setup.market).toBe("SYNTH-NQ");
     expect(setup.timeframeMin).toBe(15);
+    expect(sanitizeSetup({ timeframeMin: 3 }).timeframeMin).toBe(3);
     expect(setup.bars).toBe(5_000);
     expect(setup.seed).toBe(0);
     expect(setup.custom.maxDrawdownPct).toBe(50);
