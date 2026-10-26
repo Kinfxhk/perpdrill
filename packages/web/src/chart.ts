@@ -1,3 +1,16 @@
+import {
+  advanceViewport,
+  indexToCoordinate,
+  pinchZoomScale,
+  scrollChartTo,
+  showRecentViewport,
+  viewportAfterWheel,
+  visibleIndexRange,
+  wheelChartDeltas,
+  zoomTime,
+  type TimeViewport,
+} from "./chart-scale.ts";
+
 export type Candle = {
   readonly open: number;
   readonly high: number;
@@ -203,6 +216,8 @@ export function layoutCandles(input: {
   readonly padRight: number;
   readonly pixelRatio: number;
   readonly extraPrices?: readonly number[];
+  /** When set, candles use this spacing instead of stretching to the pane. */
+  readonly timeScale?: TimeViewport;
 }): {
   readonly candles: readonly LaidCandle[];
   readonly yOf: (price: number) => number;
@@ -214,7 +229,15 @@ export function layoutCandles(input: {
   const plotWidth = Math.max(1, input.width - input.padLeft - input.padRight);
   const plotHeight = Math.max(1, input.height);
   const prices: number[] = [];
-  for (const candle of input.candles) {
+  const visible =
+    input.timeScale === undefined
+      ? { from: 0, to: input.candles.length - 1 }
+      : visibleIndexRange(plotWidth, input.candles.length, input.timeScale);
+  for (let index = visible.from; index <= visible.to; index += 1) {
+    const candle = input.candles[index];
+    if (candle === undefined) {
+      continue;
+    }
     for (const price of [candle.open, candle.high, candle.low, candle.close]) {
       if (finitePrice(price)) {
         prices.push(price);
@@ -238,7 +261,12 @@ export function layoutCandles(input: {
   };
 
   const count = input.candles.length;
-  const barSpacing = count === 0 ? plotWidth : plotWidth / count;
+  const barSpacing =
+    input.timeScale === undefined
+      ? count === 0
+        ? plotWidth
+        : plotWidth / count
+      : input.timeScale.barSpacing;
   const bodyWidth = candleBodyDeviceWidth(barSpacing, ratio);
   const wickWidth = candleWickDeviceWidth(barSpacing, ratio, bodyWidth);
   const wickOffset = Math.floor(wickWidth * 0.5);
@@ -254,7 +282,16 @@ export function layoutCandles(input: {
     ) {
       return;
     }
-    const center = (index + 0.5) * barSpacing;
+    const center =
+      input.timeScale === undefined
+        ? (index + 0.5) * barSpacing
+        : indexToCoordinate(plotWidth, count, input.timeScale, index);
+    if (
+      input.timeScale !== undefined &&
+      (center < -barSpacing || center > plotWidth + barSpacing)
+    ) {
+      return;
+    }
     const scaledX = Math.round(ratio * center);
     const openY = Math.round(Math.min(yOf(candle.open), yOf(candle.close)) * ratio);
     const closeY = Math.round(Math.max(yOf(candle.open), yOf(candle.close)) * ratio);
@@ -314,9 +351,14 @@ function appendRect(parent: SVGElement, className: string, rect: PxRect): void {
   );
 }
 
-function collectPrices(prices: number[], points: readonly (number | null)[], limit: number): void {
-  const end = Math.min(limit, points.length);
-  for (let index = 0; index < end; index += 1) {
+function collectPrices(
+  prices: number[],
+  points: readonly (number | null)[],
+  from: number,
+  to: number,
+): void {
+  const end = Math.min(to, points.length - 1);
+  for (let index = Math.max(0, from); index <= end; index += 1) {
     const price = points[index];
     if (price !== null && price !== undefined && Number.isFinite(price)) {
       prices.push(price);
@@ -412,12 +454,33 @@ function appendBand(
   flush();
 }
 
+const PAD_LEFT = 12;
+const PAD_RIGHT = 72;
+const TOUCH_SLOP = 5;
+
+type ViewportMemory = {
+  seriesKey: string;
+  endIndex: number;
+  barCount: number;
+  barSpacing: number;
+  rightOffset: number;
+};
+
+type HostChart = {
+  paint: () => void;
+  detach: () => void;
+};
+
 /**
  * One paint per host. Split panes mount more than one host, and a resize
- * repaints only the host that changed. Wheel zoom can listen on `host` and
- * repaint that host; this module does not keep a single active chart.
+ * repaints only the host that changed. Wheel zoom listens on that host and
+ * repaints it; this module does not keep a single active chart.
  */
-const paints = new Map<HTMLElement, () => void>();
+const paints = new Map<HTMLElement, HostChart>();
+
+/** Zoom for each pane. A desk re-render keeps the entry for that series key. */
+const viewports = new Map<string, ViewportMemory>();
+
 const resizeObserver =
   typeof ResizeObserver === "undefined"
     ? null
@@ -425,19 +488,306 @@ const resizeObserver =
         for (const entry of entries) {
           const host = entry.target;
           if (host instanceof HTMLElement) {
-            paints.get(host)?.();
+            paints.get(host)?.paint();
           }
         }
       });
+
+function viewportFor(seriesKey: string): ViewportMemory | null {
+  return viewports.get(seriesKey) ?? null;
+}
 
 /** Drop hosts the desk already removed so a split re-render does not leak them. */
 export function releaseDetachedCharts(): void {
   for (const host of paints.keys()) {
     if (!host.isConnected) {
+      paints.get(host)?.detach();
       resizeObserver?.unobserve(host);
       paints.delete(host);
     }
   }
+}
+
+function plotWidthOf(host: HTMLElement): number {
+  return Math.max(0, host.clientWidth - PAD_LEFT - PAD_RIGHT);
+}
+
+function viewportFrom(state: ViewportMemory): TimeViewport {
+  return { barSpacing: state.barSpacing, rightOffset: state.rightOffset };
+}
+
+function reconcileViewport(
+  plotWidth: number,
+  barCount: number,
+  endIndex: number,
+  seriesKey: string,
+): TimeViewport {
+  const previous = viewportFor(seriesKey);
+  if (
+    previous === null ||
+    previous.seriesKey !== seriesKey ||
+    endIndex < previous.endIndex ||
+    barCount <= 0 ||
+    plotWidth <= 0
+  ) {
+    const next = showRecentViewport(plotWidth, barCount);
+    viewports.set(seriesKey, { seriesKey, endIndex, barCount, ...next });
+    return next;
+  }
+  const next = advanceViewport(
+    plotWidth,
+    previous.barCount,
+    barCount,
+    endIndex - previous.endIndex,
+    viewportFrom(previous),
+  );
+  viewports.set(seriesKey, { seriesKey, endIndex, barCount, ...next });
+  return next;
+}
+
+function commitViewport(
+  seriesKey: string,
+  endIndex: number,
+  barCount: number,
+  view: TimeViewport,
+): void {
+  viewports.set(seriesKey, {
+    seriesKey,
+    endIndex,
+    barCount,
+    barSpacing: view.barSpacing,
+    rightOffset: view.rightOffset,
+  });
+}
+
+function isWindowsChromium(): boolean {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+  const uaData = (
+    navigator as Navigator & {
+      userAgentData?: { platform?: string; brands?: readonly { brand: string }[] };
+    }
+  ).userAgentData;
+  if (uaData === undefined) {
+    return false;
+  }
+  const chromium = uaData.brands?.some((brand) => brand.brand.includes("Chromium")) ?? false;
+  return uaData.platform === "Windows" && chromium;
+}
+
+function touchDistance(a: Touch, b: Touch): number {
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+}
+
+function bindGestures(
+  host: HTMLElement,
+  read: () => { seriesKey: string; endIndex: number; barCount: number },
+  paint: () => void,
+): () => void {
+  let drag: { startX: number; startOffset: number; spacing: number } | null = null;
+  let finger: {
+    startX: number;
+    startY: number;
+    startOffset: number;
+    spacing: number;
+    mode: "pending" | "pan" | "page";
+  } | null = null;
+  let pinch: { distance: number; previousScale: number } | null = null;
+
+  const apply = (view: TimeViewport): void => {
+    const ctx = read();
+    if (ctx.barCount <= 0) {
+      return;
+    }
+    commitViewport(ctx.seriesKey, ctx.endIndex, ctx.barCount, view);
+    paint();
+  };
+
+  const onWheel = (event: WheelEvent): void => {
+    const ctx = read();
+    const current = viewportFor(ctx.seriesKey);
+    if ((event.deltaX === 0 && event.deltaY === 0) || current === null) {
+      return;
+    }
+    const plotWidth = plotWidthOf(host);
+    if (ctx.barCount <= 0 || plotWidth <= 0) {
+      return;
+    }
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+    const pointX = event.clientX - host.getBoundingClientRect().left - PAD_LEFT;
+    apply(
+      viewportAfterWheel(
+        plotWidth,
+        ctx.barCount,
+        viewportFrom(current),
+        pointX,
+        wheelChartDeltas({
+          deltaX: event.deltaX,
+          deltaY: event.deltaY,
+          deltaMode: event.deltaMode,
+          windowsChrome: isWindowsChromium(),
+          devicePixelRatio: window.devicePixelRatio,
+        }),
+      ),
+    );
+  };
+
+  const onMouseMove = (event: MouseEvent): void => {
+    if (drag === null) {
+      return;
+    }
+    const ctx = read();
+    apply(
+      scrollChartTo(
+        plotWidthOf(host),
+        ctx.barCount,
+        drag.spacing,
+        drag.startOffset,
+        drag.startX,
+        event.clientX,
+      ),
+    );
+  };
+
+  const endDrag = (): void => {
+    drag = null;
+    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("mouseup", endDrag);
+  };
+
+  const onMouseDown = (event: MouseEvent): void => {
+    const current = viewportFor(read().seriesKey);
+    if (event.button !== 0 || current === null) {
+      return;
+    }
+    drag = {
+      startX: event.clientX,
+      startOffset: current.rightOffset,
+      spacing: current.barSpacing,
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", endDrag);
+    event.preventDefault();
+  };
+
+  const onTouchStart = (event: TouchEvent): void => {
+    if (event.touches.length === 2) {
+      finger = null;
+      const first = event.touches[0];
+      const second = event.touches[1];
+      if (first === undefined || second === undefined) {
+        return;
+      }
+      pinch = { distance: touchDistance(first, second), previousScale: 1 };
+      return;
+    }
+    const first = event.touches[0];
+    const current = viewportFor(read().seriesKey);
+    if (event.touches.length !== 1 || current === null || first === undefined) {
+      return;
+    }
+    pinch = null;
+    finger = {
+      startX: first.clientX,
+      startY: first.clientY,
+      startOffset: current.rightOffset,
+      spacing: current.barSpacing,
+      mode: "pending",
+    };
+  };
+
+  const onTouchMove = (event: TouchEvent): void => {
+    const first = event.touches[0];
+    const second = event.touches[1];
+    const current = viewportFor(read().seriesKey);
+    if (
+      event.touches.length === 2 &&
+      pinch !== null &&
+      current !== null &&
+      first !== undefined &&
+      second !== undefined &&
+      pinch.distance > 0
+    ) {
+      const scale = touchDistance(first, second) / pinch.distance;
+      const zoomScale = pinchZoomScale(scale, pinch.previousScale);
+      pinch = { distance: pinch.distance, previousScale: scale };
+      const ctx = read();
+      const rect = host.getBoundingClientRect();
+      const pointX = (first.clientX + second.clientX) / 2 - rect.left - PAD_LEFT;
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      apply(zoomTime(plotWidthOf(host), ctx.barCount, viewportFrom(current), pointX, zoomScale));
+      return;
+    }
+    if (finger === null || event.touches.length !== 1 || first === undefined) {
+      return;
+    }
+    if (finger.mode === "pending") {
+      const xOffset = Math.abs(first.clientX - finger.startX);
+      const yOffset = Math.abs(first.clientY - finger.startY);
+      if (xOffset + yOffset < TOUCH_SLOP) {
+        return;
+      }
+      // Vertical drag scrolls the page. A horizontal drag pans the bars.
+      finger = { ...finger, mode: yOffset >= xOffset * 0.5 ? "page" : "pan" };
+    }
+    switch (finger.mode) {
+      case "pending":
+      case "page":
+        return;
+      case "pan": {
+        const ctx = read();
+        if (event.cancelable) {
+          event.preventDefault();
+        }
+        apply(
+          scrollChartTo(
+            plotWidthOf(host),
+            ctx.barCount,
+            finger.spacing,
+            finger.startOffset,
+            finger.startX,
+            first.clientX,
+          ),
+        );
+        return;
+      }
+      default: {
+        const unexpected: never = finger.mode;
+        return unexpected;
+      }
+    }
+  };
+
+  const onTouchEnd = (event: TouchEvent): void => {
+    if (event.touches.length < 2) {
+      pinch = null;
+    }
+    if (event.touches.length === 0) {
+      finger = null;
+    }
+  };
+
+  host.addEventListener("wheel", onWheel, { passive: false });
+  host.addEventListener("mousedown", onMouseDown);
+  host.addEventListener("touchstart", onTouchStart, { passive: true });
+  host.addEventListener("touchmove", onTouchMove, { passive: false });
+  host.addEventListener("touchend", onTouchEnd);
+  host.addEventListener("touchcancel", onTouchEnd);
+
+  return () => {
+    endDrag();
+    host.removeEventListener("wheel", onWheel);
+    host.removeEventListener("mousedown", onMouseDown);
+    host.removeEventListener("touchstart", onTouchStart);
+    host.removeEventListener("touchmove", onTouchMove);
+    host.removeEventListener("touchend", onTouchEnd);
+    host.removeEventListener("touchcancel", onTouchEnd);
+  };
 }
 
 export function mountChart(
@@ -449,6 +799,10 @@ export function mountChart(
     readonly bands: readonly ChartBand[];
     readonly label: string;
     readonly formatPrice: (price: number) => string;
+    /** Same series keeps the zoom. A new key, or a cursor rewind, shows recent bars. */
+    readonly seriesKey: string;
+    /** Absolute index of the last revealed bar. Grows by one as playback steps. */
+    readonly endIndex: number;
   },
 ): void {
   const paint = (): void => {
@@ -458,25 +812,27 @@ export function mountChart(
       return;
     }
     const ratio = deviceRatio(window.devicePixelRatio);
-    const padLeft = 12;
-    const padRight = 72;
     const revealed = input.candles.length;
+    const plotWidth = Math.max(1, width - PAD_LEFT - PAD_RIGHT);
+    const timeScale = reconcileViewport(plotWidth, revealed, input.endIndex, input.seriesKey);
+    const visible = visibleIndexRange(plotWidth, revealed, timeScale);
     const extraPrices = input.lines.map((line) => line.price);
     for (const overlay of input.overlays) {
-      collectPrices(extraPrices, overlay.points, revealed);
+      collectPrices(extraPrices, overlay.points, visible.from, visible.to);
     }
     for (const band of input.bands) {
-      collectPrices(extraPrices, band.upper, revealed);
-      collectPrices(extraPrices, band.lower, revealed);
+      collectPrices(extraPrices, band.upper, visible.from, visible.to);
+      collectPrices(extraPrices, band.lower, visible.from, visible.to);
     }
     const laid = layoutCandles({
       candles: input.candles,
       width,
       height,
-      padLeft,
-      padRight,
+      padLeft: PAD_LEFT,
+      padRight: PAD_RIGHT,
       pixelRatio: ratio,
       extraPrices,
+      timeScale,
     });
     const root = svg("svg", {
       class: "chart-svg",
@@ -500,9 +856,8 @@ export function mountChart(
     }
     root.append(wicks, bodies);
 
-    const plotWidth = laid.plotRight - laid.plotLeft;
-    const slot = plotWidth / Math.max(revealed, 1);
-    const xOf = (index: number): number => laid.plotLeft + index * slot + slot / 2;
+    const xOf = (index: number): number =>
+      laid.plotLeft + indexToCoordinate(plotWidth, revealed, timeScale, index);
     for (const band of input.bands) {
       appendBand(root, band, revealed, xOf, laid.yOf);
     }
@@ -510,9 +865,21 @@ export function mountChart(
       appendOverlay(root, overlay, revealed, xOf, laid.yOf);
     }
 
-    // Price scale: five evenly spaced labels on the right edge.
-    const hiPrice = Math.max(...input.candles.map((candle) => candle.high));
-    const loPrice = Math.min(...input.candles.map((candle) => candle.low));
+    // Price scale: five evenly spaced labels on the right edge, from visible bars.
+    let hiPrice = Number.NEGATIVE_INFINITY;
+    let loPrice = Number.POSITIVE_INFINITY;
+    for (let index = visible.from; index <= visible.to; index += 1) {
+      const candle = input.candles[index];
+      if (candle === undefined) {
+        continue;
+      }
+      if (finitePrice(candle.high)) {
+        hiPrice = Math.max(hiPrice, candle.high);
+      }
+      if (finitePrice(candle.low)) {
+        loPrice = Math.min(loPrice, candle.low);
+      }
+    }
     if (Number.isFinite(hiPrice) && Number.isFinite(loPrice) && hiPrice > loPrice) {
       for (let step = 0; step <= 4; step += 1) {
         const price = loPrice + ((hiPrice - loPrice) * step) / 4;
@@ -563,14 +930,26 @@ export function mountChart(
     }
   };
 
-  if (!paints.has(host)) {
+  const existing = paints.get(host);
+  if (existing === undefined) {
     resizeObserver?.observe(host);
+  } else {
+    existing.detach();
   }
-  paints.set(host, paint);
+  const detach = bindGestures(
+    host,
+    () => ({
+      seriesKey: input.seriesKey,
+      endIndex: input.endIndex,
+      barCount: input.candles.length,
+    }),
+    paint,
+  );
+  paints.set(host, { paint, detach });
   paint();
   if (typeof requestAnimationFrame === "function") {
     requestAnimationFrame(() => {
-      if (paints.get(host) === paint) {
+      if (paints.get(host)?.paint === paint) {
         paint();
       }
     });

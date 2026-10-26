@@ -294,6 +294,8 @@ button {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
   background-color: var(--bg-inset);
   background-image:
     linear-gradient(to top, rgb(var(--accent-rgb) / 10%), transparent 42%),

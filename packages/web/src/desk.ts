@@ -1642,6 +1642,8 @@ export function mountDesk(root: HTMLElement): void {
         bands,
         label: `${labelTf} · ${t("chart.sample")} · ${t("replay.bar")} ${state.cursor + 1}/${series.length}`,
         formatPrice: money,
+        seriesKey: `${dataKey({ ...state.setup, market: state.market })}:${selected ?? "none"}:${paneIndex}`,
+        endIndex: view === null || view.length === 0 ? 0 : view.length - 1,
       });
       if (view === null) {
         stage.append(el("p", { className: "chart-empty", text: t("chart.tfUnsupported") }));
