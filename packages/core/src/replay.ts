@@ -352,7 +352,11 @@ export function replaySession(input: SessionInput): Frame {
       if (hit !== undefined) {
         // A gap through the trigger fills at the open.
         const level = long ? Math.min(hit.price, bar.open) : Math.max(hit.price, bar.open);
-        switch (hit.kind) {
+        // If that gap also passes liquidation, the venue liquidates first.
+        const kind = (long ? level <= position.liqPrice : level >= position.liqPrice)
+          ? "liquidation"
+          : hit.kind;
+        switch (kind) {
           case "stop":
             exit(index, bar, "stop", closePriceFromMark(level, position.side, position.impactBps));
             break;
@@ -363,10 +367,10 @@ export function replaySession(input: SessionInput): Frame {
           case "daily":
           case "max-dd":
             exit(index, bar, "breach", level);
-            propBreach = hit.kind;
+            propBreach = kind;
             break;
           default: {
-            const unexpected: never = hit.kind;
+            const unexpected: never = kind;
             throw new Error(`unexpected trigger ${String(unexpected)}`);
           }
         }

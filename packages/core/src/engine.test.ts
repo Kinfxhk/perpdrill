@@ -188,6 +188,19 @@ describe("brackets and rules", () => {
     expect(stats.netPnl).toBeCloseTo(frame.equity - 2_500);
   });
 
+  it("liquidates instead of stopping when a gap passes both levels", () => {
+    const series = [ohlc(0, 100, 100, 100, 100), ohlc(1, 80, 82, 79, 81)];
+    const frame = replaySession({
+      market: "BTC-PERP",
+      series,
+      preset: null,
+      actions: [open({ leverage: 10, powerPct: 100, stopLoss: 96 })],
+      cursor: 1,
+    });
+    expect(frame.fills.at(-1)?.kind).toBe("liquidation");
+    expect(frame.cash).toBeGreaterThanOrEqual(0);
+  });
+
   it("summarises trades and the equity curve", () => {
     const series = [
       ohlc(0, 100, 100, 100, 100),
