@@ -1,0 +1,24 @@
+Third-party notices
+===================
+
+perpdrill does not vendor third-party application source. The tools below
+are installed from the npm registry by `npm ci`. Their licenses apply to
+those tools. perpsdrill itself is AGPL-3.0-or-later.
+
+Direct tooling:
+
+- Node.js — MIT — https://github.com/nodejs/node
+- TypeScript — Apache-2.0 — https://github.com/microsoft/TypeScript
+- Vite — MIT — https://github.com/vitejs/vite
+- Vitest — MIT — https://github.com/vitest-dev/vitest
+- ESLint and @eslint/js — MIT — https://github.com/eslint/eslint
+- typescript-eslint — MIT — https://github.com/typescript-eslint/typescript-eslint
+- Prettier — MIT — https://github.com/prettier/prettier
+- @types/node — MIT — https://github.com/DefinitelyTyped/DefinitelyTyped
+- globals — MIT — https://github.com/sindresorhus/globals
+
+Transitive dependencies are pinned in package-lock.json and keep their
+own licenses. They are not copied into this tree.
+
+The GNU Affero General Public License text in LICENSE is published by the
+Free Software Foundation and is included unchanged.

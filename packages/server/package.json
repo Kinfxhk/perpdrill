@@ -1,0 +1,15 @@
+{
+  "name": "@perpdrill/server",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "description": "Localhost stub that prints the perpsdrill version. No trading API.",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types src/index.ts",
+    "listen": "node --experimental-strip-types src/index.ts listen"
+  },
+  "dependencies": {
+    "@perpdrill/core": "0.0.0"
+  }
+}

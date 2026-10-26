@@ -1,0 +1,42 @@
+{
+  "name": "perpdrill",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local-first educational replay desk for crypto perps prop-style rules. M0 scaffold: no trading engine.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kinfxhk/perpdrill.git"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @perpdrill/web",
+    "start": "npm run start -w @perpdrill/server",
+    "listen": "npm run listen -w @perpdrill/server",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -p tsconfig.json && tsc -p packages/core && tsc -p packages/web && tsc -p packages/web/tsconfig.node.json && tsc -p packages/server",
+    "test": "vitest run",
+    "check:licenses": "node scripts/check-licenses.mjs",
+    "check:hygiene": "node scripts/check-hygiene.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run check:licenses && npm run check:hygiene && npm run check:secrets"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^22.19.1",
+    "eslint": "^9.39.1",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2",
+    "vitest": "^3.2.4"
+  }
+}

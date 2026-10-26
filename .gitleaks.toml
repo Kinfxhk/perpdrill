@@ -1,0 +1,12 @@
+title = "perpdrill"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "License text, lockfile, and third-party notice boilerplate"
+paths = [
+  '''(^|/)package-lock\.json$''',
+  '''(^|/)LICENSE$''',
+  '''(^|/)THIRD_PARTY_NOTICES$''',
+]

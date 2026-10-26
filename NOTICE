@@ -1,0 +1,43 @@
+perpdrill
+Copyright (C) 2026 KINFX / Kinfxhk
+
+Licensed under the GNU Affero General Public License, version 3 or later
+(AGPL-3.0-or-later). The full license text is in LICENSE.
+https://www.gnu.org/licenses/agpl-3.0.html
+
+Conceptual lineage
+------------------
+
+Replay cursors, OHLC-style fill models, and splitting rule checks into
+engine-enforced versus read-only assessment are ideas this project
+inherits conceptually from CandleDrill, also by KINFX / Kinfxhk:
+
+https://github.com/Kinfxhk/candledrill
+
+CandleDrill is licensed under the GNU Affero General Public License,
+version 3 or later (AGPL-3.0-or-later). perpsdrill is a separate work.
+It does not copy CandleDrill's interface, palette, or futures contract
+model, and it is not a release of that repository.
+
+M0 contains original stubs only. No fill, margin, or liquidation math
+is implemented.
+
+No affiliation
+--------------
+
+perpdrill is not affiliated with, endorsed by, or a client of any
+trading venue or proprietary-firm evaluation service. When documentation
+names a firm, that name is a preset source: a URL plus a statement that
+any future preset is unofficial and must be checked against current
+official documents. Logos are not used.
+
+Network use (AGPL section 13)
+-----------------------------
+
+If you modify perpsdrill and let users interact with it over a network,
+you must offer them the corresponding source. The web scaffold shows a
+source link for that purpose. The intended public repository is:
+
+https://github.com/Kinfxhk/perpdrill
+
+That address may not be published yet.
