@@ -648,7 +648,7 @@ export function mountDesk(root: HTMLElement): void {
       mountMarket(frame, change, currentBar?.close ?? frame.mark),
       mountDisclaimer(),
       el("div", { className: "workspace" }, [
-        mountChartSection(series, frame, money),
+        mountChartSection(series, frame, money, mountReplay(frame, last, drawdown, money)),
         mountTicket({
           frame,
           previewQty,
@@ -662,10 +662,7 @@ export function mountDesk(root: HTMLElement): void {
           money,
           dash,
         }),
-        el("div", { className: "desk-bottom" }, [
-          mountBlotter(frame, money, dash),
-          mountReplay(frame, last, drawdown, money),
-        ]),
+        el("div", { className: "desk-bottom" }, [mountBlotter(frame, money, dash)]),
       ]),
       mountColophon(),
     ]);
@@ -1324,6 +1321,7 @@ export function mountDesk(root: HTMLElement): void {
     series: readonly Bar[],
     frame: Frame,
     money: (value: number) => string,
+    replay: HTMLElement,
   ): HTMLElement {
     const lines: ChartLine[] = [];
     if (frame.position !== null) {
@@ -1404,6 +1402,7 @@ export function mountDesk(root: HTMLElement): void {
         }),
       ]),
       mountIndicatorControls(),
+      replay,
       stage,
     ]);
   }
@@ -2147,7 +2146,7 @@ export function mountDesk(root: HTMLElement): void {
         return node;
       }),
     );
-    return el("footer", { className: "replay", attrs: { "aria-label": "Replay" } }, [
+    return el("div", { className: "replay", attrs: { "aria-label": "Replay" } }, [
       el("div", { className: "replay-controls" }, [
         play,
         step,
