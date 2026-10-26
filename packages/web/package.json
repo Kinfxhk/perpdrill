@@ -1,0 +1,19 @@
+{
+  "name": "@perpdrill/web",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "description": "Disabled perps practice-desk wireframe. M0 scaffold.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 43127 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 43127 --strictPort"
+  },
+  "dependencies": {
+    "@perpdrill/core": "0.0.0"
+  },
+  "devDependencies": {
+    "vite": "^6.4.1"
+  }
+}
