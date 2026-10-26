@@ -66,7 +66,14 @@ export {
   syntheticSeries,
 } from "./synthetic.ts";
 export type { SyntheticSpec, SyntheticTimeframe } from "./synthetic.ts";
-export { logicalDayKey, priceForEquityFloor, profitTargetEquity, staticFloor } from "./prop.ts";
+export {
+  logicalDayKey,
+  priceForEquityFloor,
+  profitTargetEquity,
+  resolvedMaxDrawdownUsd,
+  staticFloor,
+  staticFloorUsd,
+} from "./prop.ts";
 export type { DailyReset, PropBreach } from "./prop.ts";
 export { bracketValid, replaySession } from "./replay.ts";
 export type {

@@ -12,6 +12,22 @@ export function staticFloor(startingBalance: number, limitPct: number): number {
   return startingBalance * (1 - limitPct / 100);
 }
 
+/**
+ * Dollar loss that breaches max drawdown. A USD amount wins over the percent.
+ */
+export function resolvedMaxDrawdownUsd(
+  startingBalance: number,
+  maxDrawdownUsd: number | null,
+  maxDrawdownPct: number,
+): number {
+  return maxDrawdownUsd ?? startingBalance * (maxDrawdownPct / 100);
+}
+
+/** Static, non-trailing equity floor: starting balance minus the USD max drawdown. */
+export function staticFloorUsd(startingBalance: number, maxDrawdownUsd: number): number {
+  return startingBalance - maxDrawdownUsd;
+}
+
 export function profitTargetEquity(startingBalance: number, targetPct: number): number {
   return startingBalance * (1 + targetPct / 100);
 }

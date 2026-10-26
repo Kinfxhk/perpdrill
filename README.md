@@ -59,12 +59,12 @@ npm start
 
 ## 預設來源
 
-`presets/` 有兩份非官方社群 JSON。數字與網址寫在檔案裡，並標明請對照該站現行文件。模擬結果不是官方評測。產品程式碼（`packages/`）不寫廠商名稱。沒有核到的規則不要補數字。
+`presets/` 有 13 份教學方案 JSON（Instant、Evaluation、2-Step）。下拉選單與規則標題只用教學名，不寫廠商名稱。最大回撤是靜態金額（`maxDrawdownUsd`）：地板＝起始資金減去該金額。來源網址留在 JSON，畫面上不以網址當文字。模擬結果不是官方評測。產品程式碼（`packages/`）不寫廠商名稱。沒有核到的規則不要補數字。
 
 | 來源                   | 網址                                                            | 說明                                                                                                                          |
 | ---------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Vest Capital 方案      | https://next.vestmarkets.com/vest-capital                       | 13 個方案 JSON（`presets/plan-*.json`）：1-Step／2-Step 評測 Silver–Emerald、Instant $500–$50k。2026-10-26 依官網與文件核對。 |
-| MyFundedPerps 挑戰筆記 | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | 非官方社群 JSON，見 `presets/`。費用筆記：https://docs.myfundedperpetuals.com/guides/commissions-and-fees                     |
+| MyFundedPerps 挑戰筆記 | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | 不再附社群 JSON。費用筆記：https://docs.myfundedperpetuals.com/guides/commissions-and-fees                                    |
 | Tradeify Perps         | https://tradeifyperps.co/                                       | 2026-10-26 未能核實公開規則（僅見 waitlist）。不要編造數字。                                                                  |
 
 細節與「強平線 ≠ prop 回撤線」見 [docs/DESIGN-MVP.md](docs/DESIGN-MVP.md)。
@@ -128,12 +128,12 @@ npm start
 
 ## Preset sources
 
-`presets/` ships two unofficial community JSON files. The numbers and URLs live in those files, with a line telling the reader to check the firm's current documents. A simulated result is not an official evaluation. Product code under `packages/` does not name firms. Do not invent numbers for a rule that was not verified.
+`presets/` ships 13 teaching-plan JSON files (Instant, Evaluation, and 2-Step). The dropdown and rule heading use teaching names only, with no firm name. Max drawdown is a static dollar amount (`maxDrawdownUsd`): the floor is the starting balance minus that amount. Source URLs stay in the JSON and are not used as on-screen labels. A simulated result is not an official evaluation. Product code under `packages/` does not name firms. Do not invent numbers for a rule that was not verified.
 
 | Source                        | URL                                                             | Note                                                                                                                                                               |
 | ----------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Vest Capital plans            | https://next.vestmarkets.com/vest-capital                       | 13 plan JSON files (`presets/plan-*.json`): 1-Step / 2-Step evaluation Silver–Emerald and Instant $500–$50k. Checked against the plan page and docs on 2026-10-26. |
-| MyFundedPerps challenge notes | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | Unofficial community JSON in `presets/`. Fees: https://docs.myfundedperpetuals.com/guides/commissions-and-fees                                                     |
+| MyFundedPerps challenge notes | https://docs.myfundedperpetuals.com/guides/challenges-and-rules | No community JSON is shipped. Fees: https://docs.myfundedperpetuals.com/guides/commissions-and-fees                                                                |
 | Tradeify Perps                | https://tradeifyperps.co/                                       | Unverified on 2026-10-26 (waitlist only). Do not invent numbers.                                                                                                   |
 
 See [docs/DESIGN-MVP.md](docs/DESIGN-MVP.md) for liquidation versus prop drawdown lines and the percent-sizing note.

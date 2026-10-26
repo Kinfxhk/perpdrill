@@ -49,7 +49,7 @@ export const DEFAULT_CUSTOM_RULES: CustomRules = {
   startingBalanceUsd: 10_000,
   profitTargetPct: 8,
   maxDrawdownPct: 6,
-  drawdownMode: "trailing",
+  drawdownMode: "static",
   dailyLossLimitPct: 3,
   maxLeverage: 10,
   takerBps: 5,
@@ -77,6 +77,15 @@ function num(value: unknown, min: number, max: number, fallback: number): number
   return typeof value === "number" && Number.isFinite(value)
     ? Math.min(max, Math.max(min, value))
     : fallback;
+}
+
+const RETIRED_PRESET_IDS = new Set(["community-a", "community-b"]);
+
+function retiredPresetId(value: unknown): string | null {
+  if (typeof value !== "string" || RETIRED_PRESET_IDS.has(value)) {
+    return null;
+  }
+  return value;
 }
 
 function optionalPct(value: unknown): number | null | undefined {
@@ -135,14 +144,14 @@ export function sanitizeSetup(raw: unknown): SessionSetup {
       value.rulesMode === "none" || value.rulesMode === "preset" || value.rulesMode === "custom"
         ? value.rulesMode
         : base.rulesMode,
-    presetId: typeof value.presetId === "string" ? value.presetId : null,
+    presetId: retiredPresetId(value.presetId),
     presetTargetPct: optionalPct(value.presetTargetPct),
     presetDailyPct: optionalPct(value.presetDailyPct),
     custom: {
       startingBalanceUsd: num(custom.startingBalanceUsd, 100, 10_000_000, d.startingBalanceUsd),
       profitTargetPct: num(custom.profitTargetPct, 0.1, 100, d.profitTargetPct),
       maxDrawdownPct: num(custom.maxDrawdownPct, 0.1, MAX_RULE_DRAWDOWN_PCT, d.maxDrawdownPct),
-      drawdownMode: custom.drawdownMode === "static" ? "static" : "trailing",
+      drawdownMode: custom.drawdownMode === "trailing" ? "trailing" : "static",
       dailyLossLimitPct: num(custom.dailyLossLimitPct, 0, 100, d.dailyLossLimitPct),
       maxLeverage: Math.round(num(custom.maxLeverage, 1, TEACHING_MAX_LEVERAGE, d.maxLeverage)),
       takerBps: num(custom.takerBps, 0, 100, d.takerBps),
@@ -161,6 +170,7 @@ export function customPreset(rules: CustomRules): PracticePreset {
     sourceUrls: [],
     profitTargetPct: rules.profitTargetPct,
     maxDrawdownPct: rules.maxDrawdownPct,
+    maxDrawdownUsd: null,
     drawdownMode: rules.drawdownMode,
     maxLeverage: rules.maxLeverage,
     dailyLossLimitPct: rules.dailyLossLimitPct > 0 ? rules.dailyLossLimitPct : null,

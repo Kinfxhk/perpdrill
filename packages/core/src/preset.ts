@@ -17,6 +17,11 @@ export type PracticePreset = {
   /** `null` = no profit target (an instant-style account). */
   readonly profitTargetPct: number | null;
   readonly maxDrawdownPct: number;
+  /**
+   * Dollar max drawdown. When set, the static floor is the starting balance
+   * minus this amount and does not trail. Null uses maxDrawdownPct instead.
+   */
+  readonly maxDrawdownUsd: number | null;
   /** Static floor from the start, or trailing the closing high-water mark. */
   readonly drawdownMode: DrawdownMode;
   /** One cap for every market, or a cap per market. */
@@ -268,6 +273,18 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
     }
     startingBalanceUsd = value.startingBalanceUsd;
   }
+  let maxDrawdownUsd: number | null = null;
+  if (value.maxDrawdownUsd !== undefined && value.maxDrawdownUsd !== null) {
+    if (
+      typeof value.maxDrawdownUsd !== "number" ||
+      !Number.isFinite(value.maxDrawdownUsd) ||
+      value.maxDrawdownUsd <= 0 ||
+      (startingBalanceUsd !== null && value.maxDrawdownUsd >= startingBalanceUsd)
+    ) {
+      return { ok: false, error: "max drawdown amount is invalid" };
+    }
+    maxDrawdownUsd = value.maxDrawdownUsd;
+  }
   let markets: readonly MarketId[] | null = null;
   if (value.markets !== undefined && value.markets !== null) {
     if (!Array.isArray(value.markets) || value.markets.length === 0) {
@@ -320,6 +337,7 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
       sourceUrls,
       profitTargetPct,
       maxDrawdownPct,
+      maxDrawdownUsd,
       drawdownMode,
       maxLeverage,
       dailyBase,

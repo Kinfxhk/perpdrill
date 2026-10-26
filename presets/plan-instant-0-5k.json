@@ -22,12 +22,13 @@
     "ETH-PERP": 15
   },
   "markets": ["BTC-PERP", "ETH-PERP"],
-  "group": "Instant account",
-  "displayName": "Instant — $500",
+  "group": "Instant",
+  "displayName": "Teaching · Instant 500",
   "startingBalanceUsd": 500,
   "maxDrawdownPct": 2,
+  "maxDrawdownUsd": 10,
   "profitTargetPct": null,
   "dailyLossLimitPct": null,
-  "note": "$500 capital, no evaluation and no profit target. Static max drawdown 2% ($10, floor $490) on equity. No daily loss limit. Taker 1 bp. Leverage caps BTC 25×, ETH 15×. Profit split 95% is not simulated.",
+  "note": "$500 capital, no evaluation and no profit target. Static max drawdown $10 (starting balance minus that amount; it does not trail) on equity. No daily loss limit. Taker 1 bp. Leverage caps BTC 25×, ETH 15×. Profit split 95% is not simulated.",
   "id": "plan-instant-0-5k"
 }

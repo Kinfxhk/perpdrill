@@ -24,6 +24,7 @@ function preset(overrides: Partial<PracticePreset> = {}): PracticePreset {
     sourceUrls: ["https://example.com/rules"],
     profitTargetPct: 10,
     maxDrawdownPct: 5,
+    maxDrawdownUsd: null,
     drawdownMode: "static",
     maxLeverage: null,
     dailyBase: "equity",

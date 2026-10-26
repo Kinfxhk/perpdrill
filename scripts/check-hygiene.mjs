@@ -115,8 +115,8 @@ async function assertPresets(repoRoot, sink) {
   const dir = path.join(repoRoot, "presets");
   const index = JSON.parse(await readFile(path.join(dir, "index.json"), "utf8"));
   const files = index.files;
-  if (!Array.isArray(files) || files.length === 0) {
-    sink.push("presets/index.json must list preset files");
+  if (!Array.isArray(files) || files.length !== 13) {
+    sink.push("presets/index.json must list the 13 teaching plans");
     return;
   }
   const loaded = new Map();
@@ -125,14 +125,15 @@ async function assertPresets(repoRoot, sink) {
       sink.push(`presets/index.json has an unsafe file name ${String(name)}`);
       continue;
     }
+    if (name.startsWith("community-")) {
+      sink.push(`${name} is a retired community preset`);
+      continue;
+    }
     loaded.set(name, JSON.parse(await readFile(path.join(dir, name), "utf8")));
   }
-  const prime = loaded.get("community-a.json");
-  if (prime === undefined) {
-    sink.push("presets/index.json must name community-a.json");
-    return;
-  }
   const unofficial = "Unofficial community preset — verify against current official docs.";
+  const firmName = /myfunded|vestmarkets|\bvest\b|tradeify/i;
+  const shownFields = ["displayName", "group", "disclaimer", "note"];
   for (const file of loaded.values()) {
     if (typeof file.disclaimer !== "string" || !file.disclaimer.includes(unofficial)) {
       sink.push(`${file.id ?? "preset"} is missing the unofficial disclaimer`);
@@ -140,62 +141,128 @@ async function assertPresets(repoRoot, sink) {
     if (!Array.isArray(file.sourceUrls) || file.sourceUrls.length === 0) {
       sink.push(`${file.id ?? "preset"} is missing source URLs`);
     }
+    if (typeof file.id === "string" && file.id.startsWith("community-")) {
+      sink.push(`${file.id} is a retired community preset`);
+    }
+    for (const field of shownFields) {
+      if (typeof file[field] === "string" && firmName.test(file[field])) {
+        sink.push(`${file.id ?? "preset"} ${field} contains a firm name`);
+      }
+    }
   }
-  expectFields(sink, "community-a", prime, {
-    displayName: "MyFundedPerps — 1-Step Prime (community)",
-    profitTargetPct: 12,
-    dailyLossLimitPct: 3,
-    maxDrawdownPct: 5,
-    equityIncludesUPnL: true,
-    costModel: "swap",
-    takerBps: 30,
-    makerBps: 30,
-    swapDailyRatePct: 0.03,
-    venueFundingChangesBalance: false,
-  });
-  if (prime.dailyReset?.timeZone !== "America/New_York" || prime.dailyReset?.hour !== 0) {
-    sink.push("community-a daily reset must be 00:00 America/New_York");
-  }
-  if (
-    !JSON.stringify(prime.sourceUrls).includes(
-      "https://docs.myfundedperpetuals.com/guides/challenges-and-rules",
-    )
-  ) {
-    sink.push("community-a is missing its challenge source URL");
-  }
-  if (
-    !JSON.stringify(prime.sourceUrls).includes(
-      "https://docs.myfundedperpetuals.com/guides/commissions-and-fees",
-    )
-  ) {
-    sink.push("community-a is missing its fee source URL");
-  }
-  // Plan presets: numbers checked against the plan page on 2026-10-26.
-  const planDd = { "1step": 6, "2step": 6 };
-  for (const [name, file] of loaded) {
-    const match = /^plan-(1step|2step|instant)-/.exec(name);
-    if (match === null) {
+  const ladder = {
+    "plan-instant-0-5k.json": {
+      displayName: "Teaching · Instant 500",
+      startingBalanceUsd: 500,
+      maxDrawdownUsd: 10,
+      profitTargetPct: null,
+      dailyLossLimitPct: null,
+    },
+    "plan-instant-5k.json": {
+      displayName: "Teaching · Instant 5k",
+      startingBalanceUsd: 5000,
+      maxDrawdownUsd: 200,
+      profitTargetPct: null,
+      dailyLossLimitPct: null,
+    },
+    "plan-instant-10k.json": {
+      displayName: "Teaching · Instant 10k",
+      startingBalanceUsd: 10000,
+      maxDrawdownUsd: 400,
+      profitTargetPct: null,
+      dailyLossLimitPct: null,
+    },
+    "plan-instant-25k.json": {
+      displayName: "Teaching · Instant 25k",
+      startingBalanceUsd: 25000,
+      maxDrawdownUsd: 1000,
+      profitTargetPct: null,
+      dailyLossLimitPct: null,
+    },
+    "plan-instant-50k.json": {
+      displayName: "Teaching · Instant 50k",
+      startingBalanceUsd: 50000,
+      maxDrawdownUsd: 2000,
+      profitTargetPct: null,
+      dailyLossLimitPct: null,
+    },
+    "plan-1step-silver.json": {
+      displayName: "Teaching · Eval Silver",
+      startingBalanceUsd: 5000,
+      maxDrawdownUsd: 300,
+      profitTargetPct: 10,
+      dailyLossLimitPct: null,
+    },
+    "plan-1step-gold.json": {
+      displayName: "Teaching · Eval Gold",
+      startingBalanceUsd: 10000,
+      maxDrawdownUsd: 600,
+      profitTargetPct: 10,
+      dailyLossLimitPct: null,
+    },
+    "plan-1step-platinum.json": {
+      displayName: "Teaching · Eval Platinum",
+      startingBalanceUsd: 25000,
+      maxDrawdownUsd: 1500,
+      profitTargetPct: 10,
+      dailyLossLimitPct: null,
+    },
+    "plan-1step-emerald.json": {
+      displayName: "Teaching · Eval Emerald",
+      startingBalanceUsd: 50000,
+      maxDrawdownUsd: 3000,
+      profitTargetPct: 10,
+      dailyLossLimitPct: null,
+    },
+    "plan-2step-silver.json": {
+      displayName: "Teaching · 2-Step Silver",
+      startingBalanceUsd: 5000,
+      maxDrawdownUsd: 300,
+      profitTargetPct: 10,
+      dailyLossLimitPct: 3,
+    },
+    "plan-2step-gold.json": {
+      displayName: "Teaching · 2-Step Gold",
+      startingBalanceUsd: 10000,
+      maxDrawdownUsd: 600,
+      profitTargetPct: 10,
+      dailyLossLimitPct: 3,
+    },
+    "plan-2step-platinum.json": {
+      displayName: "Teaching · 2-Step Platinum",
+      startingBalanceUsd: 25000,
+      maxDrawdownUsd: 1500,
+      profitTargetPct: 10,
+      dailyLossLimitPct: 3,
+    },
+    "plan-2step-emerald.json": {
+      displayName: "Teaching · 2-Step Emerald",
+      startingBalanceUsd: 50000,
+      maxDrawdownUsd: 3000,
+      profitTargetPct: 10,
+      dailyLossLimitPct: 3,
+    },
+  };
+  for (const [name, expected] of Object.entries(ladder)) {
+    const file = loaded.get(name);
+    if (file === undefined) {
+      sink.push(`presets/index.json is missing ${name}`);
       continue;
     }
-    const kind = match[1];
-    if (kind === "instant") {
-      const expected = file.startingBalanceUsd === 500 ? 2 : 4;
-      if (
-        file.maxDrawdownPct !== expected ||
-        file.profitTargetPct !== null ||
-        file.dailyLossLimitPct !== null
-      ) {
-        sink.push(`${file.id} instant rules drifted`);
-      }
-    } else if (file.maxDrawdownPct !== planDd[kind] || file.drawdownMode !== "static") {
-      sink.push(`${file.id} max drawdown must be a static ${planDd[kind]}%`);
+    expectFields(sink, file.id ?? name, file, expected);
+    if (file.drawdownMode !== "static") {
+      sink.push(`${file.id} max drawdown must be static`);
     }
     if (
-      kind !== "instant" &&
+      !name.startsWith("plan-instant-") &&
       (file.dailyReset?.timeZone !== "America/New_York" || file.dailyReset?.hour !== 20)
     ) {
       sink.push(`${file.id} daily reset must be 20:00 America/New_York`);
     }
+  }
+  const desk = await readFile(path.join(repoRoot, "packages/web/src/desk.ts"), "utf8");
+  if (desk.includes("text: url")) {
+    sink.push("preset source URLs must not be used as visible link text");
   }
 }
 

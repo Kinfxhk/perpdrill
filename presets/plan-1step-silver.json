@@ -26,16 +26,17 @@
     "ETH-PERP": 15
   },
   "markets": ["BTC-PERP", "ETH-PERP"],
-  "group": "1-Step evaluation",
-  "displayName": "1-Step Silver — $5,000",
+  "group": "Evaluation",
+  "displayName": "Teaching · Eval Silver",
   "startingBalanceUsd": 5000,
   "maxDrawdownPct": 6,
+  "maxDrawdownUsd": 300,
   "profitTargetPct": 10,
   "dailyLossLimitPct": null,
   "choices": {
     "profitTargetPct": [10, 20],
     "dailyLossLimitPct": [null, 3, 4]
   },
-  "note": "$5,000 capital. Static max drawdown 6% ($300, floor $4,700) on equity. Profit target 10% or 20%. Daily loss limit none, 3% or 4%: reset 20:00 New York, measured from the realized balance plus reserved margin, checked against equity. Taker 1 bp, maker 0. Funding is a 0 stub. Leverage caps BTC 25×, ETH 15×. Profit split (80% or 90%) and the one-time fee are not simulated.",
+  "note": "$5,000 capital. Static max drawdown $300 (starting balance minus that amount; it does not trail) on equity. Profit target 10% or 20%. Daily loss limit none, 3% or 4%: reset 20:00 New York, measured from the realized balance plus reserved margin, checked against equity. Taker 1 bp, maker 0. Funding is a 0 stub. Leverage caps BTC 25×, ETH 15×. Profit split (80% or 90%) and the one-time fee are not simulated.",
   "id": "plan-1step-silver"
 }
