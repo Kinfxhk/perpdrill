@@ -56,6 +56,7 @@ import { formatNumber, formatPct, formatQty, signedNumber } from "./format.ts";
 import {
   LANG_CHOICES,
   THEMES,
+  applyDocumentTheme,
   numberLocale,
   readStoredLang,
   readStoredTheme,
@@ -467,11 +468,7 @@ export function mountDesk(root: HTMLElement): void {
     const active = document.activeElement;
     const restore = active instanceof HTMLInputElement && root.contains(active) ? active.id : "";
     document.documentElement.lang = state.lang;
-    if (state.theme === "teal") {
-      delete document.documentElement.dataset.theme;
-    } else {
-      document.documentElement.dataset.theme = state.theme;
-    }
+    applyDocumentTheme(state.theme);
     root.replaceChildren(build());
     if (restore.length > 0) {
       const next = root.querySelector(`#${CSS.escape(restore)}`);
@@ -1097,7 +1094,7 @@ export function mountDesk(root: HTMLElement): void {
     });
 
     const theme = el("select", {
-      className: "lang-select",
+      className: "theme-select",
       attrs: { id: "theme", "aria-label": t("theme.label") },
     });
     for (const choice of THEMES) {

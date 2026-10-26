@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Desk themes use original cool-green accents. Grove, Lagoon, and Iris
+  replace the venue-like palettes. Daylight uses a darker green so accent
+  text stays readable. The header theme menu still saves the choice.
 - Plan presets keep their v0.3.0 ids. The desk shows teaching names only
   (`Teaching · Instant …`, `Teaching · Eval …`, `Teaching · 2-Step …`).
   `community-a` is removed; a stored `community-a` or `community-b` id is
