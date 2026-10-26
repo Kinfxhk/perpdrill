@@ -62,6 +62,7 @@ import {
 } from "./i18n.ts";
 import { loadCommunityPresets } from "./preset-loader.ts";
 import {
+  MAX_RULE_DRAWDOWN_PCT,
   customPreset,
   dataKey,
   readStoredSetup,
@@ -839,7 +840,7 @@ export function mountDesk(root: HTMLElement): void {
           "rule-maxdd",
           t("setup.maxDd"),
           rules.maxDrawdownPct,
-          { min: 0.1, max: 100, step: 0.5 },
+          { min: 0.1, max: MAX_RULE_DRAWDOWN_PCT, step: 0.5 },
           (v) => setRule("maxDrawdownPct", v),
           "%",
         ),
@@ -1909,7 +1910,11 @@ export function mountDesk(root: HTMLElement): void {
         stat(t("review.winRate"), pct(stats.winRate)),
         stat(
           t("review.pf"),
-          stats.profitFactor === null ? dash : formatNumber(stats.profitFactor, locale()),
+          stats.profitFactor === null
+            ? dash
+            : Number.isFinite(stats.profitFactor)
+              ? formatNumber(stats.profitFactor, locale())
+              : "∞",
         ),
         stat(t("review.expectancy"), amount(stats.expectancy)),
         stat(t("review.avgWin"), amount(stats.avgWin)),
@@ -1920,6 +1925,7 @@ export function mountDesk(root: HTMLElement): void {
         stat(t("review.fees"), money(frame.feesPaid + frame.carryPaid)),
       ]),
       spark,
+      el("p", { className: "hint", text: t("review.carryNote") }),
       el("table", {}, [
         el("thead", {}, [
           el(

@@ -65,7 +65,8 @@ export function sessionStats(input: {
   const trades = pairTrades(input.fills);
   const pnls = trades.map((trade) => trade.netPnl);
   const winners = pnls.filter((pnl) => pnl > 0);
-  const losers = pnls.filter((pnl) => pnl <= 0);
+  // Breakeven trades count toward trades but neither wins nor losses.
+  const losers = pnls.filter((pnl) => pnl < 0);
   const sum = (values: readonly number[]): number => values.reduce((a, b) => a + b, 0);
   const grossProfit = sum(winners);
   const grossLoss = -sum(losers);
@@ -86,7 +87,12 @@ export function sessionStats(input: {
     netPnl: sum(pnls),
     grossProfit,
     grossLoss,
-    profitFactor: grossLoss === 0 ? null : grossProfit / grossLoss,
+    profitFactor:
+      grossLoss === 0
+        ? grossProfit > 0
+          ? Number.POSITIVE_INFINITY
+          : null
+        : grossProfit / grossLoss,
     avgWin: winners.length === 0 ? null : grossProfit / winners.length,
     avgLoss: losers.length === 0 ? null : -grossLoss / losers.length,
     expectancy: trades.length === 0 ? null : sum(pnls) / trades.length,

@@ -15,7 +15,7 @@ describe("session setup", () => {
     expect(setup.timeframeMin).toBe(15);
     expect(setup.bars).toBe(5_000);
     expect(setup.seed).toBe(0);
-    expect(setup.custom.maxDrawdownPct).toBe(100);
+    expect(setup.custom.maxDrawdownPct).toBe(50);
     expect(setup.custom.maxLeverage).toBe(20);
     expect(setup.custom.drawdownMode).toBe("trailing");
   });

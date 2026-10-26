@@ -16,6 +16,9 @@ import {
   type SyntheticTimeframe,
 } from "@perpdrill/core";
 
+/** Above this the static floor sits under every liquidation, so the rule never trips. */
+export const MAX_RULE_DRAWDOWN_PCT = 50;
+
 export type RulesMode = "none" | "preset" | "custom";
 
 export type CustomRules = {
@@ -101,7 +104,7 @@ export function sanitizeSetup(raw: unknown): SessionSetup {
     custom: {
       startingBalanceUsd: num(custom.startingBalanceUsd, 100, 10_000_000, d.startingBalanceUsd),
       profitTargetPct: num(custom.profitTargetPct, 0.1, 100, d.profitTargetPct),
-      maxDrawdownPct: num(custom.maxDrawdownPct, 0.1, 100, d.maxDrawdownPct),
+      maxDrawdownPct: num(custom.maxDrawdownPct, 0.1, MAX_RULE_DRAWDOWN_PCT, d.maxDrawdownPct),
       drawdownMode: custom.drawdownMode === "static" ? "static" : "trailing",
       dailyLossLimitPct: num(custom.dailyLossLimitPct, 0, 100, d.dailyLossLimitPct),
       maxLeverage: Math.round(num(custom.maxLeverage, 1, TEACHING_MAX_LEVERAGE, d.maxLeverage)),

@@ -203,6 +203,7 @@ const en = {
   "setup.swap": "Daily swap",
   "setup.swapHint": "% per day · 0 = off",
   "setup.timeframe": "Timeframe",
+  "review.carryNote": "Trade PnL includes fees but not carry. Return includes both.",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -402,6 +403,7 @@ const zhHant = catalog({
   "setup.swap": "每日持倉費",
   "setup.swapHint": "每日 % · 0 為關閉",
   "setup.timeframe": "週期",
+  "review.carryNote": "單筆損益已扣手續費，未扣持倉成本；報酬率兩者都已計入。",
 });
 
 const zhHans = catalog({
@@ -593,6 +595,7 @@ const zhHans = catalog({
   "setup.swap": "每日持仓费",
   "setup.swapHint": "每日 % · 0 为关闭",
   "setup.timeframe": "周期",
+  "review.carryNote": "单笔盈亏已扣手续费，未扣持仓成本；收益率两者都已计入。",
 });
 
 const ja = catalog({
@@ -787,6 +790,8 @@ const ja = catalog({
   "setup.swap": "日次スワップ",
   "setup.swapHint": "1 日あたり % · 0 で無効",
   "setup.timeframe": "時間足",
+  "review.carryNote":
+    "取引ごとの損益は手数料込み、保有コストは含みません。リターンは両方を含みます。",
 });
 
 const ko = catalog({
@@ -982,6 +987,8 @@ const ko = catalog({
   "setup.swap": "일일 스왑",
   "setup.swapHint": "일당 % · 0 = 끔",
   "setup.timeframe": "타임프레임",
+  "review.carryNote":
+    "거래별 손익은 수수료를 포함하고 보유 비용은 제외합니다. 수익률은 둘 다 포함합니다.",
 });
 
 const catalogs: Record<Lang, Catalog> = {

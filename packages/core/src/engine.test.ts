@@ -201,6 +201,114 @@ describe("brackets and rules", () => {
     expect(frame.cash).toBeGreaterThanOrEqual(0);
   });
 
+  it("keeps a stop that slips past liquidation inside the margin", () => {
+    const series = [ohlc(0, 100, 100, 100, 100), ohlc(1, 95.2, 95.2, 95.2, 95.2)];
+    const frame = replaySession({
+      market: "BTC-PERP",
+      series,
+      preset: null,
+      actions: [open({ leverage: 10, powerPct: 100, stopLoss: 95.5, realizedImpactBps: 75 })],
+      cursor: 1,
+    });
+    expect(frame.cash).toBeGreaterThanOrEqual(0);
+  });
+
+  it("fills the target at the open when the bar gaps past it", () => {
+    const series = [ohlc(0, 100, 100, 100, 100), ohlc(1, 112, 113, 97, 100)];
+    const frame = replaySession({
+      market: "BTC-PERP",
+      series,
+      preset: null,
+      actions: [open({ stopLoss: 98, takeProfit: 110 })],
+      cursor: 1,
+    });
+    expect(frame.fills.at(-1)?.kind).toBe("take-profit");
+    expect(frame.fills.at(-1)?.price).toBe(112);
+  });
+
+  it("starts the realized-equity day from realized equity", () => {
+    const day = 24 * HOUR;
+    const series: Bar[] = [
+      { timeMs: day - HOUR, open: 100, high: 100, low: 100, close: 100 },
+      { timeMs: day - 1, open: 103, high: 103, low: 103, close: 103 },
+      { timeMs: day + HOUR, open: 103, high: 103, low: 103, close: 103 },
+    ];
+    const frame = replaySession({
+      market: "BTC-PERP",
+      series,
+      preset: preset({
+        equityIncludesUPnL: false,
+        dailyLossLimitPct: 5,
+        dailyReset: { timeZone: "UTC", hour: 0, minute: 0 },
+        profitTargetPct: 50,
+      }),
+      actions: [
+        open({ leverage: 1, powerPct: 100 }),
+        { kind: "close", barIndex: 2, slipToleranceBps: 75, realizedImpactBps: 0 },
+      ],
+      cursor: 2,
+    });
+    expect(frame.phase).toBe("practice");
+    expect(frame.dailyLossFloor).toBeCloseTo(9_500);
+  });
+
+  it("counts breakeven apart and shows an all-win profit factor as infinite", () => {
+    const stats = sessionStats({
+      fills: [
+        {
+          barIndex: 0,
+          timeMs: 0,
+          market: "BTC-PERP",
+          side: "long",
+          kind: "open",
+          price: 1,
+          qty: 1,
+          fee: 0,
+          pricePnl: 0,
+        },
+        {
+          barIndex: 1,
+          timeMs: 1,
+          market: "BTC-PERP",
+          side: "long",
+          kind: "close",
+          price: 2,
+          qty: 1,
+          fee: 0,
+          pricePnl: 1,
+        },
+        {
+          barIndex: 2,
+          timeMs: 2,
+          market: "BTC-PERP",
+          side: "long",
+          kind: "open",
+          price: 2,
+          qty: 1,
+          fee: 0,
+          pricePnl: 0,
+        },
+        {
+          barIndex: 3,
+          timeMs: 3,
+          market: "BTC-PERP",
+          side: "long",
+          kind: "close",
+          price: 2,
+          qty: 1,
+          fee: 0,
+          pricePnl: 0,
+        },
+      ],
+      equityCurve: [10, 11, 11, 11],
+      startingBalance: 10,
+    });
+    expect(stats.trades).toBe(2);
+    expect(stats.wins).toBe(1);
+    expect(stats.losses).toBe(0);
+    expect(stats.profitFactor).toBe(Number.POSITIVE_INFINITY);
+  });
+
   it("summarises trades and the equity curve", () => {
     const series = [
       ohlc(0, 100, 100, 100, 100),
@@ -234,7 +342,7 @@ describe("brackets and rules", () => {
     });
     expect(stats.trades).toBe(2);
     expect(stats.wins).toBe(1);
-    expect(stats.losses).toBe(1);
+    expect(stats.losses).toBe(0); // the short at 100 → 100 is breakeven
     expect(stats.winRate).toBe(50);
     expect(stats.netPnl).toBeCloseTo(250);
     expect(stats.returnPct).toBeCloseTo(10);

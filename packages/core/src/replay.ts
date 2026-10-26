@@ -273,13 +273,13 @@ export function replaySession(input: SessionInput): Frame {
       return;
     }
     const rawPnl = unrealizedPnl(position.side, position.qty, position.entry, price);
-    // Isolated: a gap through liquidation cannot lose more than the position margin.
-    const pricePnl = kind === "liquidation" ? Math.max(rawPnl, -position.isolatedMargin) : rawPnl;
-    const fee = kind === "liquidation" ? 0 : position.qty * price * (takerBps / 10_000);
-    const back =
+    // Isolated: no exit (gap, slipped stop) can lose more than the position margin.
+    const pricePnl = Math.max(rawPnl, -position.isolatedMargin);
+    const fee =
       kind === "liquidation"
-        ? Math.max(0, position.isolatedMargin + pricePnl)
-        : position.isolatedMargin + pricePnl - fee;
+        ? 0
+        : Math.min(position.qty * price * (takerBps / 10_000), position.isolatedMargin + pricePnl);
+    const back = Math.max(0, position.isolatedMargin + pricePnl - fee);
     cash += back;
     feesPaid += fee;
     fills.push({
@@ -330,6 +330,9 @@ export function replaySession(input: SessionInput): Frame {
       const long = position.side === "long";
       const worst = long ? bar.low : bar.high;
       const best = long ? bar.high : bar.low;
+      const openedPastTarget =
+        position.takeProfit !== null &&
+        (long ? bar.open >= position.takeProfit : bar.open <= position.takeProfit);
       const candidates: Trigger[] = [{ price: position.liqPrice, kind: "liquidation" }];
       if (position.stopLoss !== null) {
         candidates.push({ price: position.stopLoss, kind: "stop" });
@@ -349,7 +352,9 @@ export function replaySession(input: SessionInput): Frame {
             Number.isFinite(item.price) && (long ? worst <= item.price : worst >= item.price),
         )
         .sort((a, b) => (long ? b.price - a.price : a.price - b.price))[0];
-      if (hit !== undefined) {
+      if (openedPastTarget) {
+        exit(index, bar, "take-profit", bar.open);
+      } else if (hit !== undefined) {
         // A gap through the trigger fills at the open.
         const level = long ? Math.min(hit.price, bar.open) : Math.max(hit.price, bar.open);
         // If that gap also passes liquidation, the venue liquidates first.
@@ -529,7 +534,7 @@ export function replaySession(input: SessionInput): Frame {
         targetHit = true;
       }
     }
-    lastCloseEquity = settled.equity;
+    lastCloseEquity = settledAssessed;
     equityCurve.push(settled.equity);
   }
 
