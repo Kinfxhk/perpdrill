@@ -12,6 +12,11 @@
 - Cancel and New session during the 3-2-1 intro stop it without advancing bars.
   That data set still counts down on the next start. Skip starts playback.
   The New session control stays usable while the intro is up.
+- Each new practice candle paints in 3 parts: the open, the adverse extreme,
+  then the real bar. The gaps share the whole bar budget
+  (`budget / (parts - 1)`), with no 140ms cap. Play spends the speed interval.
+  One forward step spends 420ms. The cursor, and therefore the fill, still
+  moves on the last paint — the same beat play used to step on.
 - Plan presets keep their v0.3.0 ids. The desk shows teaching names only
   (`Teaching · Instant …`, `Teaching · Eval …`, `Teaching · 2-Step …`).
   `community-a` is removed; a stored `community-a` or `community-b` id is
