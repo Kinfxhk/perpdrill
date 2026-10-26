@@ -1,11 +1,7 @@
 import { mountDesk } from "./desk.ts";
-import { readStoredTheme } from "./i18n.ts";
+import { applyDocumentTheme, readStoredTheme } from "./i18n.ts";
 
-const theme = readStoredTheme();
-// The default palette is unthemed CSS; only venue themes set the attribute.
-if (theme !== "teal") {
-  document.documentElement.dataset.theme = theme;
-}
+applyDocumentTheme(readStoredTheme());
 
 const root = document.querySelector("#app");
 if (!(root instanceof HTMLElement)) {

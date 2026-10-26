@@ -207,9 +207,9 @@ const en = {
   "setup.optNone": "None",
   "theme.label": "Theme",
   "theme.teal": "Teal (default)",
-  "theme.midnight": "Midnight exchange",
-  "theme.aqua": "On-chain aqua",
-  "theme.violet": "DeFi violet",
+  "theme.midnight": "Grove",
+  "theme.aqua": "Lagoon",
+  "theme.violet": "Iris",
   "theme.daylight": "Daylight",
 } as const;
 
@@ -414,9 +414,9 @@ const zhHant = catalog({
   "setup.optNone": "無",
   "theme.label": "主題",
   "theme.teal": "青綠（預設）",
-  "theme.midnight": "午夜交易所",
-  "theme.aqua": "鏈上水藍",
-  "theme.violet": "DeFi 紫",
+  "theme.midnight": "森綠",
+  "theme.aqua": "潟湖",
+  "theme.violet": "鳶尾",
   "theme.daylight": "日間",
 });
 
@@ -613,9 +613,9 @@ const zhHans = catalog({
   "setup.optNone": "无",
   "theme.label": "主题",
   "theme.teal": "青绿（默认）",
-  "theme.midnight": "午夜交易所",
-  "theme.aqua": "链上水蓝",
-  "theme.violet": "DeFi 紫",
+  "theme.midnight": "森绿",
+  "theme.aqua": "泻湖",
+  "theme.violet": "鸢尾",
   "theme.daylight": "日间",
 });
 
@@ -816,9 +816,9 @@ const ja = catalog({
   "setup.optNone": "なし",
   "theme.label": "テーマ",
   "theme.teal": "ティール（既定）",
-  "theme.midnight": "ミッドナイト",
-  "theme.aqua": "オンチェーン・アクア",
-  "theme.violet": "DeFi バイオレット",
+  "theme.midnight": "深緑",
+  "theme.aqua": "ラグーン",
+  "theme.violet": "アイリス",
   "theme.daylight": "デイライト",
 });
 
@@ -1020,9 +1020,9 @@ const ko = catalog({
   "setup.optNone": "없음",
   "theme.label": "테마",
   "theme.teal": "틸 (기본)",
-  "theme.midnight": "미드나잇",
-  "theme.aqua": "온체인 아쿠아",
-  "theme.violet": "DeFi 바이올렛",
+  "theme.midnight": "숲녹",
+  "theme.aqua": "라군",
+  "theme.violet": "아이리스",
   "theme.daylight": "데이라이트",
 });
 
@@ -1081,6 +1081,30 @@ export function writeStoredTheme(theme: Theme): void {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {
     // Optional, as with the language.
+  }
+}
+
+export function applyDocumentTheme(theme: Theme): void {
+  const root = document.documentElement;
+  switch (theme) {
+    case "teal":
+      delete root.dataset.theme;
+      break;
+    case "midnight":
+    case "aqua":
+    case "violet":
+    case "daylight":
+      root.dataset.theme = theme;
+      break;
+    default: {
+      const unexpected: never = theme;
+      return unexpected;
+    }
+  }
+  const color = getComputedStyle(root).getPropertyValue("--bg").trim();
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (color.length > 0 && meta instanceof HTMLMetaElement) {
+    meta.content = color;
   }
 }
 

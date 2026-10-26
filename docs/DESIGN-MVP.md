@@ -54,5 +54,7 @@ product strings, logos, or palette tokens, and they are not preset labels.
 
 The web package is a cool-teal dark desk: header, market strip, chart,
 order ticket, positions, account health, and a replay bar that steps a
-local sample. It is not a client of any venue. Amber slate (`#f2a93b` on
+local sample. It is not a client of any venue. The header theme menu
+switches original token sets (teal, grove, lagoon, iris, daylight). Those
+palettes are not a firm or venue brand. Amber slate (`#f2a93b` on
 `#11151c`) is out of bounds for this product.
