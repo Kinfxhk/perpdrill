@@ -4,7 +4,9 @@
 
 **狀態：M0 骨架。** 可以安裝、檢查、打開一張停用的版面。沒有成交、保證金、強平、資金費或回放引擎。
 
-預定公開儲存庫（現在可能還沒公開）：<https://github.com/Kinfxhk/perpdrill>
+儲存庫：<https://github.com/Kinfxhk/perpdrill>
+
+線上版面（GitHub Pages，與本機同一張停用的 M0 骨架）：<https://kinfxhk.github.io/perpdrill/>。由 `main` 的 Pages workflow 部署，內容安全政策仍是 `default-src 'self'`。
 
 ## 這是什麼
 
@@ -69,7 +71,7 @@ npm start
 
 ## 授權
 
-[GNU AGPL-3.0-or-later](LICENSE)。若你改過程式並讓別人透過網路使用，必須提供對應原始碼（AGPL 第 13 條）。線框頁尾有來源連結，指向上面的預定儲存庫。
+[GNU AGPL-3.0-or-later](LICENSE)。若你改過程式並讓別人透過網路使用，必須提供對應原始碼（AGPL 第 13 條）。線框頁尾的來源連結指向 <https://github.com/Kinfxhk/perpdrill>。
 
 ---
 
@@ -79,7 +81,9 @@ Local-first educational simulator and replay desk for crypto perpetuals and prop
 
 **Status: M0 scaffold.** Install, check, and open a disabled layout. There is no fill, margin, liquidation, funding, or replay engine.
 
-Intended public repository (it may not be public yet): <https://github.com/Kinfxhk/perpdrill>
+Repository: <https://github.com/Kinfxhk/perpdrill>
+
+Online desk (GitHub Pages, the same disabled M0 scaffold): <https://kinfxhk.github.io/perpdrill/>. The Pages workflow on `main` deploys it. The page policy stays `default-src 'self'`.
 
 ## What it is
 
@@ -136,7 +140,7 @@ See [docs/DESIGN-MVP.md](docs/DESIGN-MVP.md) for liquidation versus prop drawdow
 
 ## License
 
-[GNU AGPL-3.0-or-later](LICENSE). If you modify the program and let users interact with it over a network, you must offer the corresponding source (AGPL section 13). The wireframe footer links the intended repository above.
+[GNU AGPL-3.0-or-later](LICENSE). If you modify the program and let users interact with it over a network, you must offer the corresponding source (AGPL section 13). The wireframe footer links <https://github.com/Kinfxhk/perpdrill>.
 
 ## Packages
 

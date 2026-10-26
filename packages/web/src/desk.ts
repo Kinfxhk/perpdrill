@@ -278,7 +278,7 @@ export function mountDesk(root: HTMLElement): void {
     text: "Source code (AGPL §13)",
     attrs: { href: SOURCE_URL, rel: "noreferrer" },
   });
-  source.title = "Intended public repository. It may not be published yet.";
+  source.title = "Source repository (AGPL §13)";
 
   const shell = el("div", { className: "shell" }, [
     el("p", {
