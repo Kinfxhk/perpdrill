@@ -401,9 +401,11 @@ export function mountDesk(root: HTMLElement): void {
           money,
           dash,
         }),
+        el("div", { className: "desk-bottom" }, [
+          mountBlotter(frame, money, dash),
+          mountReplay(frame, last, drawdown, money),
+        ]),
       ]),
-      mountBlotter(frame, money, dash),
-      mountReplay(frame, last, drawdown, money),
       mountColophon(),
     ]);
     return shell;
