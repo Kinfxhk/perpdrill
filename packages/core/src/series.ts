@@ -23,7 +23,11 @@ export const SIMULATION_POLICY = {
 
 const SAMPLE_START_MS = Date.parse("2026-01-05T15:00:00.000Z");
 
-/** Symmetric wick so the teaching mark equals the close. */
+/**
+ * Sample closes. High and low stay symmetric around the close so the teaching
+ * mark equals the close. The open sits inside that wick when the close moved,
+ * which gives the practice chart a real body. A flat close stays a doji.
+ */
 const SAMPLE_CLOSES = [
   10_000, 10_040, 10_080, 10_120, 10_060, 10_000, 9_920, 9_840, 9_760, 9_680, 9_600, 9_520, 9_440,
   9_360, 9_480, 9_700, 9_900, 10_100, 10_300, 10_440, 10_300, 10_100, 10_000, 10_000,
@@ -47,9 +51,11 @@ export function sampleSeries(market: MarketId): readonly Bar[] {
   return SAMPLE_CLOSES.map((close, index) => {
     const price = close * scale;
     const wick = 15 * scale;
+    const previous = index === 0 ? close : SAMPLE_CLOSES[index - 1];
+    const moved = previous === undefined ? 0 : close - previous;
     return {
       timeMs: SAMPLE_START_MS + index * SAMPLE_BAR_MS,
-      open: price,
+      open: price - Math.sign(moved) * 10 * scale,
       high: price + wick,
       low: price - wick,
       close: price,

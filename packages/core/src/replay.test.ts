@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   estimatedLiqPrice,
   logicalDayKey,
+  markPrice,
   replaySession,
   sampleSeries,
   type Bar,
@@ -204,5 +205,12 @@ describe("replay", () => {
     expect(series[1]?.timeMs).toBe((series[0]?.timeMs ?? 0) + 3_600_000);
     const eth = sampleSeries("ETH-PERP");
     expect(eth[0]?.close).toBe(2_500);
+    for (const bar of series) {
+      expect(markPrice(bar)).toBe(bar.close);
+      expect(bar.low).toBeLessThanOrEqual(bar.open);
+      expect(bar.open).toBeLessThanOrEqual(bar.high);
+    }
+    expect(series[1]?.open).toBeLessThan(series[1]?.close ?? 0);
+    expect(series[6]?.close).toBeLessThan(series[6]?.open ?? 0);
   });
 });
