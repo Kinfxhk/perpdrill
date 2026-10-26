@@ -13,10 +13,12 @@ import {
   PRODUCT_VERSION,
   PROP_RULE_PRESET_FORMAT,
   PROP_RULE_PRESET_SCHEMA_VERSION,
+  SAMPLE_MARKETS,
   SETTLEMENT_POLICIES,
   SETTLEMENT_POLICY_LABELS,
   TRADING_POWER_LABEL,
   isBuyingPowerPct,
+  isMarketId,
 } from "./index.ts";
 
 describe("perpdrill core identity", () => {
@@ -56,5 +58,16 @@ describe("perpdrill core identity", () => {
     });
     expect(PROP_RULE_PRESET_FORMAT).toBe("perps-prop-profile");
     expect(PROP_RULE_PRESET_SCHEMA_VERSION).toBe(1);
+  });
+
+  it("names sample markets SYNTH-* and refuses bare exchange symbols", () => {
+    expect(SAMPLE_MARKETS).toEqual(["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES"]);
+    for (const market of SAMPLE_MARKETS) {
+      expect(market.startsWith("SYNTH-")).toBe(true);
+      expect(isMarketId(market)).toBe(true);
+    }
+    for (const bare of ["NQ", "GC", "ES", "BTC", "ETH", "BTC-PERP", "ETH-PERP"]) {
+      expect(isMarketId(bare)).toBe(false);
+    }
   });
 });

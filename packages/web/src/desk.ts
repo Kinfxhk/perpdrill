@@ -60,6 +60,7 @@ import {
   numberLocale,
   readStoredLang,
   readStoredTheme,
+  sampleMarketLabel,
   translate,
   writeStoredLang,
   writeStoredTheme,
@@ -426,7 +427,9 @@ export function mountDesk(root: HTMLElement): void {
     state.setup = setup;
     sessionPreset = presetFor(setup);
     const allowed = setupMarkets(sessionPreset);
-    state.market = allowed.includes(setup.market) ? setup.market : (allowed[0] ?? "BTC-PERP");
+    state.market = allowed.includes(setup.market)
+      ? setup.market
+      : (allowed[0] ?? SAMPLE_MARKETS[0]);
     {
       state.leverage = Math.min(state.leverage, leverageCap(sessionPreset, state.market));
     }
@@ -755,6 +758,11 @@ export function mountDesk(root: HTMLElement): void {
   }
 
   function mountSetup(): HTMLElement {
+    const allowedMarkets = setupMarkets(presetFor(state.setup));
+    if (!allowedMarkets.includes(state.setup.market)) {
+      const fallback = allowedMarkets[0] ?? SAMPLE_MARKETS[0];
+      state.setup = { ...state.setup, market: fallback };
+    }
     const setup = state.setup;
     const rules = setup.custom;
     const setRule = <K extends keyof CustomRules>(key: K, value: CustomRules[K]): void => {
@@ -771,7 +779,10 @@ export function mountDesk(root: HTMLElement): void {
         selectField(
           "setup-market",
           t("setup.market"),
-          SAMPLE_MARKETS.map((market) => ({ value: market, text: market })),
+          allowedMarkets.map((market) => ({
+            value: market,
+            text: sampleMarketLabel(state.lang, market),
+          })),
           setup.market,
           (value) => {
             if (isMarketId(value)) {
@@ -1005,9 +1016,12 @@ export function mountDesk(root: HTMLElement): void {
             quoteRow(t("setup.daily"), pctText(applied.dailyLossLimitPct)),
             quoteRow(
               t("setup.maxLev"),
-              SAMPLE_MARKETS.map(
-                (market) => `${market.replace("-PERP", "")} ${leverageCap(applied, market)}×`,
-              ).join(" · "),
+              (applied.markets ?? SAMPLE_MARKETS)
+                .map(
+                  (market) =>
+                    `${sampleMarketLabel(state.lang, market)} ${leverageCap(applied, market)}×`,
+                )
+                .join(" · "),
             ),
             quoteRow(t("setup.fee"), `${applied.takerBps ?? 0} ${t("slip.bps")}`),
           ]);
@@ -1155,7 +1169,10 @@ export function mountDesk(root: HTMLElement): void {
       attrs: { "aria-label": t("market.synthetic") },
     });
     for (const market of [state.market]) {
-      const option = el("option", { text: market, attrs: { value: market } });
+      const option = el("option", {
+        text: sampleMarketLabel(state.lang, market),
+        attrs: { value: market },
+      });
       if (market === state.market) {
         option.selected = true;
       }
@@ -1391,7 +1408,7 @@ export function mountDesk(root: HTMLElement): void {
       el("div", { className: "chart-toolbar" }, [
         el("span", {
           className: "chip is-current",
-          text: `${state.market} · ${state.setup.timeframeMin >= 60 ? `${state.setup.timeframeMin / 60}h` : `${state.setup.timeframeMin}m`} · ${t("setup.seed")} ${state.setup.seed}`,
+          text: `${sampleMarketLabel(state.lang, state.market)} · ${state.setup.timeframeMin >= 60 ? `${state.setup.timeframeMin / 60}h` : `${state.setup.timeframeMin}m`} · ${t("setup.seed")} ${state.setup.seed}`,
         }),
         el("span", {
           className: "toolbar-note",

@@ -58,7 +58,7 @@ export const DEFAULT_CUSTOM_RULES: CustomRules = {
 
 export function defaultSetup(): SessionSetup {
   return {
-    market: "BTC-PERP",
+    market: SAMPLE_MARKETS[0],
     timeframeMin: 15,
     bars: DEFAULT_SYNTHETIC_BARS,
     seed: randomSeed(),
