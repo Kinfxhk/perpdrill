@@ -24,6 +24,8 @@ function preset(overrides: Partial<PracticePreset> = {}): PracticePreset {
     sourceUrls: ["https://example.com/rules"],
     profitTargetPct: 10,
     maxDrawdownPct: 5,
+    drawdownMode: "static",
+    maxLeverage: null,
     dailyLossLimitPct: null,
     dailyReset: null,
     equityIncludesUPnL: true,
@@ -81,7 +83,9 @@ describe("replay", () => {
     });
     expect(breached.phase).toBe("drawdown");
     expect(breached.liquidated).toBe(false);
-    expect(breached.position).not.toBeNull();
+    // A rule breach flattens the account at the floor price.
+    expect(breached.position).toBeNull();
+    expect(breached.fills.at(-1)?.kind).toBe("breach");
     expect(breached.equity).toBeCloseTo(9_500);
   });
 
