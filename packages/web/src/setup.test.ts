@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { customPreset, dataKey, sanitizeSetup, takeFirstRun } from "./setup.ts";
+import { readFileSync } from "node:fs";
+import { leverageCap, parsePracticePreset } from "@perpdrill/core";
+import { applyPresetChoices, customPreset, dataKey, sanitizeSetup, takeFirstRun } from "./setup.ts";
 
 describe("session setup", () => {
   it("clamps hostile stored values", () => {
@@ -16,7 +18,7 @@ describe("session setup", () => {
     expect(setup.bars).toBe(5_000);
     expect(setup.seed).toBe(0);
     expect(setup.custom.maxDrawdownPct).toBe(50);
-    expect(setup.custom.maxLeverage).toBe(20);
+    expect(setup.custom.maxLeverage).toBe(50);
     expect(setup.custom.drawdownMode).toBe("trailing");
   });
 
@@ -29,6 +31,32 @@ describe("session setup", () => {
     expect(preset.dailyLossLimitPct).toBeNull();
     expect(preset.dailyReset).toBeNull();
     expect(preset.costModel).toBe("swap");
+  });
+});
+
+describe("plan presets", () => {
+  it("only applies buyer options the plan offers", () => {
+    const raw: unknown = JSON.parse(
+      readFileSync(new URL("../../../presets/plan-1step-gold.json", import.meta.url), "utf8"),
+    );
+    const parsed = parsePracticePreset(raw);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) {
+      return;
+    }
+    const base = sanitizeSetup({ rulesMode: "preset", presetId: "plan-1step-gold" });
+    expect(applyPresetChoices(parsed.preset, base).dailyLossLimitPct).toBeNull();
+    const picked = applyPresetChoices(parsed.preset, {
+      ...base,
+      presetTargetPct: 20,
+      presetDailyPct: 4,
+    });
+    expect(picked.profitTargetPct).toBe(20);
+    expect(picked.dailyLossLimitPct).toBe(4);
+    const bogus = applyPresetChoices(parsed.preset, { ...base, presetDailyPct: 7 });
+    expect(bogus.dailyLossLimitPct).toBeNull();
+    expect(leverageCap(parsed.preset, "BTC-PERP")).toBe(25);
+    expect(leverageCap(parsed.preset, "ETH-PERP")).toBe(15);
   });
 });
 

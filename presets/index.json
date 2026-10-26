@@ -1,3 +1,18 @@
 {
-  "files": ["community-a.json", "community-b.json"]
+  "files": [
+    "community-a.json",
+    "plan-1step-silver.json",
+    "plan-1step-gold.json",
+    "plan-1step-platinum.json",
+    "plan-1step-emerald.json",
+    "plan-2step-silver.json",
+    "plan-2step-gold.json",
+    "plan-2step-platinum.json",
+    "plan-2step-emerald.json",
+    "plan-instant-0-5k.json",
+    "plan-instant-5k.json",
+    "plan-instant-10k.json",
+    "plan-instant-25k.json",
+    "plan-instant-50k.json"
+  ]
 }

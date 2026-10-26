@@ -12,7 +12,7 @@ describe("practice preset parser", () => {
     const index = JSON.parse(readFileSync(path.join(dir, "index.json"), "utf8")) as {
       files: string[];
     };
-    expect(index.files).toHaveLength(2);
+    expect(index.files.length).toBeGreaterThanOrEqual(14);
     for (const name of index.files) {
       const parsed = parsePracticePreset(JSON.parse(readFileSync(path.join(dir, name), "utf8")));
       expect(parsed.ok).toBe(true);

@@ -45,7 +45,7 @@ const en = {
   "type.market": "Market",
   "type.limit": "Limit",
   "field.leverage": "Leverage",
-  "field.leverageHint": "Teaching leverage is 1–20. Not a firm cap.",
+  "field.leverageHint": "Teaching leverage is 1–50. Not a firm cap.",
   "field.amount": "Amount",
   "field.maxSlip": "Max slip",
   "field.estSlip": "Est. Slippage",
@@ -204,6 +204,13 @@ const en = {
   "setup.swapHint": "% per day · 0 = off",
   "setup.timeframe": "Timeframe",
   "review.carryNote": "Trade PnL includes fees but not carry. Return includes both.",
+  "setup.optNone": "None",
+  "theme.label": "Theme",
+  "theme.teal": "Teal (default)",
+  "theme.midnight": "Midnight exchange",
+  "theme.aqua": "On-chain aqua",
+  "theme.violet": "DeFi violet",
+  "theme.daylight": "Daylight",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -247,7 +254,7 @@ const zhHant = catalog({
   "type.market": "市價",
   "type.limit": "限價",
   "field.leverage": "槓桿",
-  "field.leverageHint": "教學槓桿是 1–20，不是廠商上限。",
+  "field.leverageHint": "教學槓桿是 1–50，不是廠商上限。",
   "field.amount": "數量",
   "field.maxSlip": "滑點上限",
   "field.estSlip": "預估滑點",
@@ -404,6 +411,13 @@ const zhHant = catalog({
   "setup.swapHint": "每日 % · 0 為關閉",
   "setup.timeframe": "週期",
   "review.carryNote": "單筆損益已扣手續費，未扣持倉成本；報酬率兩者都已計入。",
+  "setup.optNone": "無",
+  "theme.label": "主題",
+  "theme.teal": "青綠（預設）",
+  "theme.midnight": "午夜交易所",
+  "theme.aqua": "鏈上水藍",
+  "theme.violet": "DeFi 紫",
+  "theme.daylight": "日間",
 });
 
 const zhHans = catalog({
@@ -439,7 +453,7 @@ const zhHans = catalog({
   "type.market": "市价",
   "type.limit": "限价",
   "field.leverage": "杠杆",
-  "field.leverageHint": "教学杠杆是 1–20，不是厂商上限。",
+  "field.leverageHint": "教学杠杆是 1–50，不是厂商上限。",
   "field.amount": "数量",
   "field.maxSlip": "滑点上限",
   "field.estSlip": "预估滑点",
@@ -596,6 +610,13 @@ const zhHans = catalog({
   "setup.swapHint": "每日 % · 0 为关闭",
   "setup.timeframe": "周期",
   "review.carryNote": "单笔盈亏已扣手续费，未扣持仓成本；收益率两者都已计入。",
+  "setup.optNone": "无",
+  "theme.label": "主题",
+  "theme.teal": "青绿（默认）",
+  "theme.midnight": "午夜交易所",
+  "theme.aqua": "链上水蓝",
+  "theme.violet": "DeFi 紫",
+  "theme.daylight": "日间",
 });
 
 const ja = catalog({
@@ -633,7 +654,7 @@ const ja = catalog({
   "type.market": "成行",
   "type.limit": "指値",
   "field.leverage": "レバレッジ",
-  "field.leverageHint": "学習用レバレッジは 1–20 です。業者上限ではありません。",
+  "field.leverageHint": "学習用レバレッジは 1–50 です。業者上限ではありません。",
   "field.amount": "数量",
   "field.maxSlip": "最大スリッページ",
   "field.estSlip": "想定スリッページ",
@@ -792,6 +813,13 @@ const ja = catalog({
   "setup.timeframe": "時間足",
   "review.carryNote":
     "取引ごとの損益は手数料込み、保有コストは含みません。リターンは両方を含みます。",
+  "setup.optNone": "なし",
+  "theme.label": "テーマ",
+  "theme.teal": "ティール（既定）",
+  "theme.midnight": "ミッドナイト",
+  "theme.aqua": "オンチェーン・アクア",
+  "theme.violet": "DeFi バイオレット",
+  "theme.daylight": "デイライト",
 });
 
 const ko = catalog({
@@ -829,7 +857,7 @@ const ko = catalog({
   "type.market": "시장가",
   "type.limit": "지정가",
   "field.leverage": "레버리지",
-  "field.leverageHint": "학습용 레버리지는 1–20입니다. 업체 한도가 아닙니다.",
+  "field.leverageHint": "학습용 레버리지는 1–50입니다. 업체 한도가 아닙니다.",
   "field.amount": "수량",
   "field.maxSlip": "최대 슬리피지",
   "field.estSlip": "예상 슬리피지",
@@ -989,6 +1017,13 @@ const ko = catalog({
   "setup.timeframe": "타임프레임",
   "review.carryNote":
     "거래별 손익은 수수료를 포함하고 보유 비용은 제외합니다. 수익률은 둘 다 포함합니다.",
+  "setup.optNone": "없음",
+  "theme.label": "테마",
+  "theme.teal": "틸 (기본)",
+  "theme.midnight": "미드나잇",
+  "theme.aqua": "온체인 아쿠아",
+  "theme.violet": "DeFi 바이올렛",
+  "theme.daylight": "데이라이트",
 });
 
 const catalogs: Record<Lang, Catalog> = {
@@ -1023,6 +1058,29 @@ export function numberLocale(lang: Lang): string {
       const unexpected: never = lang;
       return unexpected;
     }
+  }
+}
+
+export const THEMES = ["teal", "midnight", "aqua", "violet", "daylight"] as const;
+
+export type Theme = (typeof THEMES)[number];
+
+const THEME_STORAGE_KEY = "perpdrill.theme";
+
+export function readStoredTheme(): Theme {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    return (THEMES as readonly string[]).includes(stored ?? "") ? (stored as Theme) : "teal";
+  } catch {
+    return "teal";
+  }
+}
+
+export function writeStoredTheme(theme: Theme): void {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch {
+    // Optional, as with the language.
   }
 }
 

@@ -1,4 +1,4 @@
-import { isMarketId, type MarketId } from "./constants.ts";
+import { TEACHING_MAX_LEVERAGE, isMarketId, type MarketId } from "./constants.ts";
 import type { DailyReset } from "./prop.ts";
 import {
   PROP_RULE_PRESET_FORMAT,
@@ -14,11 +14,18 @@ export type PracticePreset = {
   readonly displayName: string;
   readonly disclaimer: string;
   readonly sourceUrls: readonly string[];
-  readonly profitTargetPct: number;
+  /** `null` = no profit target (an instant-style account). */
+  readonly profitTargetPct: number | null;
   readonly maxDrawdownPct: number;
   /** Static floor from the start, or trailing the closing high-water mark. */
   readonly drawdownMode: DrawdownMode;
-  readonly maxLeverage: number | null;
+  /** One cap for every market, or a cap per market. */
+  readonly maxLeverage: number | Partial<Record<MarketId, number>> | null;
+  /**
+   * What the daily loss floor is measured from at each reset: total equity, or the
+   * realized balance (margin included, unrealized PnL excluded). Equity is always checked.
+   */
+  readonly dailyBase: DailyBase;
   readonly dailyLossLimitPct: number | null;
   readonly dailyReset: DailyReset | null;
   readonly equityIncludesUPnL: boolean | null;
@@ -31,11 +38,22 @@ export type PracticePreset = {
   readonly startingBalanceUsd: number | null;
   readonly markets: readonly MarketId[] | null;
   readonly note: string;
+  /** Plan family for grouping in the picker, e.g. "1-Step evaluation". */
+  readonly group: string;
+  /** Rules the plan lets the buyer pick at purchase. The preset values are the default. */
+  readonly choices: PresetChoices;
+};
+
+export type PresetChoices = {
+  readonly profitTargetPct: readonly (number | null)[] | null;
+  readonly dailyLossLimitPct: readonly (number | null)[] | null;
 };
 
 export const DRAWDOWN_MODES = ["static", "trailing"] as const;
 
 export type DrawdownMode = (typeof DRAWDOWN_MODES)[number];
+
+export type DailyBase = "equity" | "realized";
 
 export type PresetParseResult =
   | { readonly ok: true; readonly preset: PracticePreset }
@@ -155,9 +173,9 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
     }
     sourceUrls.push(url);
   }
-  const profitTargetPct = percent(value.profitTargetPct);
+  const profitTargetPct = value.profitTargetPct === null ? null : percent(value.profitTargetPct);
   const maxDrawdownPct = percent(value.maxDrawdownPct);
-  if (profitTargetPct === null || maxDrawdownPct === null) {
+  if ((profitTargetPct === null && value.profitTargetPct !== null) || maxDrawdownPct === null) {
     return { ok: false, error: "preset percents are invalid" };
   }
   let drawdownMode: DrawdownMode = "static";
@@ -167,18 +185,34 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
     }
     drawdownMode = value.drawdownMode;
   }
-  let maxLeverage: number | null = null;
+  const leverageOk = (cap: unknown): cap is number =>
+    typeof cap === "number" && Number.isInteger(cap) && cap >= 1 && cap <= TEACHING_MAX_LEVERAGE;
+  let maxLeverage: PracticePreset["maxLeverage"] = null;
   if (value.maxLeverage !== undefined && value.maxLeverage !== null) {
-    if (
-      typeof value.maxLeverage !== "number" ||
-      !Number.isInteger(value.maxLeverage) ||
-      value.maxLeverage < 1 ||
-      value.maxLeverage > 200
-    ) {
+    if (leverageOk(value.maxLeverage)) {
+      maxLeverage = value.maxLeverage;
+    } else if (isRecord(value.maxLeverage)) {
+      const caps: Partial<Record<MarketId, number>> = {};
+      for (const [market, cap] of Object.entries(value.maxLeverage)) {
+        if (!isMarketId(market) || !leverageOk(cap)) {
+          return { ok: false, error: "max leverage is invalid" };
+        }
+        caps[market] = cap;
+      }
+      maxLeverage = caps;
+    } else {
       return { ok: false, error: "max leverage is invalid" };
     }
-    maxLeverage = value.maxLeverage;
   }
+  if (
+    value.dailyBase !== undefined &&
+    value.dailyBase !== null &&
+    value.dailyBase !== "equity" &&
+    value.dailyBase !== "realized"
+  ) {
+    return { ok: false, error: "daily base is invalid" };
+  }
+  const dailyBase: DailyBase = value.dailyBase === "realized" ? "realized" : "equity";
   const dailyLossLimitPct = optionalPercent(value.dailyLossLimitPct);
   if (dailyLossLimitPct === undefined) {
     return { ok: false, error: "daily loss limit is invalid" };
@@ -249,6 +283,32 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
     markets = parsed;
   }
   const note = typeof value.note === "string" ? value.note.slice(0, 600) : "";
+  const group = typeof value.group === "string" ? value.group.slice(0, 60) : "";
+  const choiceList = (raw: unknown): readonly (number | null)[] | null | undefined => {
+    if (raw === undefined || raw === null) {
+      return null;
+    }
+    if (!Array.isArray(raw) || raw.length === 0 || raw.length > 8) {
+      return undefined;
+    }
+    const out: (number | null)[] = [];
+    for (const item of raw) {
+      if (item !== null && percent(item) === null) {
+        return undefined;
+      }
+      out.push(item === null ? null : (item as number));
+    }
+    return out;
+  };
+  const rawChoices = isRecord(value.choices) ? value.choices : {};
+  const targetChoices = choiceList(rawChoices.profitTargetPct);
+  const dailyChoices = choiceList(rawChoices.dailyLossLimitPct);
+  if (targetChoices === undefined || dailyChoices === undefined) {
+    return { ok: false, error: "preset choices are invalid" };
+  }
+  if (dailyChoices?.some((item) => item !== null) === true && reset === null) {
+    return { ok: false, error: "daily loss choices need a reset clock" };
+  }
   return {
     ok: true,
     preset: {
@@ -262,6 +322,7 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
       maxDrawdownPct,
       drawdownMode,
       maxLeverage,
+      dailyBase,
       dailyLossLimitPct,
       dailyReset: reset,
       equityIncludesUPnL,
@@ -274,12 +335,22 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
       startingBalanceUsd,
       markets,
       note,
+      group,
+      choices: { profitTargetPct: targetChoices, dailyLossLimitPct: dailyChoices },
     },
   };
 }
 
 export function resolvedTakerBps(preset: PracticePreset | null): number {
   return preset?.takerBps ?? 0;
+}
+
+export function leverageCap(preset: PracticePreset | null, market: MarketId): number {
+  const cap = preset?.maxLeverage ?? null;
+  if (cap === null) {
+    return TEACHING_MAX_LEVERAGE;
+  }
+  return typeof cap === "number" ? cap : (cap[market] ?? TEACHING_MAX_LEVERAGE);
 }
 
 export function includeUnrealized(preset: PracticePreset | null): boolean {
