@@ -61,6 +61,17 @@ import {
   stepPracticeIntro,
   type PracticeIntro,
 } from "./countdown-run.ts";
+import {
+  FORMING_PARTS,
+  formingBudgetMs,
+  formingCancel,
+  formingGapMs,
+  formingRequestStep,
+  formingSnapshot,
+  formingStart,
+  formingStep,
+  type FormingState,
+} from "./forming.ts";
 import { formatNumber, formatPct, formatQty, signedNumber } from "./format.ts";
 import {
   LANG_CHOICES,
@@ -154,6 +165,8 @@ type DeskState = {
   presetStatus: "loading" | "ready" | "error";
   tab: Tab;
   playing: boolean;
+  /** Paints shown for the unclosed bar after `cursor`. `null` keeps that bar off the engine. */
+  formingPart: number | null;
   movingAverages: MovingAverageInstance[];
   bollingerVisible: boolean;
 };
@@ -323,13 +336,16 @@ export function mountDesk(root: HTMLElement): void {
     presetStatus: "loading",
     tab: "positions",
     playing: false,
+    formingPart: null,
     movingAverages: defaultMovingAverages(),
     bollingerVisible: false,
   };
-  let timer = 0;
   let introTimer = 0;
   let intro: PracticeIntro = idlePracticeIntro();
   let introKey: string | null = null;
+  let formingTimer = 0;
+  let formingToken = 0;
+  let formingBudget = 0;
   // Effects fire once per new event; the desk DOM is rebuilt on every render.
   let seenFills = 0;
   let seenRejects = 0;
@@ -368,33 +384,106 @@ export function mountDesk(root: HTMLElement): void {
   const preset = (): PracticePreset | null => sessionPreset;
   const startingBalance = (): number => setupStartingBalance(preset());
 
-  const stopPlay = (): void => {
-    state.playing = false;
-    if (timer !== 0) {
-      window.clearInterval(timer);
-      timer = 0;
+  const clearFormingTimer = (): void => {
+    if (formingTimer !== 0) {
+      window.clearTimeout(formingTimer);
+      formingTimer = 0;
     }
+  };
+
+  const formingView = (): FormingState => ({
+    cursor: state.cursor,
+    part: state.formingPart,
+    playing: state.playing,
+  });
+
+  const assignForming = (next: FormingState): void => {
+    state.cursor = next.cursor;
+    state.formingPart = next.part;
+    state.playing = next.playing;
+  };
+
+  /** Stop autoplay and drop a preview the engine has not closed. */
+  const pausePlayback = (): void => {
+    formingToken += 1;
+    clearFormingTimer();
+    assignForming(formingCancel(formingView()));
   };
 
   const lastIndex = (): number => state.series.length - 1;
   const firstCursor = (): number => warmupBars(state.series.length);
 
-  const startPlay = (): void => {
-    stopPlay();
-    if (state.cursor >= lastIndex() || state.endedAt !== null) {
+  const armFormingTimer = (): void => {
+    clearFormingTimer();
+    if (state.formingPart === null) {
       return;
     }
-    state.playing = true;
-    timer = window.setInterval(() => {
-      if (state.cursor >= lastIndex() || state.endedAt !== null) {
-        stopPlay();
-        render();
+    const token = formingToken;
+    const gap = formingGapMs(formingBudget, FORMING_PARTS);
+    formingTimer = window.setTimeout(() => {
+      formingTimer = 0;
+      if (token !== formingToken) {
         return;
       }
-      state.cursor += 1;
+      applyFormingStep();
+    }, gap);
+  };
+
+  const applyFormingStep = (): void => {
+    const beforeCursor = state.cursor;
+    assignForming(formingStep(formingView(), lastIndex()));
+    const committed = state.cursor !== beforeCursor;
+    if (committed) {
       settleEnd();
+    }
+    if (state.endedAt !== null) {
+      clearFormingTimer();
       render();
-    }, state.speedMs);
+      return;
+    }
+    render();
+    if (state.formingPart === null) {
+      return;
+    }
+    if (committed) {
+      formingBudget = formingBudgetMs(state.playing, state.speedMs);
+    }
+    armFormingTimer();
+  };
+
+  const beginForming = (playing: boolean): void => {
+    if (state.endedAt !== null || state.countdown !== null) {
+      return;
+    }
+    const before = state.formingPart;
+    const next = formingStart(formingView(), lastIndex(), playing);
+    assignForming(next);
+    if (before === null && next.part !== null) {
+      formingBudget = formingBudgetMs(playing, state.speedMs);
+      armFormingTimer();
+    }
+  };
+
+  /**
+   * Preview the next bar across the speed interval. The cursor moves on the last
+   * paint, which is the same beat the play clock used to step on.
+   */
+  const startPlay = (): void => {
+    beginForming(true);
+  };
+
+  /** One bar across the step beat. A preview already running does not start another. */
+  const requestStep = (): void => {
+    if (state.endedAt !== null || state.countdown !== null) {
+      return;
+    }
+    const before = state.formingPart;
+    const next = formingRequestStep(formingView(), lastIndex());
+    assignForming(next);
+    if (before === null && next.part !== null) {
+      formingBudget = formingBudgetMs(false, state.speedMs);
+      armFormingTimer();
+    }
   };
 
   const clearIntroTimer = (): void => {
@@ -444,7 +533,7 @@ export function mountDesk(root: HTMLElement): void {
 
   /** Leave the practice screen. An in-progress intro is dropped and does not start playback. */
   const leavePractice = (): void => {
-    stopPlay();
+    pausePlayback();
     cancelIntro();
     state.screen = "setup";
     render();
@@ -458,13 +547,13 @@ export function mountDesk(root: HTMLElement): void {
     const frame = currentFrame();
     if (frame.phase !== "practice" || state.cursor >= lastIndex()) {
       state.endedAt = state.cursor;
-      stopPlay();
+      pausePlayback();
       state.tab = "review";
     }
   };
 
   const resetSession = (): void => {
-    stopPlay();
+    pausePlayback();
     cancelIntro();
     state.cursor = firstCursor();
     state.actions = [];
@@ -1425,8 +1514,16 @@ export function mountDesk(root: HTMLElement): void {
     }
     const closes = closesThrough(series, state.cursor);
     // Indicators use the full revealed history; only the last window is drawn.
-    const from = Math.max(0, closes.length - CHART_WINDOW);
+    // The unclosed preview takes the last slot. It is not fed to the engine.
+    const previewBar = state.formingPart === null ? undefined : series[state.cursor + 1];
+    const preview =
+      previewBar === undefined || state.formingPart === null
+        ? null
+        : formingSnapshot(previewBar, state.formingPart);
+    const closedWindow = preview === null ? CHART_WINDOW : Math.max(1, CHART_WINDOW - 1);
+    const from = Math.max(0, closes.length - closedWindow);
     const revealed = series.slice(from, closes.length);
+    const candles = preview === null ? revealed : [...revealed, preview];
     const overlays: ChartOverlay[] = [];
     for (const instance of state.movingAverages) {
       if (!instance.visible) {
@@ -1455,7 +1552,7 @@ export function mountDesk(root: HTMLElement): void {
     }
     const stage = el("div", { className: "chart-stage" });
     mountChart(stage, {
-      candles: revealed,
+      candles,
       lines,
       overlays,
       bands,
@@ -2185,20 +2282,18 @@ export function mountDesk(root: HTMLElement): void {
     // No rewind button: a blind backtest only moves forward, like the live market.
     const play = actionButton(state.playing ? t("replay.pause") : t("replay.play"), "ghost", () => {
       if (state.playing) {
-        stopPlay();
+        pausePlayback();
       } else {
         startPlay();
       }
       render();
     });
     const step = actionButton(t("replay.forward"), "ghost", () => {
-      stopPlay();
-      state.cursor = Math.min(last, state.cursor + 1);
-      settleEnd();
+      requestStep();
       render();
     });
     const finish = actionButton(t("replay.finish"), "ghost", () => {
-      stopPlay();
+      pausePlayback();
       state.endedAt = state.cursor;
       state.tab = "review";
       render();
@@ -2269,16 +2364,14 @@ export function mountDesk(root: HTMLElement): void {
     if (event.key === " ") {
       event.preventDefault();
       if (state.playing) {
-        stopPlay();
+        pausePlayback();
       } else {
         startPlay();
       }
       render();
     } else if (event.key === "ArrowRight") {
       event.preventDefault();
-      stopPlay();
-      state.cursor = Math.min(lastIndex(), state.cursor + 1);
-      settleEnd();
+      requestStep();
       render();
     }
   });
