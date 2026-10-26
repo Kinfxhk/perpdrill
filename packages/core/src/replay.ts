@@ -13,6 +13,8 @@ import {
   priceForEquityFloor,
   profitTargetEquity,
   propEquity,
+  resolvedMaxDrawdownUsd,
+  staticFloorUsd,
   type PropBreach,
 } from "./prop.ts";
 import type { Bar } from "./series.ts";
@@ -216,7 +218,9 @@ export function replaySession(input: SessionInput): Frame {
   const takerBps = resolvedTakerBps(input.preset);
   const useUPnL = includeUnrealized(input.preset);
   const drawdownAmount =
-    input.preset === null ? null : starting * (input.preset.maxDrawdownPct / 100);
+    input.preset === null
+      ? null
+      : resolvedMaxDrawdownUsd(starting, input.preset.maxDrawdownUsd, input.preset.maxDrawdownPct);
   const trailing = input.preset?.drawdownMode === "trailing";
   const profitTarget =
     input.preset === null || input.preset.profitTargetPct === null
@@ -247,7 +251,7 @@ export function replaySession(input: SessionInput): Frame {
       ? null
       : trailing
         ? Math.min(starting, peak - drawdownAmount)
-        : starting - drawdownAmount;
+        : staticFloorUsd(starting, drawdownAmount);
   const dailyFloor = (): number | null =>
     dailyPct === null ? null : dayStart * (1 - dailyPct / 100);
 

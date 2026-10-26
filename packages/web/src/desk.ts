@@ -29,6 +29,7 @@ import {
   quoteOpen,
   replaySession,
   randomSeed,
+  resolvedMaxDrawdownUsd,
   resolvedTakerBps,
   sessionStats,
   simpleMovingAverage,
@@ -995,11 +996,16 @@ export function mountDesk(root: HTMLElement): void {
           );
           const capital = applied.startingBalanceUsd ?? 0;
           const money0 = (value: number): string => formatNumber(value, locale(), 0);
+          const drawdownUsd = resolvedMaxDrawdownUsd(
+            capital,
+            applied.maxDrawdownUsd,
+            applied.maxDrawdownPct,
+          );
           const summary = el("div", { className: "preset-summary" }, [
             quoteRow(t("setup.balance"), money0(capital)),
             quoteRow(
               t("rules.maxDd"),
-              `${money0(capital * (applied.maxDrawdownPct / 100))} (${applied.maxDrawdownPct}%, ${applied.drawdownMode === "trailing" ? t("setup.ddTrailing") : t("setup.ddStatic")})`,
+              `${money0(drawdownUsd)} (${applied.drawdownMode === "trailing" ? t("setup.ddTrailing") : t("setup.ddStatic")})`,
             ),
             quoteRow(t("rules.target"), pctText(applied.profitTargetPct)),
             quoteRow(t("setup.daily"), pctText(applied.dailyLossLimitPct)),
@@ -1924,10 +1930,10 @@ export function mountDesk(root: HTMLElement): void {
         : active.equityIncludesUPnL === false
           ? t("rules.upnlNo")
           : t("rules.upnlUnstated");
-    const links = active.sourceUrls.map((url) => {
+    const links = active.sourceUrls.map((url, index) => {
       const link = el("a", {
         className: "source-link",
-        text: url,
+        text: `${t("rules.sources")} ${index + 1}`,
         attrs: { href: url, rel: "noreferrer" },
       });
       return el("li", {}, [link]);

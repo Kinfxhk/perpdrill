@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Plan presets keep their v0.3.0 ids. The desk shows teaching names only
+  (`Teaching · Instant …`, `Teaching · Eval …`, `Teaching · 2-Step …`).
+  `community-a` is removed; a stored `community-a` or `community-b` id is
+  dropped. Source URLs stay in the JSON and are not used as link labels.
+- Max drawdown on those presets is `maxDrawdownUsd`. The floor is the
+  starting balance minus that amount, static, and it fails only once equity
+  has lost the full amount. Instant 50k is $2,000. Eval Emerald is $3,000.
+  Liquidation can still win if price gaps through it first.
+- Custom max drawdown defaults to static. Trailing remains a choice.
+
 ## 0.3.0 — 2026-10-26
 
 Plan presets and venue themes.

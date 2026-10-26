@@ -19,7 +19,20 @@ describe("session setup", () => {
     expect(setup.seed).toBe(0);
     expect(setup.custom.maxDrawdownPct).toBe(50);
     expect(setup.custom.maxLeverage).toBe(50);
-    expect(setup.custom.drawdownMode).toBe("trailing");
+    expect(setup.custom.drawdownMode).toBe("static");
+  });
+
+  it("defaults custom max drawdown to static and keeps an explicit trailing choice", () => {
+    expect(sanitizeSetup(null).custom.drawdownMode).toBe("static");
+    expect(sanitizeSetup({ custom: { drawdownMode: "trailing" } }).custom.drawdownMode).toBe(
+      "trailing",
+    );
+  });
+
+  it("drops retired community preset ids", () => {
+    expect(sanitizeSetup({ rulesMode: "preset", presetId: "community-a" }).presetId).toBeNull();
+    expect(sanitizeSetup({ presetId: "community-b" }).presetId).toBeNull();
+    expect(sanitizeSetup({ presetId: "plan-instant-50k" }).presetId).toBe("plan-instant-50k");
   });
 
   it("turns custom rules into an engine preset", () => {

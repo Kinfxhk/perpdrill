@@ -26,16 +26,17 @@
     "ETH-PERP": 15
   },
   "markets": ["BTC-PERP", "ETH-PERP"],
-  "group": "2-Step evaluation",
-  "displayName": "2-Step Gold — $10,000",
+  "group": "2-Step",
+  "displayName": "Teaching · 2-Step Gold",
   "startingBalanceUsd": 10000,
   "maxDrawdownPct": 6,
+  "maxDrawdownUsd": 600,
   "profitTargetPct": 10,
   "dailyLossLimitPct": 3,
   "choices": {
     "profitTargetPct": [10, 5],
     "dailyLossLimitPct": null
   },
-  "note": "$10,000 capital. Two steps: pick 10% for step 1, then start a new session with 5% for step 2. Daily loss limit 3% fixed (reset 20:00 New York, realized base, equity checked). Static max drawdown 6% ($600). Taker 1 bp. Leverage caps BTC 25×, ETH 15×. Profit split 80% is not simulated.",
+  "note": "$10,000 capital. Two steps: pick 10% for step 1, then start a new session with 5% for step 2. Daily loss limit 3% fixed (reset 20:00 New York, realized base, equity checked). Static max drawdown $600 (starting balance minus that amount; it does not trail). Taker 1 bp. Leverage caps BTC 25×, ETH 15×. Profit split 80% is not simulated.",
   "id": "plan-2step-gold"
 }
