@@ -40,12 +40,37 @@ export {
   unrealizedPnl,
 } from "./liq.ts";
 export type { Side } from "./liq.ts";
-export { includeUnrealized, parsePracticePreset, resolvedTakerBps } from "./preset.ts";
-export type { PracticePreset, PresetParseResult } from "./preset.ts";
+export {
+  DRAWDOWN_MODES,
+  includeUnrealized,
+  parsePracticePreset,
+  resolvedTakerBps,
+} from "./preset.ts";
+export type { DrawdownMode, PracticePreset, PresetParseResult } from "./preset.ts";
+export { pairTrades, sessionStats } from "./stats.ts";
+export type { SessionStats, Trade } from "./stats.ts";
+export {
+  DEFAULT_SYNTHETIC_BARS,
+  MAX_SYNTHETIC_BARS,
+  MIN_SYNTHETIC_BARS,
+  SYNTHETIC_TIMEFRAMES_MIN,
+  isSyntheticTimeframe,
+  randomSeed,
+  syntheticSeries,
+} from "./synthetic.ts";
+export type { SyntheticSpec, SyntheticTimeframe } from "./synthetic.ts";
 export { logicalDayKey, priceForEquityFloor, profitTargetEquity, staticFloor } from "./prop.ts";
 export type { DailyReset, PropBreach } from "./prop.ts";
-export { replaySession } from "./replay.ts";
-export type { FillEvent, FillKind, Frame, Phase, Position, SessionAction } from "./replay.ts";
+export { bracketValid, replaySession } from "./replay.ts";
+export type {
+  Bracket,
+  FillEvent,
+  FillKind,
+  Frame,
+  Phase,
+  Position,
+  SessionAction,
+} from "./replay.ts";
 export { SIMULATION_POLICY, markPrice, sampleSeries } from "./series.ts";
 export type { Bar } from "./series.ts";
 export {

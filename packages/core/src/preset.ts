@@ -16,6 +16,9 @@ export type PracticePreset = {
   readonly sourceUrls: readonly string[];
   readonly profitTargetPct: number;
   readonly maxDrawdownPct: number;
+  /** Static floor from the start, or trailing the closing high-water mark. */
+  readonly drawdownMode: DrawdownMode;
+  readonly maxLeverage: number | null;
   readonly dailyLossLimitPct: number | null;
   readonly dailyReset: DailyReset | null;
   readonly equityIncludesUPnL: boolean | null;
@@ -29,6 +32,10 @@ export type PracticePreset = {
   readonly markets: readonly MarketId[] | null;
   readonly note: string;
 };
+
+export const DRAWDOWN_MODES = ["static", "trailing"] as const;
+
+export type DrawdownMode = (typeof DRAWDOWN_MODES)[number];
 
 export type PresetParseResult =
   | { readonly ok: true; readonly preset: PracticePreset }
@@ -153,6 +160,25 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
   if (profitTargetPct === null || maxDrawdownPct === null) {
     return { ok: false, error: "preset percents are invalid" };
   }
+  let drawdownMode: DrawdownMode = "static";
+  if (value.drawdownMode !== undefined && value.drawdownMode !== null) {
+    if (value.drawdownMode !== "static" && value.drawdownMode !== "trailing") {
+      return { ok: false, error: "drawdown mode is invalid" };
+    }
+    drawdownMode = value.drawdownMode;
+  }
+  let maxLeverage: number | null = null;
+  if (value.maxLeverage !== undefined && value.maxLeverage !== null) {
+    if (
+      typeof value.maxLeverage !== "number" ||
+      !Number.isInteger(value.maxLeverage) ||
+      value.maxLeverage < 1 ||
+      value.maxLeverage > 200
+    ) {
+      return { ok: false, error: "max leverage is invalid" };
+    }
+    maxLeverage = value.maxLeverage;
+  }
   const dailyLossLimitPct = optionalPercent(value.dailyLossLimitPct);
   if (dailyLossLimitPct === undefined) {
     return { ok: false, error: "daily loss limit is invalid" };
@@ -234,6 +260,8 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
       sourceUrls,
       profitTargetPct,
       maxDrawdownPct,
+      drawdownMode,
+      maxLeverage,
       dailyLossLimitPct,
       dailyReset: reset,
       equityIncludesUPnL,

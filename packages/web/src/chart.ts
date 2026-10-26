@@ -5,7 +5,7 @@ export type Candle = {
   readonly close: number;
 };
 
-export type ChartLineKind = "entry" | "liq" | "fail" | "daily";
+export type ChartLineKind = "entry" | "liq" | "fail" | "daily" | "sl" | "tp";
 
 export type ChartLine = {
   readonly price: number;
@@ -80,6 +80,10 @@ function lineClass(kind: ChartLineKind): string {
       return "line-fail";
     case "daily":
       return "line-daily";
+    case "sl":
+      return "line-sl";
+    case "tp":
+      return "line-tp";
     default: {
       const unexpected: never = kind;
       return unexpected;
@@ -485,6 +489,28 @@ export function mountChart(
     }
     for (const overlay of input.overlays) {
       appendOverlay(root, overlay, revealed, xOf, laid.yOf);
+    }
+
+    // Price scale: five evenly spaced labels on the right edge.
+    const hiPrice = Math.max(...input.candles.map((candle) => candle.high));
+    const loPrice = Math.min(...input.candles.map((candle) => candle.low));
+    if (Number.isFinite(hiPrice) && Number.isFinite(loPrice) && hiPrice > loPrice) {
+      for (let step = 0; step <= 4; step += 1) {
+        const price = loPrice + ((hiPrice - loPrice) * step) / 4;
+        const y = laid.yOf(price);
+        root.append(
+          svg("line", {
+            class: "price-grid",
+            x1: String(laid.plotLeft),
+            x2: String(laid.plotRight),
+            y1: px(y),
+            y2: px(y),
+          }),
+        );
+        const tick = svg("text", { class: "price-tick", x: px(laid.plotRight + 6), y: px(y + 4) });
+        tick.textContent = input.formatPrice(price);
+        root.append(tick);
+      }
     }
 
     for (const line of input.lines) {
