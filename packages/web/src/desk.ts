@@ -52,6 +52,15 @@ import {
   type ChartOverlay,
   type IndicatorStroke,
 } from "./chart.ts";
+import {
+  PRACTICE_INTRO_MS,
+  cancelPracticeIntro,
+  idlePracticeIntro,
+  skipPracticeIntro,
+  startPracticeIntro,
+  stepPracticeIntro,
+  type PracticeIntro,
+} from "./countdown-run.ts";
 import { formatNumber, formatPct, formatQty, signedNumber } from "./format.ts";
 import {
   LANG_CHOICES,
@@ -73,11 +82,12 @@ import {
   MAX_RULE_DRAWDOWN_PCT,
   applyPresetChoices,
   customPreset,
+  countdownPending,
   dataKey,
+  markCountdownPlayed,
   readStoredSetup,
   setupMarkets,
   setupStartingBalance,
-  takeFirstRun,
   warmupBars,
   writeStoredSetup,
   type CustomRules,
@@ -96,7 +106,6 @@ const SPEEDS = [
   { label: "4×", ms: 200 },
   { label: "8×", ms: 100 },
 ] as const;
-const COUNTDOWN_STEP_MS = 1_000;
 
 type MovingAverageKind = "sma" | "ema";
 
@@ -318,7 +327,9 @@ export function mountDesk(root: HTMLElement): void {
     bollingerVisible: false,
   };
   let timer = 0;
-  let countdownTimer = 0;
+  let introTimer = 0;
+  let intro: PracticeIntro = idlePracticeIntro();
+  let introKey: string | null = null;
   // Effects fire once per new event; the desk DOM is rebuilt on every render.
   let seenFills = 0;
   let seenRejects = 0;
@@ -365,14 +376,6 @@ export function mountDesk(root: HTMLElement): void {
     }
   };
 
-  const stopCountdown = (): void => {
-    state.countdown = null;
-    if (countdownTimer !== 0) {
-      window.clearInterval(countdownTimer);
-      countdownTimer = 0;
-    }
-  };
-
   const lastIndex = (): number => state.series.length - 1;
   const firstCursor = (): number => warmupBars(state.series.length);
 
@@ -394,6 +397,59 @@ export function mountDesk(root: HTMLElement): void {
     }, state.speedMs);
   };
 
+  const clearIntroTimer = (): void => {
+    if (introTimer !== 0) {
+      window.clearInterval(introTimer);
+      introTimer = 0;
+    }
+  };
+
+  /** Hide the 3-2-1 overlay. Bars stay put, and this data set can count down again. */
+  const cancelIntro = (): void => {
+    clearIntroTimer();
+    intro = cancelPracticeIntro(intro);
+    introKey = null;
+    state.countdown = null;
+  };
+
+  /** Apply one intro step. `play` records the data set and starts the bars. */
+  const publishIntro = (next: PracticeIntro, play: boolean): void => {
+    intro = next;
+    state.countdown = next.number;
+    if (next.number === null) {
+      clearIntroTimer();
+    }
+    if (play) {
+      const key = introKey;
+      introKey = null;
+      if (key !== null) {
+        markCountdownPlayed(key);
+      }
+      startPlay();
+    }
+    render();
+  };
+
+  const armIntro = (key: string): void => {
+    cancelIntro();
+    introKey = key;
+    intro = startPracticeIntro();
+    state.countdown = intro.number;
+    introTimer = window.setInterval(() => {
+      const stepped = stepPracticeIntro(intro);
+      publishIntro(stepped.intro, stepped.play);
+    }, PRACTICE_INTRO_MS);
+    render();
+  };
+
+  /** Leave the practice screen. An in-progress intro is dropped and does not start playback. */
+  const leavePractice = (): void => {
+    stopPlay();
+    cancelIntro();
+    state.screen = "setup";
+    render();
+  };
+
   /** Freeze the session when the account fails, passes or the data runs out. */
   const settleEnd = (): void => {
     if (state.endedAt !== null) {
@@ -409,7 +465,7 @@ export function mountDesk(root: HTMLElement): void {
 
   const resetSession = (): void => {
     stopPlay();
-    stopCountdown();
+    cancelIntro();
     state.cursor = firstCursor();
     state.actions = [];
     state.endedAt = null;
@@ -421,7 +477,7 @@ export function mountDesk(root: HTMLElement): void {
     seenEnd = null;
   };
 
-  /** Generate the data, then count 3-2-1 the first time this data set is played. */
+  /** Generate the data. The first playback of that set counts 3-2-1, then the bars advance. */
   const beginSession = (setup: SessionSetup): void => {
     writeStoredSetup(setup);
     state.setup = setup;
@@ -441,21 +497,13 @@ export function mountDesk(root: HTMLElement): void {
     });
     state.screen = "play";
     resetSession();
-    if (takeFirstRun(dataKey({ ...setup, market: state.market }))) {
-      state.countdown = 3;
-      countdownTimer = window.setInterval(() => {
-        if (state.countdown === null || state.countdown <= 1) {
-          stopCountdown();
-          startPlay();
-        } else {
-          state.countdown -= 1;
-        }
-        render();
-      }, COUNTDOWN_STEP_MS);
+    const key = dataKey({ ...setup, market: state.market });
+    if (countdownPending(key)) {
+      armIntro(key);
     } else {
       startPlay();
+      render();
     }
-    render();
   };
 
   const currentFrame = (): Frame =>
@@ -676,6 +724,16 @@ export function mountDesk(root: HTMLElement): void {
       for (const child of Array.from(shell.children)) {
         child.setAttribute("inert", "");
       }
+      const nav = shell.querySelector(".topnav");
+      if (nav instanceof HTMLElement) {
+        nav.classList.add("topnav-live");
+        nav.removeAttribute("inert");
+        for (const control of nav.querySelectorAll<HTMLElement>("button, select")) {
+          if (control.dataset.action !== "leave-practice") {
+            control.setAttribute("inert", "");
+          }
+        }
+      }
       shell.append(mountCountdown(state.countdown));
     }
     return shell;
@@ -683,15 +741,24 @@ export function mountDesk(root: HTMLElement): void {
 
   function mountCountdown(value: number): HTMLElement {
     const skip = actionButton(t("countdown.skip"), "countdown-skip", () => {
-      stopCountdown();
-      startPlay();
-      render();
+      const stepped = skipPracticeIntro(intro);
+      publishIntro(stepped.intro, stepped.play);
     });
+    skip.dataset.testid = "countdown-skip";
+    const cancel = actionButton(t("countdown.cancel"), "countdown-cancel", () => {
+      leavePractice();
+    });
+    cancel.dataset.testid = "countdown-cancel";
     return el(
       "div",
       {
         className: "countdown-overlay",
-        attrs: { role: "dialog", "aria-modal": "true", "aria-label": t("countdown.label") },
+        attrs: {
+          role: "dialog",
+          "aria-modal": "true",
+          "aria-label": t("countdown.label"),
+          "data-testid": "countdown",
+        },
       },
       [
         el("p", { className: "countdown-label", text: t("countdown.label") }),
@@ -700,7 +767,7 @@ export function mountDesk(root: HTMLElement): void {
           text: String(value),
           attrs: { "aria-live": "assertive", "data-testid": "countdown-num" },
         }),
-        skip,
+        el("div", { className: "countdown-actions" }, [skip, cancel]),
       ],
     );
   }
@@ -1125,22 +1192,22 @@ export function mountDesk(root: HTMLElement): void {
       }
     });
 
+    const leave = actionButton(
+      t("nav.setup"),
+      state.screen === "setup" ? "nav-btn is-current" : "nav-btn",
+      () => {
+        leavePractice();
+      },
+    );
+    leave.dataset.action = "leave-practice";
+
     return el("header", { className: "topnav" }, [
       el("div", { className: "brand" }, [
         el("p", { className: "brand-kicker", text: t("kicker") }),
         el("h1", { text: PRODUCT_NAME }),
       ]),
       el("nav", { attrs: { "aria-label": "Primary" } }, [
-        actionButton(
-          t("nav.setup"),
-          state.screen === "setup" ? "nav-btn is-current" : "nav-btn",
-          () => {
-            stopPlay();
-            stopCountdown();
-            state.screen = "setup";
-            render();
-          },
-        ),
+        leave,
         actionButton(
           t("nav.practice"),
           state.screen === "play" ? "nav-btn is-current" : "nav-btn",
@@ -2102,9 +2169,7 @@ export function mountDesk(root: HTMLElement): void {
           beginSession({ ...state.setup, seed: randomSeed() });
         }),
         actionButton(t("nav.setup"), "ghost", () => {
-          stopPlay();
-          state.screen = "setup";
-          render();
+          leavePractice();
         }),
       ]),
     ]);

@@ -224,24 +224,57 @@ export function dataKey(setup: SessionSetup): string {
   return `${setup.market}:${setup.timeframeMin}:${setup.bars}:${setup.seed}`;
 }
 
+function countdownSuppressed(): boolean {
+  const flag = localStorage.getItem("perpdrill.countdown");
+  return flag === "0" || (flag !== "1" && navigator.webdriver);
+}
+
+function readPlayed(): string[] {
+  const raw: unknown = JSON.parse(localStorage.getItem(PLAYED_KEY) ?? "[]");
+  return Array.isArray(raw) ? raw.filter((item) => typeof item === "string") : [];
+}
+
 /**
- * True the first time this exact data set starts on this browser; records it.
- * Automated browsers skip it unless storage `perpdrill.countdown` is "1".
+ * True when this data set should count 3-2-1 before the bars move.
+ * Does not record the set. Automated browsers skip it unless storage
+ * `perpdrill.countdown` is "1".
  */
-export function takeFirstRun(key: string): boolean {
+export function countdownPending(key: string): boolean {
   try {
-    const flag = localStorage.getItem("perpdrill.countdown");
-    if (flag === "0" || (flag !== "1" && navigator.webdriver)) {
+    if (countdownSuppressed()) {
       return false;
     }
-    const raw: unknown = JSON.parse(localStorage.getItem(PLAYED_KEY) ?? "[]");
-    const played = Array.isArray(raw) ? raw.filter((item) => typeof item === "string") : [];
-    if (played.includes(key)) {
-      return false;
-    }
-    localStorage.setItem(PLAYED_KEY, JSON.stringify([...played, key].slice(-MAX_PLAYED)));
-    return true;
+    return !readPlayed().includes(key);
   } catch {
     return true;
   }
+}
+
+/** Remember that playback started, so a later open of this data set does not count down. */
+export function markCountdownPlayed(key: string): void {
+  try {
+    if (countdownSuppressed()) {
+      return;
+    }
+    const played = readPlayed();
+    if (played.includes(key)) {
+      return;
+    }
+    localStorage.setItem(PLAYED_KEY, JSON.stringify([...played, key].slice(-MAX_PLAYED)));
+  } catch {
+    // Storage is optional. The intro may show again next time.
+  }
+}
+
+/**
+ * True the first time this exact data set starts on this browser; records it.
+ * The desk uses `countdownPending` and `markCountdownPlayed` so leaving during
+ * the intro does not consume the first run.
+ */
+export function takeFirstRun(key: string): boolean {
+  if (!countdownPending(key)) {
+    return false;
+  }
+  markCountdownPlayed(key);
+  return true;
 }
