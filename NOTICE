@@ -24,6 +24,13 @@ original. They are an isolated approximation for practice. They are not
 CandleDrill's fill model, and they are not an exchange's closed-form
 liquidation price.
 
+Live market data
+----------------
+
+Live klines are fetched on demand, in the browser, from Binance's public
+data endpoint (data-api.binance.vision) and attributed on the desk. No
+market data is bundled or redistributed in this repository.
+
 No affiliation
 --------------
 

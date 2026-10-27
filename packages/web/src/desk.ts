@@ -23,6 +23,7 @@ import {
   isMarketId,
   leverageCap,
   coarserTimeframe,
+  parseOhlcCsv,
   pairTrades,
   quoteClose,
   quoteOpen,
@@ -38,6 +39,7 @@ import {
   syntheticMarks,
   syntheticSeries,
   timeframeSupported,
+  type CsvImportError,
   type Bar,
   type BuyingPowerPct,
   type FillKind,
@@ -95,6 +97,7 @@ import {
   type MessageKey,
   type Theme,
 } from "./i18n.ts";
+import { LIVE_PAIRS, fetchLiveKlines, isLivePair, type LivePair } from "./live-data.ts";
 import { loadCommunityPresets } from "./preset-loader.ts";
 import {
   MAX_RULE_DRAWDOWN_PCT,
@@ -155,6 +158,9 @@ type DeskState = {
   screen: "setup" | "play";
   setup: SessionSetup;
   series: readonly Bar[];
+  importedBars: readonly Bar[];
+  /** Shown in the market bar instead of the sample name when imported. */
+  dataLabel: string | null;
   funding: readonly (number | null)[];
   marks: readonly number[];
   indexSeries: readonly number[];
@@ -260,6 +266,25 @@ function clampInt(value: number, min: number, max: number, fallback: number): nu
     return fallback;
   }
   return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+function csvErrorKey(error: CsvImportError): MessageKey {
+  switch (error) {
+    case "empty":
+      return "csv.empty";
+    case "columns":
+      return "csv.columns";
+    case "times":
+      return "csv.times";
+    case "prices":
+      return "csv.prices";
+    case "count":
+      return "csv.count";
+    default: {
+      const unexpected: never = error;
+      throw new Error(`unexpected csv error ${String(unexpected)}`);
+    }
+  }
 }
 
 function rejectKey(reason: RejectReason): MessageKey {
@@ -373,6 +398,8 @@ export function mountDesk(root: HTMLElement): void {
     screen: "setup",
     setup: stored,
     series: [],
+    importedBars: [],
+    dataLabel: null,
     funding: [],
     marks: [],
     indexSeries: [],
@@ -644,18 +671,24 @@ export function mountDesk(root: HTMLElement): void {
     {
       state.leverage = Math.min(state.leverage, leverageCap(sessionPreset, state.market));
     }
-    state.series = syntheticSeries({
-      market: state.market,
-      seed: setup.seed,
-      bars: setup.bars,
-      timeframeMin: setup.timeframeMin,
-      stress: setup.stress,
-    });
+    state.series =
+      setup.dataSource === "imported" && state.importedBars.length > 0
+        ? state.importedBars
+        : syntheticSeries({
+            market: state.market,
+            seed: setup.seed,
+            bars: setup.bars,
+            timeframeMin: setup.timeframeMin,
+            stress: setup.stress,
+          });
+    if (setup.dataSource !== "imported") {
+      state.dataLabel = null;
+    }
     state.funding =
       sessionPreset?.costModel === "funding" && sessionPreset.fundingRatePerHour !== null
         ? syntheticFunding({
             seed: setup.seed,
-            bars: setup.bars,
+            bars: state.series.length,
             timeframeMin: setup.timeframeMin,
             meanPerHour: sessionPreset.fundingRatePerHour,
             intervalHours: sessionPreset.fundingIntervalHours ?? 8,
@@ -1042,6 +1075,21 @@ export function mountDesk(root: HTMLElement): void {
     }
     const setup = state.setup;
     const rules = setup.custom;
+    const loadLive = async (pair: LivePair): Promise<void> => {
+      try {
+        const bars = await fetchLiveKlines(pair, setup.timeframeMin, 500);
+        if (bars.length === 0) {
+          toast(t("live.error"), "warn");
+          return;
+        }
+        state.importedBars = bars;
+        state.dataLabel = `${pair}·live`;
+        state.setup = { ...state.setup, dataSource: "imported", bars: bars.length };
+        render();
+      } catch {
+        toast(t("live.error"), "warn");
+      }
+    };
     const setRule = <K extends keyof CustomRules>(key: K, value: CustomRules[K]): void => {
       state.setup = { ...state.setup, custom: { ...state.setup.custom, [key]: value } };
     };
@@ -1119,6 +1167,103 @@ export function mountDesk(root: HTMLElement): void {
             return select;
           })(),
         ]),
+        el("label", { className: "field" }, [
+          el("span", { text: t("setup.source") }),
+          (() => {
+            const select = el("select", {
+              attrs: { id: "setup-source", "aria-label": t("setup.source") },
+            });
+            const current =
+              setup.dataSource === "imported"
+                ? (state.dataLabel ?? "").endsWith("csv")
+                  ? "csv"
+                  : "live"
+                : "synthetic";
+            for (const choice of [
+              { value: "synthetic", text: t("setup.sourceSynth") },
+              { value: "csv", text: t("setup.sourceCsv") },
+              { value: "live", text: t("setup.sourceLive") },
+            ]) {
+              const option = el("option", { text: choice.text, attrs: { value: choice.value } });
+              option.selected = current === choice.value;
+              select.append(option);
+            }
+            const fileInput = el("input", {
+              attrs: { type: "file", accept: ".csv,text/csv", "aria-label": t("setup.sourceCsv") },
+            });
+            fileInput.style.display = "none";
+            fileInput.addEventListener("change", () => {
+              const file = fileInput.files?.[0];
+              if (file === undefined) {
+                return;
+              }
+              void file
+                .text()
+                .then((text) => {
+                  const parsed = parseOhlcCsv(text);
+                  if (!parsed.ok) {
+                    toast(t(csvErrorKey(parsed.error)), "warn");
+                    return;
+                  }
+                  state.importedBars = parsed.bars;
+                  state.dataLabel = `${file.name}·csv`;
+                  state.setup = {
+                    ...state.setup,
+                    dataSource: "imported",
+                    bars: parsed.bars.length,
+                    seed: (file.name.length * 7919) % 0xffffffff,
+                  };
+                  render();
+                })
+                .catch(() => {
+                  toast(t("csv.read"), "warn");
+                });
+            });
+            select.addEventListener("change", () => {
+              if (select.value === "csv") {
+                fileInput.click();
+                render();
+                return;
+              }
+              if (select.value === "live") {
+                void loadLive("BTCUSDT");
+                return;
+              }
+              state.setup = { ...state.setup, dataSource: "synthetic" };
+              state.importedBars = [];
+              state.dataLabel = null;
+              render();
+            });
+            return el("span", { className: "source-row" }, [select, fileInput]);
+          })(),
+        ]),
+        ...(state.dataLabel === null
+          ? []
+          : [
+              el("div", { className: "seed-row" }, [
+                el("span", { className: "hint", text: `${t("setup.loaded")} ${state.dataLabel}` }),
+                el("label", { className: "field" }, [
+                  el("span", { text: t("setup.pair") }),
+                  (() => {
+                    const pair = el("select", {
+                      attrs: { id: "setup-pair", "aria-label": t("setup.pair") },
+                    });
+                    for (const choice of LIVE_PAIRS) {
+                      const option = el("option", { text: choice, attrs: { value: choice } });
+                      option.selected = state.dataLabel?.startsWith(choice) === true;
+                      pair.append(option);
+                    }
+                    return pair;
+                  })(),
+                ]),
+                actionButton(t("setup.load"), "ghost", () => {
+                  const pair = document.getElementById("setup-pair");
+                  if (pair instanceof HTMLSelectElement && isLivePair(pair.value)) {
+                    void loadLive(pair.value);
+                  }
+                }),
+              ]),
+            ]),
         el("div", { className: "seed-row" }, [
           numberField(
             "setup-seed",
@@ -1489,7 +1634,7 @@ export function mountDesk(root: HTMLElement): void {
     });
     for (const market of [state.market]) {
       const option = el("option", {
-        text: sampleMarketLabel(state.lang, market),
+        text: state.dataLabel ?? sampleMarketLabel(state.lang, market),
         attrs: { value: market },
       });
       if (market === state.market) {
@@ -1511,7 +1656,13 @@ export function mountDesk(root: HTMLElement): void {
     return el("section", { className: "market", attrs: { "aria-label": "Market" } }, [
       el("div", { className: "symbol-block" }, [
         select,
-        el("span", { className: "toolbar-note", text: t("market.synthetic") }),
+        el("span", {
+          className: "toolbar-note",
+          text:
+            state.dataLabel?.endsWith("live") === true
+              ? t("data.attribution")
+              : t("market.synthetic"),
+        }),
       ]),
       el("div", { className: "stats" }, [
         stat(t("market.mid"), formatNumber(frame.mark, locale())),

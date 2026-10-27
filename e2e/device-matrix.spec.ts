@@ -59,6 +59,42 @@ const SIZES = [
   },
 ] as const;
 
+test.describe("data sources", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("imports a CSV file and trades it", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("perpdrill.lang", "en");
+      localStorage.setItem("perpdrill.countdown", "1");
+    });
+    await page.goto("/");
+    await page.locator("#setup-rules").selectOption({ label: "No rules (free practice)" });
+    const csv = [
+      "time,open,high,low,close,volume",
+      ...Array.from({ length: 200 }, (_, index) => {
+        const time = 1_700_000_000_000 + index * 60_000;
+        const close = 100 + Math.round(index * 0.1);
+        return `${time},${close - 1},${close + 1},${close - 2},${close},0`;
+      }),
+    ].join("\n");
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles({ name: "practice.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+    await expect(page.locator(".setup")).toContainText("practice.csv");
+    await page.getByRole("button", { name: "Start backtest" }).click();
+    try {
+      await page.getByRole("button", { name: "Skip" }).waitFor({ state: "visible", timeout: 2000 });
+      await page.getByRole("button", { name: "Skip" }).click();
+    } catch {
+      // Intro finished on its own.
+    }
+    await ensurePaused(page);
+    await expect(page.locator(".chart-stage")).toBeVisible();
+    // The market bar shows the imported label instead of a sample name.
+    await expect(page.locator(".market-select")).toContainText("practice.csv");
+  });
+});
+
 test.describe("working orders", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
