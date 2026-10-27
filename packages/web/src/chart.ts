@@ -1,5 +1,6 @@
 import {
   clampViewport,
+  coordinateToFloatIndex,
   indexToCoordinate,
   indicatorIndexSpan,
   pinchZoomScale,
@@ -70,7 +71,53 @@ export type LaidCandle = {
 };
 
 /** Empty band above and below the high/low range, as a fraction of the pane. */
-export const CANDLE_PANE_MARGIN = 0.08;
+export const CANDLE_PANE_MARGIN = 0.05;
+
+/**
+ * A horizontal drawing (entry, liquidation, floor, stop, target) may stretch the price
+ * scale at most this share of the visible candle range on each side. A risk line further
+ * away is clipped instead of flattening the candles into a strip.
+ */
+export const LINE_SCALE_REACH = 0.15;
+
+export type PriceRange = {
+  readonly low: number;
+  readonly high: number;
+};
+
+/** Highest high and lowest low of the revealed bars inside `visible`. */
+export function visibleCandleRange(
+  candles: readonly Candle[],
+  visible: { readonly from: number; readonly to: number },
+): PriceRange | null {
+  let low = Number.POSITIVE_INFINITY;
+  let high = Number.NEGATIVE_INFINITY;
+  const end = Math.min(visible.to, candles.length - 1);
+  for (let index = Math.max(0, visible.from); index <= end; index += 1) {
+    const candle = candles[index];
+    if (candle === undefined) {
+      continue;
+    }
+    for (const price of [candle.high, candle.low]) {
+      if (Number.isFinite(price)) {
+        low = Math.min(low, price);
+        high = Math.max(high, price);
+      }
+    }
+  }
+  return low <= high ? { low, high } : null;
+}
+
+/** True when a drawing sits close enough to the candles to join the price scale. */
+export function withinPriceReach(range: PriceRange | null, price: number): boolean {
+  if (range === null) {
+    return true;
+  }
+  const span = range.high - range.low || Math.abs(range.high) * 0.01 || 1;
+  return (
+    price >= range.low - span * LINE_SCALE_REACH && price <= range.high + span * LINE_SCALE_REACH
+  );
+}
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const SLOT_SPECIAL_FROM = 2.5;
@@ -230,6 +277,7 @@ export function layoutCandles(input: {
 }): {
   readonly candles: readonly LaidCandle[];
   readonly yOf: (price: number) => number;
+  readonly priceOf: (y: number) => number;
   readonly plotLeft: number;
   readonly plotRight: number;
 } {
@@ -267,7 +315,8 @@ export function layoutCandles(input: {
   const floorPrice = mid - half;
   const zoomedSpan = half * 2;
   const topMargin = plotHeight * CANDLE_PANE_MARGIN;
-  const bottomMargin = plotHeight * CANDLE_PANE_MARGIN;
+  // The bottom band always leaves room for the time labels under the candles.
+  const bottomMargin = Math.max(plotHeight * CANDLE_PANE_MARGIN, 16);
   const internal = Math.max(1, plotHeight - topMargin - bottomMargin);
   const yOf = (price: number): number => {
     const inv = bottomMargin + ((internal - 1) * (price - floorPrice)) / zoomedSpan;
@@ -346,7 +395,13 @@ export function layoutCandles(input: {
     });
   });
 
-  return { candles: laid, yOf, plotLeft, plotRight: plotLeft + plotWidth };
+  /** Inverse of yOf: the price under a pane y coordinate, clamped nowhere. */
+  const priceOf = (y: number): number => {
+    const inv = plotHeight - 1 - y;
+    return floorPrice + ((inv - bottomMargin) * zoomedSpan) / (internal - 1);
+  };
+
+  return { candles: laid, yOf, priceOf, plotLeft, plotRight: plotLeft + plotWidth };
 }
 
 function px(value: number): string {
@@ -533,7 +588,6 @@ function viewportFor(seriesKey: string): ViewportMemory | null {
 const priceZooms = new Map<string, number>();
 
 const MAX_PRICE_ZOOM = 20;
-const PRICE_ZOOM_STEP = 1.15;
 
 /** Stored zoom, clamped to [1, MAX_PRICE_ZOOM]. 1 is the fitted view. */
 function zoomedPriceScale(value: number | undefined): number {
@@ -541,6 +595,185 @@ function zoomedPriceScale(value: number | undefined): number {
     return 1;
   }
   return Math.min(MAX_PRICE_ZOOM, value);
+}
+
+/** Wheel travel per unit of magnification. A 120-delta notch is about 1.075x. */
+const PRICE_ZOOM_PER_DELTA = 0.0006;
+
+/** Axis drag travel per unit of magnification, in pixels. */
+const PRICE_ZOOM_PER_PIXEL = 0.004;
+
+/** Continuous price magnification from a wheel delta; small deltas stay fine-grained. */
+export function priceZoomAfterWheel(zoom: number, deltaY: number): number {
+  return zoomedPriceScale(zoomedPriceScale(zoom) * Math.exp(-deltaY * PRICE_ZOOM_PER_DELTA));
+}
+
+/** Magnification from dragging the price axis: up magnifies, down returns toward the fit. */
+export function priceZoomAfterDrag(startZoom: number, startY: number, currentY: number): number {
+  return zoomedPriceScale(
+    zoomedPriceScale(startZoom) * Math.exp((startY - currentY) * PRICE_ZOOM_PER_PIXEL),
+  );
+}
+
+/** Pointer over the price axis, not the plot. */
+function onPriceAxis(host: HTMLElement, clientX: number): boolean {
+  const rect = host.getBoundingClientRect();
+  return clientX - rect.left >= rect.width - PAD_RIGHT;
+}
+
+/** Mapping the last paint left behind, so the crosshair can read prices without a repaint. */
+type ChartGeometry = {
+  readonly plotWidth: number;
+  readonly revealed: number;
+  readonly timeScale: TimeViewport;
+  readonly priceOf: (y: number) => number;
+  readonly candles: readonly Candle[];
+  readonly times: readonly number[] | undefined;
+};
+
+const chartGeometries = new WeakMap<HTMLElement, ChartGeometry>();
+
+type CrosshairLayer = {
+  readonly root: HTMLElement;
+  readonly vertical: HTMLElement;
+  readonly horizontal: HTMLElement;
+  readonly priceTag: HTMLElement;
+  readonly timeTag: HTMLElement;
+  readonly readout: HTMLElement;
+};
+
+function childDiv(parent: HTMLElement, className: string): HTMLElement {
+  const node = document.createElement("div");
+  node.className = className;
+  parent.append(node);
+  return node;
+}
+
+/** Crosshair, axis tags and the OHLC readout. The desk strips chrome before a mount. */
+function ensureCrosshair(host: HTMLElement): CrosshairLayer {
+  let root = host.querySelector<HTMLElement>(":scope > .crosshair");
+  if (root === null) {
+    root = document.createElement("div");
+    root.className = "crosshair";
+    root.hidden = true;
+    root.setAttribute("aria-hidden", "true");
+    childDiv(root, "crosshair-v");
+    childDiv(root, "crosshair-h");
+    childDiv(root, "crosshair-price");
+    childDiv(root, "crosshair-time");
+    host.append(root);
+  }
+  let readout = host.querySelector<HTMLElement>(":scope > .chart-ohlc");
+  if (readout === null) {
+    readout = document.createElement("div");
+    readout.className = "chart-ohlc";
+    readout.hidden = true;
+    host.append(readout);
+  }
+  const part = (selector: string): HTMLElement => {
+    const node = root.querySelector<HTMLElement>(selector);
+    if (node === null) {
+      throw new Error(`crosshair part missing: ${selector}`);
+    }
+    return node;
+  };
+  return {
+    root,
+    vertical: part(".crosshair-v"),
+    horizontal: part(".crosshair-h"),
+    priceTag: part(".crosshair-price"),
+    timeTag: part(".crosshair-time"),
+    readout,
+  };
+}
+
+/** Hide the crosshair lines. The readout keeps showing the last bar, as a desk does. */
+function hideCrosshair(layer: CrosshairLayer): void {
+  layer.root.hidden = true;
+}
+
+/** OHLC readout for one bar, green or red from that bar's own direction. */
+function updateReadout(
+  layer: CrosshairLayer,
+  candles: readonly Candle[],
+  index: number,
+  formatPrice: (price: number) => string,
+  compact: boolean,
+): void {
+  const candle = candles[index];
+  if (candle === undefined) {
+    layer.readout.hidden = true;
+    return;
+  }
+  const previous = candles[index - 1]?.close ?? candle.open;
+  const change = previous === 0 ? 0 : ((candle.close - previous) / previous) * 100;
+  const sign = change >= 0 ? "+" : "";
+  layer.readout.hidden = false;
+  layer.readout.className = candle.close >= candle.open ? "chart-ohlc is-up" : "chart-ohlc is-down";
+  const parts = [
+    `O ${formatPrice(candle.open)}`,
+    `H ${formatPrice(candle.high)}`,
+    `L ${formatPrice(candle.low)}`,
+    `C ${formatPrice(candle.close)}`,
+  ];
+  if (!compact) {
+    parts.push(`${sign}${change.toFixed(2)}%`);
+  }
+  layer.readout.textContent = parts.join(compact ? "  " : "   ");
+}
+
+/** Place the crosshair, its axis tags and the OHLC readout under the pointer. */
+function placeCrosshair(
+  host: HTMLElement,
+  layer: CrosshairLayer,
+  geometry: ChartGeometry,
+  clientX: number,
+  clientY: number,
+  formatPrice: (price: number) => string,
+  formatTime: ((timeMs: number) => string) | undefined,
+): void {
+  const rect = host.getBoundingClientRect();
+  const localX = clientX - rect.left;
+  const localY = clientY - rect.top;
+  const lastIndex = Math.max(0, geometry.revealed - 1);
+  if (localX < PAD_LEFT || localX > rect.width - PAD_RIGHT || localY < 0 || localY > rect.height) {
+    hideCrosshair(layer);
+    updateReadout(layer, geometry.candles, lastIndex, formatPrice, rect.width < 520);
+    return;
+  }
+  const rawIndex = Math.round(
+    coordinateToFloatIndex(
+      geometry.plotWidth,
+      geometry.revealed,
+      geometry.timeScale,
+      localX - PAD_LEFT,
+    ),
+  );
+  const index = Math.min(lastIndex, Math.max(0, rawIndex));
+  const candle = geometry.candles[index];
+  if (candle === undefined) {
+    hideCrosshair(layer);
+    updateReadout(layer, geometry.candles, lastIndex, formatPrice, rect.width < 520);
+    return;
+  }
+  const x =
+    indexToCoordinate(geometry.plotWidth, geometry.revealed, geometry.timeScale, index) + PAD_LEFT;
+  layer.root.hidden = false;
+  layer.vertical.style.transform = `translate(${px(x)}px, 0)`;
+  layer.horizontal.style.left = `${px(PAD_LEFT)}px`;
+  layer.horizontal.style.width = `${px(geometry.plotWidth)}px`;
+  layer.horizontal.style.transform = `translate(0, ${px(localY)}px)`;
+  layer.priceTag.style.transform = `translate(0, ${px(localY - 9)}px)`;
+  layer.priceTag.textContent = formatPrice(geometry.priceOf(localY));
+  const timeMs = geometry.times?.[index];
+  if (timeMs !== undefined && formatTime !== undefined) {
+    layer.timeTag.hidden = false;
+    layer.timeTag.style.transform = `translate(${px(x)}px, 0)`;
+    layer.timeTag.textContent = formatTime(timeMs);
+  } else {
+    layer.timeTag.hidden = true;
+  }
+  updateReadout(layer, geometry.candles, index, formatPrice, rect.width < 520);
 }
 
 /** Stage element already showing this series, so a playback paint can keep its pan. */
@@ -646,12 +879,17 @@ function bindGestures(
   host: HTMLElement,
   read: () => ChartExtent,
   paint: () => void,
+  formatters: () => {
+    readonly formatPrice: (price: number) => string;
+    readonly formatTime?: ((timeMs: number) => string) | undefined;
+  },
 ): GestureSession {
   let currentRead = read;
   let currentPaint = paint;
   const heldKeys = new Set<string>();
   const pointers = new Map<number, PointerPoint>();
   let drag: { startX: number; startOffset: number; spacing: number } | null = null;
+  let priceDrag: { startY: number; startZoom: number } | null = null;
   let finger: {
     startX: number;
     startY: number;
@@ -720,8 +958,8 @@ function bindGestures(
       if (event.cancelable) {
         event.preventDefault();
       }
-      const step = event.deltaY < 0 ? PRICE_ZOOM_STEP : 1 / PRICE_ZOOM_STEP;
-      priceZooms.set(ctx.seriesKey, zoomedPriceScale((priceZooms.get(ctx.seriesKey) ?? 1) * step));
+      const zoom = priceZoomAfterWheel(priceZooms.get(ctx.seriesKey) ?? 1, event.deltaY);
+      priceZooms.set(ctx.seriesKey, zoom);
       currentPaint();
       return;
     }
@@ -762,6 +1000,24 @@ function bindGestures(
 
   const onPointerDown = (event: PointerEvent): void => {
     if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+    if (event.pointerType !== "touch" && onPriceAxis(host, event.clientX)) {
+      // Dragging the price axis scales prices, the way a charting desk does it.
+      const current = viewportFor(currentRead().seriesKey);
+      if (current === null) {
+        return;
+      }
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      capturePointer(event.pointerId);
+      priceDrag = {
+        startY: event.clientY,
+        startZoom: priceZooms.get(currentRead().seriesKey) ?? 1,
+      };
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      remember(true);
       return;
     }
     const current = viewportFor(currentRead().seriesKey);
@@ -808,10 +1064,21 @@ function bindGestures(
   };
 
   const onPointerMove = (event: PointerEvent): void => {
+    if (priceDrag === null && event.pointerType !== "touch") {
+      host.style.cursor = onPriceAxis(host, event.clientX) ? "ns-resize" : "";
+    }
     if (!pointers.has(event.pointerId)) {
       return;
     }
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (priceDrag !== null) {
+      priceZooms.set(
+        currentRead().seriesKey,
+        priceZoomAfterDrag(priceDrag.startZoom, priceDrag.startY, event.clientY),
+      );
+      currentPaint();
+      return;
+    }
     const pair = trackedPair();
     const current = viewportFor(currentRead().seriesKey);
     if (
@@ -896,13 +1163,20 @@ function bindGestures(
   };
 
   const onPointerUp = (event: PointerEvent): void => {
-    if (!pointers.has(event.pointerId) && drag === null && finger === null && pinch === null) {
+    if (
+      !pointers.has(event.pointerId) &&
+      drag === null &&
+      priceDrag === null &&
+      finger === null &&
+      pinch === null
+    ) {
       return;
     }
     pointers.delete(event.pointerId);
     releasePointer(event.pointerId);
     if (pointers.size === 0) {
       drag = null;
+      priceDrag = null;
       finger = null;
       pinch = null;
     } else if (pointers.size < 2) {
@@ -911,11 +1185,73 @@ function bindGestures(
     releaseGesture();
   };
 
+  /** Double-click the axis to fit prices again; double-click the plot to re-fit the time scale. */
+  const onDoubleClick = (event: MouseEvent): void => {
+    const ctx = currentRead();
+    if (onPriceAxis(host, event.clientX)) {
+      priceZooms.set(ctx.seriesKey, 1);
+      currentPaint();
+      return;
+    }
+    const plotWidth = plotWidthOf(host);
+    if (plotWidth > 0 && ctx.barCount > 0) {
+      commitViewport(
+        ctx.seriesKey,
+        ctx.endIndex,
+        ctx.barCount,
+        showRecentViewport(plotWidth, ctx.barCount),
+      );
+      currentPaint();
+    }
+  };
+
+  /** Crosshair follows a mouse or pen; touch drags the chart instead. */
+  const onHover = (event: PointerEvent): void => {
+    if (event.pointerType === "touch" || priceDrag !== null || drag !== null || finger !== null) {
+      return;
+    }
+    const geometry = chartGeometries.get(host);
+    if (geometry === undefined) {
+      return;
+    }
+    const { formatPrice, formatTime } = formatters();
+    placeCrosshair(
+      host,
+      ensureCrosshair(host),
+      geometry,
+      event.clientX,
+      event.clientY,
+      formatPrice,
+      formatTime,
+    );
+  };
+
+  const onLeave = (): void => {
+    const layer = ensureCrosshair(host);
+    hideCrosshair(layer);
+    const geometry = chartGeometries.get(host);
+    if (geometry !== undefined) {
+      updateReadout(
+        layer,
+        geometry.candles,
+        Math.max(0, geometry.revealed - 1),
+        formatters().formatPrice,
+        host.clientWidth < 520,
+      );
+    }
+    if (priceDrag === null) {
+      host.style.cursor = "";
+    }
+  };
+
   host.addEventListener("wheel", onWheel, { passive: false });
   host.addEventListener("pointerdown", onPointerDown);
   host.addEventListener("pointermove", onPointerMove);
+  host.addEventListener("pointermove", onHover);
+  host.addEventListener("pointerleave", onLeave);
   host.addEventListener("pointerup", onPointerUp);
   host.addEventListener("pointercancel", onPointerUp);
+  host.addEventListener("dblclick", onDoubleClick);
 
   return {
     retarget(nextRead, nextPaint) {
@@ -924,6 +1260,7 @@ function bindGestures(
     },
     detach() {
       drag = null;
+      priceDrag = null;
       finger = null;
       pinch = null;
       for (const pointerId of pointers.keys()) {
@@ -934,8 +1271,11 @@ function bindGestures(
       host.removeEventListener("wheel", onWheel);
       host.removeEventListener("pointerdown", onPointerDown);
       host.removeEventListener("pointermove", onPointerMove);
+      host.removeEventListener("pointermove", onHover);
+      host.removeEventListener("pointerleave", onLeave);
       host.removeEventListener("pointerup", onPointerUp);
       host.removeEventListener("pointercancel", onPointerUp);
+      host.removeEventListener("dblclick", onDoubleClick);
     },
   };
 }
@@ -949,6 +1289,11 @@ export function mountChart(
     readonly bands: readonly ChartBand[];
     readonly label: string;
     readonly formatPrice: (price: number) => string;
+    /** Bar timestamps, one per candle, for the crosshair time tag. */
+    readonly times?: readonly number[];
+    /** Last closed bar. A forming preview bar is not what the idle readout should show. */
+    readonly latestClosedIndex?: number | undefined;
+    readonly formatTime?: ((timeMs: number) => string) | undefined;
     /** Same series keeps the zoom. A new key, or an end that falls by more than one bar, shows recent bars. */
     readonly seriesKey: string;
     /** Index of the last revealed bar, including a forming preview. Grows as playback steps. */
@@ -966,7 +1311,10 @@ export function mountChart(
     const plotWidth = Math.max(1, width - PAD_LEFT - PAD_RIGHT);
     const timeScale = reconcileViewport(plotWidth, revealed, input.endIndex, input.seriesKey);
     const visible = visibleIndexRange(plotWidth, revealed, timeScale);
-    const extraPrices = input.lines.map((line) => line.price);
+    const candleRange = visibleCandleRange(input.candles, visible);
+    const extraPrices = input.lines
+      .map((line) => line.price)
+      .filter((price) => withinPriceReach(candleRange, price));
     for (const overlay of input.overlays) {
       if (overlay.fitsScale === false) {
         continue;
@@ -988,6 +1336,24 @@ export function mountChart(
       timeScale,
       priceScale: priceZooms.get(input.seriesKey) ?? 1,
     });
+    chartGeometries.set(host, {
+      plotWidth,
+      revealed,
+      timeScale,
+      priceOf: laid.priceOf,
+      candles: input.candles,
+      times: input.times,
+    });
+    // Idle panes show the latest bar; a hovering pointer owns the readout.
+    if (!host.matches(":hover")) {
+      updateReadout(
+        ensureCrosshair(host),
+        input.candles,
+        input.latestClosedIndex ?? input.candles.length - 1,
+        input.formatPrice,
+        width < 520,
+      );
+    }
     const root = svg("svg", {
       class: "chart-svg",
       viewBox: `0 0 ${width} ${height}`,
@@ -1065,6 +1431,30 @@ export function mountChart(
       }
     }
 
+    if (input.times !== undefined && input.formatTime !== undefined) {
+      // Time labels along the bottom edge, spaced so they never collide.
+      const minGap = 76;
+      const step = Math.max(1, Math.ceil(minGap / Math.max(1, timeScale.barSpacing)));
+      for (let index = visible.from; index <= Math.min(visible.to, revealed - 1); index += step) {
+        const timeMs = input.times[index];
+        if (timeMs === undefined) {
+          continue;
+        }
+        const x = indexToCoordinate(plotWidth, revealed, timeScale, index) + laid.plotLeft;
+        if (x < laid.plotLeft + 8 || x > laid.plotRight - 8) {
+          continue;
+        }
+        const tick = svg("text", {
+          class: "time-tick",
+          x: px(x),
+          y: px(height - 6),
+          "text-anchor": "middle",
+        });
+        tick.textContent = input.formatTime(timeMs);
+        root.append(tick);
+      }
+    }
+
     for (const line of input.lines) {
       if (!finitePrice(line.price)) {
         continue;
@@ -1104,7 +1494,7 @@ export function mountChart(
   const existing = paints.get(host);
   if (existing === undefined) {
     resizeObserver?.observe(host);
-    const session = bindGestures(host, read, paint);
+    const session = bindGestures(host, read, paint, () => input);
     paints.set(host, {
       seriesKey: input.seriesKey,
       paint,

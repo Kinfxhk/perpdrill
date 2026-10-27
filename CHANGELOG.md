@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+## 1.2.0 — 2026-10-27
+
+- The chart reads like a desk chart. A crosshair follows the pointer with a
+  price tag on the axis and a time tag under the bar, and an O/H/L/C readout
+  sits at the top of the pane, showing the bar under the pointer or the latest
+  closed bar when the pointer is away. Time labels run along the bottom edge.
+
+- Prices scale from the right axis: drag it to magnify, wheel over it for fine
+  steps (about 7.5% per notch, finer for small trackpad deltas), double-click
+  it to fit again, and double-click the plot to re-fit the time scale. The
+  cursor turns into a resize arrow over the axis.
+
+- The price scale fits the visible candles. Entry, liquidation, floor, stop and
+  target drawings may stretch it by at most 15% of the candle range on each
+  side and are clipped beyond that, instead of flattening the candles into a
+  strip. Candle padding drops from 8% to 5% a side.
+
+- Candle bodies and wicks render with crisp edges on the device pixel grid.
+
 ## 1.1.0 — 2026-10-27
 
 - Wheel over the price axis scales prices vertically, the way a charting desk
