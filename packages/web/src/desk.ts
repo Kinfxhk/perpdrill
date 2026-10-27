@@ -433,6 +433,8 @@ export function mountDesk(root: HTMLElement): void {
     primaryTf: stored.timeframeMin,
     secondaryTf: stored.timeframeMin,
   };
+  let indicatorsOpen = false;
+  let noticesOpen = false;
   let introTimer = 0;
   let intro: PracticeIntro = idlePracticeIntro();
   let introKey: string | null = null;
@@ -643,6 +645,7 @@ export function mountDesk(root: HTMLElement): void {
       state.endedAt = state.cursor;
       pausePlayback();
       state.tab = "review";
+      state.drawerOpen = true;
     }
   };
 
@@ -933,31 +936,49 @@ export function mountDesk(root: HTMLElement): void {
       state.drawerOpen = false;
       render();
     });
-    const shell = el("div", { className: state.drawerOpen ? "shell drawer-open" : "shell" }, [
-      el("p", { className: "banner", attrs: { role: "status" }, text: t("banner") }),
-      mountNav(),
-      mountMarket(frame, change, currentBar?.close ?? frame.mark),
-      mountDisclaimer(),
-      el("div", { className: "workspace" }, [
-        mountChartSection(series, frame, money, mountReplay(frame, last, drawdown, money)),
-        mountTicket({
-          frame,
-          previewQty,
-          previewFee,
-          previewValue,
-          liqPrice,
-          liqDistance,
-          maintenance,
-          tradingPower,
-          latestReject: latestReject?.reason ?? null,
-          money,
-          dash,
-        }),
-        el("div", { className: "desk-bottom" }, [mountBlotter(frame, money, dash)]),
-        drawerOverlay,
+    const notices = el("details", { className: "desk-notices" }, [
+      el("summary", { text: `${ENGINE_STATUS} · ${t("nav.rules")}` }),
+      el("div", { className: "notice-content" }, [
+        el("p", { className: "banner", attrs: { role: "status" }, text: t("banner") }),
+        mountDisclaimer(),
       ]),
-      mountColophon(),
     ]);
+    notices.open = noticesOpen;
+    notices.addEventListener("toggle", () => {
+      if (notices.isConnected) noticesOpen = notices.open;
+    });
+    const colophon = mountColophon();
+    colophon.append(notices);
+    const shell = el(
+      "div",
+      {
+        className: `shell shell-desk${state.drawerOpen ? " drawer-open" : ""}${state.tab === "review" ? " shell-review" : ""}`,
+      },
+      [
+        mountNav(),
+        mountMarket(frame, change, currentBar?.close ?? frame.mark),
+        el("div", { className: "workspace" }, [
+          mountChartSection(series, frame, money),
+          mountTicket({
+            frame,
+            previewQty,
+            previewFee,
+            previewValue,
+            liqPrice,
+            liqDistance,
+            maintenance,
+            tradingPower,
+            latestReject: latestReject?.reason ?? null,
+            money,
+            dash,
+          }),
+          el("div", { className: "desk-bottom" }, [mountBlotter(frame, money, dash)]),
+          drawerOverlay,
+        ]),
+        colophon,
+        mountReplay(frame, last, drawdown, money),
+      ],
+    );
     if (flash !== null) {
       shell.querySelector(".replay-meters")?.classList.add(`flash-${flash}`);
     }
@@ -1616,6 +1637,7 @@ export function mountDesk(root: HTMLElement): void {
           if (state.series.length > 0) {
             state.screen = "play";
             state.tab = "review";
+            state.drawerOpen = true;
             render();
           }
         }),
@@ -1839,7 +1861,6 @@ export function mountDesk(root: HTMLElement): void {
     series: readonly Bar[],
     frame: Frame,
     money: (value: number) => string,
-    replay: HTMLElement,
   ): HTMLElement {
     const lines: ChartLine[] = [];
     if (frame.position !== null) {
@@ -2011,6 +2032,14 @@ export function mountDesk(root: HTMLElement): void {
       panes.append(mountPane(1, state.secondaryTf, false));
     }
 
+    const indicators = el("details", { className: "indicator-settings" }, [
+      el("summary", { text: t("indicator.label") }),
+      mountIndicatorControls(),
+    ]);
+    indicators.open = indicatorsOpen;
+    indicators.addEventListener("toggle", () => {
+      if (indicators.isConnected) indicatorsOpen = indicators.open;
+    });
     return el("section", { className: "chart", attrs: { "aria-label": "Chart" } }, [
       el("div", { className: "chart-toolbar" }, [
         el("span", {
@@ -2018,13 +2047,12 @@ export function mountDesk(root: HTMLElement): void {
           text: `${sampleMarketLabel(state.lang, state.market)} · ${formatTimeframe(state.setup.timeframeMin)} · ${t("setup.seed")} ${state.setup.seed}`,
         }),
         split,
+        indicators,
         el("span", {
           className: "toolbar-note",
           text: `${t("replay.bar")} ${state.cursor + 1}/${series.length} · ${t("teaching.mark")}`,
         }),
       ]),
-      mountIndicatorControls(),
-      replay,
       panes,
     ]);
   }
@@ -2770,6 +2798,7 @@ export function mountDesk(root: HTMLElement): void {
     ];
     return el("div", { className: "review" }, [
       el("h2", { className: `verdict verdict-${frame.phase}`, text: verdict }),
+      spark,
       el("div", { className: "review-grid" }, [
         stat(t("review.return"), pct(metrics.returnPct)),
         stat(t("review.net"), amount(metrics.netPnl)),
@@ -2840,7 +2869,6 @@ export function mountDesk(root: HTMLElement): void {
           ]),
         ];
       })(),
-      spark,
       el("p", { className: "hint", text: t("review.carryNote") }),
       el("table", {}, [
         el("thead", {}, [
@@ -2904,30 +2932,28 @@ export function mountDesk(root: HTMLElement): void {
       pausePlayback();
       state.endedAt = state.cursor;
       state.tab = "review";
+      state.drawerOpen = true;
       render();
     });
     for (const node of [play, step, finish]) {
       node.disabled = ended || state.countdown !== null;
     }
-    const speeds = el(
-      "div",
-      { className: "speed-row", attrs: { role: "group", "aria-label": t("replay.speed") } },
-      SPEEDS.map((speed) => {
-        const node = actionButton(
-          speed.label,
-          speed.ms === state.speedMs ? "chip is-current" : "chip",
-          () => {
-            state.speedMs = speed.ms;
-            if (state.playing) {
-              startPlay();
-            }
-            render();
-          },
-        );
-        node.setAttribute("aria-pressed", speed.ms === state.speedMs ? "true" : "false");
-        return node;
-      }),
-    );
+    const speeds = el("select", {
+      className: "speed-select",
+      attrs: { "aria-label": t("replay.speed") },
+    });
+    for (const speed of SPEEDS) {
+      const option = el("option", { text: speed.label, attrs: { value: String(speed.ms) } });
+      option.selected = speed.ms === state.speedMs;
+      speeds.append(option);
+    }
+    speeds.addEventListener("change", () => {
+      const speed = SPEEDS.find((item) => String(item.ms) === speeds.value);
+      if (speed === undefined) return;
+      state.speedMs = speed.ms;
+      if (state.playing) startPlay();
+      render();
+    });
     return el("div", { className: "replay", attrs: { "aria-label": "Replay" } }, [
       el("div", { className: "replay-controls" }, [
         play,
@@ -2959,7 +2985,7 @@ export function mountDesk(root: HTMLElement): void {
       attrs: { href: SOURCE_URL, rel: "noreferrer" },
     });
     source.dataset.license = "AGPL-3.0-or-later";
-    return el("p", { className: "colophon" }, [
+    return el("div", { className: "colophon" }, [
       el("span", {
         text: `${PRODUCT_NAME} ${PRODUCT_VERSION} · ${ENGINE_STATUS} · preset schema v${PROP_RULE_PRESET_SCHEMA_VERSION} · `,
       }),
@@ -2972,7 +2998,7 @@ export function mountDesk(root: HTMLElement): void {
       return;
     }
     const target = event.target;
-    if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) {
+    if (target instanceof Element && target.closest("input, select, button, summary, a")) {
       return;
     }
     if (event.key === " ") {

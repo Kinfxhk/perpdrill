@@ -8,6 +8,7 @@ import {
   dataKey,
   markCountdownPlayed,
   sanitizeSetup,
+  setupMarkets,
   takeFirstRun,
 } from "./setup.ts";
 
@@ -79,6 +80,12 @@ describe("plan presets", () => {
     expect(bogus.dailyLossLimitPct).toBeNull();
     expect(leverageCap(parsed.preset, "SYNTH-NQ")).toBe(25);
     expect(leverageCap(parsed.preset, "SYNTH-GC")).toBe(15);
+    expect(setupMarkets(parsed.preset)).toEqual(["SYNTH-NQ", "SYNTH-GC"]);
+    expect(setupMarkets(null)).toEqual(["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES", "SYNTH-BTC"]);
+    expect(setupMarkets(customPreset(base.custom))).toContain("SYNTH-BTC");
+    const btc = sanitizeSetup({ market: "SYNTH-BTC", seed: 7 });
+    expect(btc.market).toBe("SYNTH-BTC");
+    expect(dataKey(btc)).toBe("SYNTH-BTC:15:600:7");
   });
 });
 

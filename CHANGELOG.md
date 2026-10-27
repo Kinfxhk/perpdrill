@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+- Add SYNTH-BTC as the fourth fictional generated market for custom rules and
+  free practice. It uses only local seeded randomness, never exchange history.
+  Existing market ids, parameters, seed outputs and plan market scopes stay
+  unchanged. All five languages label the samples as fictional, not exchange
+  contract models; NOTICE documents the data/source-code licensing boundary.
+- Slate is the default theme on first use and when preference storage is unavailable;
+  existing saved themes are preserved. Theme labels in all five languages, the initial
+  HTML colour, and the pictured guide match the new default.
+- The desk keeps the chart as the dominant surface. The shell owns the viewport
+  height, the market notice and rule disclaimer fold into a footer details
+  popover, the indicator settings open from the chart toolbar as a popover, and
+  the blotter bottom row is a fixed-height strip that yields to the chart. The
+  review tab expands the bottom row only on desktop; the phone review stays in the drawer.
+- The replay bar moves to the desk bottom on every width, its speed chips
+  become a compact select, and the phone keeps the same structure: the chart
+  takes the space left by the header, the replay/trade bar, and the footer.
+  The phone footer and source link live in the drawer; short portrait phones drop
+  only the meters so the chart stays on screen.
+- Re-shoot the five Slate guide images with prominent amber frames and matching
+  numbered captions in both languages. Orders use a readable ticket close-up;
+  the setup, desk, review and phone frames identify the exact taught regions.
+
 ## 1.0.0 — 2026-10-27
 
 - Desk themes use original cool-green accents. Grove, Lagoon, and Iris
