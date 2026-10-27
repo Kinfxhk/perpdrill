@@ -25,3 +25,15 @@ export function signedNumber(value: number, locale: string, digits = 2): string 
   const prefix = value > 0 ? "+" : "";
   return `${prefix}${formatNumber(value, locale, digits)}`;
 }
+
+/** Crosshair time tag: a 24-hour clock in the reader's zone. */
+export function formatBarTime(timeMs: number, locale: string): string {
+  if (!Number.isFinite(timeMs)) {
+    return "";
+  }
+  return new Date(timeMs).toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}

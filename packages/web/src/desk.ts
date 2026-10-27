@@ -88,7 +88,14 @@ import {
   formingStep,
   type FormingState,
 } from "./forming.ts";
-import { formatNumber, formatPct, formatQty, formatTimeframe, signedNumber } from "./format.ts";
+import {
+  formatBarTime,
+  formatNumber,
+  formatPct,
+  formatQty,
+  formatTimeframe,
+  signedNumber,
+} from "./format.ts";
 import {
   LANG_CHOICES,
   THEMES,
@@ -2024,6 +2031,9 @@ export function mountDesk(root: HTMLElement): void {
             bands,
             label: `${labelTf} · ${t("chart.sample")} · ${t("replay.bar")} ${state.cursor + 1}/${series.length}`,
             formatPrice: money,
+            times: drawn.map((bar) => bar.timeMs),
+            latestClosedIndex: Math.max(0, previewExtra ? drawn.length - 2 : drawn.length - 1),
+            formatTime: (timeMs) => formatBarTime(timeMs, locale()),
             seriesKey,
             // Counts the forming preview. Pause removes that one bar and keeps the zoom.
             endIndex: view === null || view.length === 0 ? 0 : view.length - 1,

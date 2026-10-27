@@ -17,6 +17,10 @@ import {
   candleDirection,
   candleWickDeviceWidth,
   layoutCandles,
+  priceZoomAfterDrag,
+  priceZoomAfterWheel,
+  visibleCandleRange,
+  withinPriceReach,
   type Candle,
 } from "./chart.ts";
 
@@ -121,6 +125,43 @@ describe("practice candle geometry", () => {
     expect(zoomed.yOf(14)).toBeLessThan(fitted.yOf(14));
     expect(zoomed.yOf(7)).toBeGreaterThan(fitted.yOf(7));
     expect(layoutCandles({ ...args, priceScale: 0.5 }).yOf(14)).toBeCloseTo(fitted.yOf(14), 5);
+  });
+
+  it("inverts yOf so the crosshair can read the price under the pointer", () => {
+    const laid = layoutCandles({
+      candles: [up, down, doji],
+      width: 640,
+      height: 360,
+      padLeft: 12,
+      padRight: 72,
+      pixelRatio: 1,
+      priceScale: 3,
+    });
+    for (const price of [7, 9.5, 11, 14]) {
+      expect(laid.priceOf(laid.yOf(price))).toBeCloseTo(price, 6);
+    }
+  });
+
+  it("keeps far-away drawings out of the price fit and leaves near ones in", () => {
+    const candles: Candle[] = [up, down, doji];
+    const range = visibleCandleRange(candles, { from: 0, to: 2 });
+    expect(range).toEqual({ low: 7, high: 14 });
+    expect(withinPriceReach(range, 14)).toBe(true);
+    expect(withinPriceReach(range, 7)).toBe(true);
+    expect(withinPriceReach(range, 15)).toBe(true);
+    expect(withinPriceReach(range, 15.5)).toBe(false);
+    expect(withinPriceReach(range, 5)).toBe(false);
+    expect(withinPriceReach(null, 1)).toBe(true);
+  });
+
+  it("scales prices in fine steps from the wheel and the axis drag", () => {
+    expect(priceZoomAfterWheel(1, 0)).toBe(1);
+    expect(priceZoomAfterWheel(1, -120)).toBeCloseTo(1.0746, 3);
+    expect(priceZoomAfterWheel(1, -20)).toBeLessThan(priceZoomAfterWheel(1, -120));
+    expect(priceZoomAfterWheel(1, 120)).toBe(1);
+    expect(priceZoomAfterWheel(50, -120)).toBe(20);
+    expect(priceZoomAfterDrag(1, 100, 0)).toBeGreaterThan(1);
+    expect(priceZoomAfterDrag(2, 100, 300)).toBe(1);
   });
 });
 

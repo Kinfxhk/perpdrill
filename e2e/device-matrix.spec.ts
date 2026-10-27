@@ -182,6 +182,52 @@ test.describe("chart controls", () => {
     const after = (await candle.boundingBox())?.width ?? 0;
     expect(after).toBeGreaterThan(before);
   });
+
+  test("shows the crosshair and the OHLC readout under the pointer", async ({ page }) => {
+    const stage = page.locator(".chart-stage").first();
+    const box = await stage.boundingBox();
+    if (box === null) throw new Error("no chart stage");
+    await page.mouse.move(box.x + box.width * 0.4, box.y + box.height * 0.5);
+    await expect(page.locator(".crosshair")).toBeVisible();
+    await expect(page.locator(".chart-ohlc")).toContainText("O ");
+    await expect(page.locator(".chart-ohlc")).toContainText("C ");
+    await expect(page.locator(".crosshair-price")).not.toBeEmpty();
+    await page.mouse.move(box.x + box.width + 40, box.y + box.height * 0.5);
+    await expect(page.locator(".crosshair")).toBeHidden();
+  });
+
+  test("scales prices from the axis, then fits again on a double click", async ({ page }) => {
+    const spread = async (): Promise<number> =>
+      page.evaluate(() => {
+        const rects = [
+          ...document.querySelectorAll(".chart-svg rect.candle-up, .chart-svg rect.candle-down"),
+        ];
+        const top = Math.min(...rects.map((rect) => Number(rect.getAttribute("y"))));
+        const bottom = Math.max(
+          ...rects.map(
+            (rect) => Number(rect.getAttribute("y")) + Number(rect.getAttribute("height")),
+          ),
+        );
+        return bottom - top;
+      });
+    const stage = page.locator(".chart-stage").first();
+    const box = await stage.boundingBox();
+    if (box === null) throw new Error("no chart stage");
+    const fitted = await spread();
+    const axisX = box.x + box.width - 20;
+    const axisY = box.y + box.height * 0.6;
+    await page.mouse.move(axisX, axisY);
+    await page.mouse.down();
+    await page.mouse.move(axisX, axisY - 60, { steps: 6 });
+    await page.mouse.up();
+    await expect(async () => {
+      expect(await spread()).toBeGreaterThan(fitted * 1.1);
+    }).toPass({ timeout: 3000 });
+    await page.mouse.dblclick(axisX, axisY);
+    await expect(async () => {
+      expect(Math.abs((await spread()) - fitted)).toBeLessThan(fitted * 0.05);
+    }).toPass({ timeout: 3000 });
+  });
 });
 
 test.describe("chart-first workspace", () => {
