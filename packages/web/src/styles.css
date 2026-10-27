@@ -767,6 +767,12 @@ output {
   border-top: 1px solid var(--line);
 }
 
+.margin-row {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 0;
+}
+
 .close-row {
   display: flex;
   flex-wrap: wrap;

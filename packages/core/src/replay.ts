@@ -149,12 +149,16 @@ export type Frame = {
   readonly equityCurve: readonly number[];
 };
 
+export type MarginMode = "isolated" | "cross";
+
 export type SessionInput = {
   readonly market: MarketId;
   readonly series: readonly Bar[];
   readonly preset: PracticePreset | null;
   readonly actions: readonly SessionAction[];
   readonly cursor: number;
+  /** Cross margin counts the free cash toward the liquidation cushion. */
+  readonly marginMode?: MarginMode;
   /** Per-window funding totals at their settlement bars (null elsewhere). */
   readonly funding?: readonly (number | null)[];
   /** Mark prices per bar; falls back to the bar close when absent. */
@@ -254,9 +258,13 @@ function phaseOf(input: {
   }
 }
 
-/** Mark where isolated equity equals maintenance, after any carry taken from margin. */
-function actualLiqPrice(position: WorkingPosition): number {
-  const cushion = position.isolatedMargin - maintenanceMargin(position.initialMargin);
+/** Mark where the position equity equals maintenance. Cross margin counts
+    the free cash toward the cushion; isolated counts only the position. */
+function actualLiqPrice(position: WorkingPosition, marginMode: MarginMode, cash: number): number {
+  const cushion =
+    marginMode === "cross"
+      ? cash + position.isolatedMargin - maintenanceMargin(position.initialMargin)
+      : position.isolatedMargin - maintenanceMargin(position.initialMargin);
   return position.entry - (sideSign(position.side) * cushion) / position.qty;
 }
 
@@ -284,6 +292,7 @@ export function replaySession(input: SessionInput): Frame {
     throw new Error("series is empty");
   }
   const cursor = Math.min(Math.max(input.cursor, 0), input.series.length - 1);
+  const marginMode: MarginMode = input.marginMode ?? "isolated";
   const starting = input.preset?.startingBalanceUsd ?? PRACTICE_STARTING_BALANCE_USD;
   const takerBps = resolvedTakerBps(input.preset);
   const useUPnL = includeUnrealized(input.preset);
@@ -392,7 +401,7 @@ export function replaySession(input: SessionInput): Frame {
       position.qty -= qty;
       position.initialMargin *= 1 - fraction;
       position.isolatedMargin -= marginShare;
-      position.liqPrice = actualLiqPrice(position);
+      position.liqPrice = actualLiqPrice(position, marginMode, cash);
     }
   };
 
@@ -439,7 +448,7 @@ export function replaySession(input: SessionInput): Frame {
         carryPaid += cost;
         fundingPaid += funding;
       }
-      position.liqPrice = actualLiqPrice(position);
+      position.liqPrice = actualLiqPrice(position, marginMode, cash);
     }
 
     // Intrabar: assume the adverse extreme prints before the favourable one.
@@ -639,7 +648,7 @@ export function replaySession(input: SessionInput): Frame {
             position.isolatedMargin += quote.initialMargin;
             position.leverage = action.leverage;
             position.impactBps = action.realizedImpactBps;
-            position.liqPrice = actualLiqPrice(position);
+            position.liqPrice = actualLiqPrice(position, marginMode, cash);
           } else {
             position = {
               market: input.market,

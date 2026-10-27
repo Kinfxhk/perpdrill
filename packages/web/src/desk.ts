@@ -29,10 +29,10 @@ import {
   replaySession,
   randomSeed,
   resampleBars,
+  reviewMetrics,
   resolvedMaxDrawdownUsd,
   resolvedTakerBps,
   seriesTimeframeMin,
-  sessionStats,
   simpleMovingAverage,
   syntheticFunding,
   syntheticMarks,
@@ -171,6 +171,8 @@ type DeskState = {
   orderPriceText: string;
   /** Fraction of the position the ticket close control closes. */
   closePct: BuyingPowerPct;
+  /** Teaching margin mode; cross counts free cash toward the liq cushion. */
+  marginMode: "isolated" | "cross";
   slipToleranceBps: number;
   realizedImpactBps: number;
   cursor: number;
@@ -386,6 +388,7 @@ export function mountDesk(root: HTMLElement): void {
     orderType: "market",
     orderPriceText: "",
     closePct: 100,
+    marginMode: "isolated",
     slipToleranceBps: DEFAULT_SLIP_TOLERANCE_BPS,
     realizedImpactBps: DEFAULT_REALIZED_IMPACT_BPS,
     cursor: 0,
@@ -646,6 +649,7 @@ export function mountDesk(root: HTMLElement): void {
       seed: setup.seed,
       bars: setup.bars,
       timeframeMin: setup.timeframeMin,
+      stress: setup.stress,
     });
     state.funding =
       sessionPreset?.costModel === "funding" && sessionPreset.fundingRatePerHour !== null
@@ -691,6 +695,7 @@ export function mountDesk(root: HTMLElement): void {
       funding: state.funding,
       marks: state.marks,
       index: state.indexSeries,
+      marginMode: state.marginMode,
     });
 
   let chartPlacements: ChartPlacement[] = [];
@@ -1093,6 +1098,27 @@ export function mountDesk(root: HTMLElement): void {
             state.setup = { ...state.setup, bars: Math.round(value) };
           },
         ),
+        el("label", { className: "field" }, [
+          el("span", { text: t("setup.stress") }),
+          (() => {
+            const select = el("select", {
+              attrs: { "aria-label": t("setup.stress") },
+            });
+            for (const choice of [
+              { value: "false", text: t("setup.stressNormal") },
+              { value: "true", text: t("setup.stressHard") },
+            ]) {
+              const option = el("option", { text: choice.text, attrs: { value: choice.value } });
+              option.selected = String(setup.stress) === choice.value;
+              select.append(option);
+            }
+            select.addEventListener("change", () => {
+              state.setup = { ...state.setup, stress: select.value === "true" };
+              render();
+            });
+            return select;
+          })(),
+        ]),
         el("div", { className: "seed-row" }, [
           numberField(
             "setup-seed",
@@ -2053,6 +2079,20 @@ export function mountDesk(root: HTMLElement): void {
                   ]),
             ]
           : []),
+        el(
+          "div",
+          { className: "margin-row", attrs: { role: "group", "aria-label": t("margin.mode") } },
+          (["isolated", "cross"] as const).map((mode) =>
+            actionButton(
+              t(`margin.${mode}`),
+              mode === state.marginMode ? "chip is-current" : "chip",
+              () => {
+                state.marginMode = mode;
+                render();
+              },
+            ),
+          ),
+        ),
         ...(view.frame.position === null
           ? []
           : [
@@ -2503,7 +2543,7 @@ export function mountDesk(root: HTMLElement): void {
   }
 
   function reviewPanel(frame: Frame, money: (value: number) => string, dash: string): HTMLElement {
-    const stats = sessionStats({
+    const metrics = reviewMetrics({
       fills: frame.fills,
       equityCurve: frame.equityCurve,
       startingBalance: startingBalance(),
@@ -2577,25 +2617,43 @@ export function mountDesk(root: HTMLElement): void {
     return el("div", { className: "review" }, [
       el("h2", { className: `verdict verdict-${frame.phase}`, text: verdict }),
       el("div", { className: "review-grid" }, [
-        stat(t("review.return"), pct(stats.returnPct)),
-        stat(t("review.net"), amount(stats.netPnl)),
-        stat(t("review.trades"), String(stats.trades)),
-        stat(t("review.winRate"), pct(stats.winRate)),
+        stat(t("review.return"), pct(metrics.returnPct)),
+        stat(t("review.net"), amount(metrics.netPnl)),
+        stat(t("review.trades"), String(metrics.trades)),
+        stat(t("review.winRate"), pct(metrics.winRate)),
         stat(
           t("review.pf"),
-          stats.profitFactor === null
+          metrics.profitFactor === null
             ? dash
-            : Number.isFinite(stats.profitFactor)
-              ? formatNumber(stats.profitFactor, locale())
+            : Number.isFinite(metrics.profitFactor)
+              ? formatNumber(metrics.profitFactor, locale())
               : "∞",
         ),
-        stat(t("review.expectancy"), amount(stats.expectancy)),
-        stat(t("review.avgWin"), amount(stats.avgWin)),
-        stat(t("review.avgLoss"), amount(stats.avgLoss)),
-        stat(t("review.best"), amount(stats.bestTrade)),
-        stat(t("review.worst"), amount(stats.worstTrade)),
-        stat(t("review.maxDd"), pct(stats.maxDrawdownPct)),
-        stat(t("review.fees"), money(frame.feesPaid + frame.carryPaid)),
+        stat(t("review.expectancy"), amount(metrics.expectancy)),
+        stat(t("review.avgWin"), amount(metrics.avgWin)),
+        stat(t("review.avgLoss"), amount(metrics.avgLoss)),
+        stat(t("review.best"), amount(metrics.bestTrade)),
+        stat(t("review.worst"), amount(metrics.worstTrade)),
+        stat(t("review.maxDd"), pct(metrics.maxDrawdownPct)),
+        stat(
+          t("review.sharpe"),
+          metrics.sharpe === null ? dash : formatNumber(metrics.sharpe, locale(), 2),
+        ),
+        stat(
+          t("review.sortino"),
+          metrics.sortino === null ? dash : formatNumber(metrics.sortino, locale(), 2),
+        ),
+        stat(
+          t("review.calmar"),
+          metrics.calmar === null ? dash : formatNumber(metrics.calmar, locale(), 2),
+        ),
+        stat(
+          t("review.avgHold"),
+          metrics.avgHoldBars === null ? dash : formatNumber(metrics.avgHoldBars, locale(), 1),
+        ),
+        stat(t("review.fees"), money(frame.feesPaid)),
+        stat(t("review.carry"), money(frame.carryPaid)),
+        stat(t("review.funding"), money(frame.fundingPaid)),
       ]),
       spark,
       el("p", { className: "hint", text: t("review.carryNote") }),

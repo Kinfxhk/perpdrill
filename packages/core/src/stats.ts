@@ -57,6 +57,50 @@ export function pairTrades(fills: readonly FillEvent[]): readonly Trade[] {
   return trades;
 }
 
+export type ReviewMetrics = SessionStats & {
+  /** Per-session Sharpe over the bar returns (not annualized). */
+  readonly sharpe: number | null;
+  readonly sortino: number | null;
+  readonly calmar: number | null;
+  readonly avgHoldBars: number | null;
+};
+
+export function reviewMetrics(input: {
+  readonly fills: readonly FillEvent[];
+  readonly equityCurve: readonly number[];
+  readonly startingBalance: number;
+}): ReviewMetrics {
+  const stats = sessionStats(input);
+  const returns: number[] = [];
+  for (let index = 1; index < input.equityCurve.length; index += 1) {
+    const previous = input.equityCurve[index - 1] ?? input.startingBalance;
+    const current = input.equityCurve[index] ?? previous;
+    if (previous > 0) {
+      returns.push((current - previous) / previous);
+    }
+  }
+  const count = returns.length;
+  const mean = count === 0 ? 0 : returns.reduce((sum, value) => sum + value, 0) / count;
+  const variance =
+    count === 0 ? 0 : returns.reduce((sum, value) => sum + (value - mean) ** 2, 0) / count;
+  const std = Math.sqrt(variance);
+  const downside = Math.sqrt(
+    returns.filter((value) => value < 0).reduce((sum, value) => sum + value * value, 0) /
+      Math.max(1, count),
+  );
+  const scale = Math.sqrt(count);
+  const trades = pairTrades(input.fills);
+  const holds = trades.map((trade) => trade.closeBar - trade.openBar);
+  return {
+    ...stats,
+    sharpe: std > 0 && count > 1 ? (mean / std) * scale : null,
+    sortino: downside > 0 && count > 1 ? (mean / downside) * scale : null,
+    calmar: stats.maxDrawdownPct > 0 ? stats.returnPct / stats.maxDrawdownPct : null,
+    avgHoldBars:
+      holds.length === 0 ? null : holds.reduce((sum, value) => sum + value, 0) / holds.length,
+  };
+}
+
 export function sessionStats(input: {
   readonly fills: readonly FillEvent[];
   readonly equityCurve: readonly number[];
