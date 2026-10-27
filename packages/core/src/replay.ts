@@ -134,6 +134,11 @@ export type Frame = {
   readonly liquidated: boolean;
   readonly feesPaid: number;
   readonly carryPaid: number;
+  /** Cumulative funding, signed: positive is paid, negative is received. */
+  readonly fundingPaid: number;
+  /** The window's funding total when the cursor sits on a settlement bar. */
+  readonly fundingSettlement: number | null;
+  readonly indexPrice: number | null;
   readonly fills: readonly FillEvent[];
   readonly rejects: readonly RejectEvent[];
   /** Working limit/stop orders, oldest first. */
@@ -148,6 +153,12 @@ export type SessionInput = {
   readonly preset: PracticePreset | null;
   readonly actions: readonly SessionAction[];
   readonly cursor: number;
+  /** Per-window funding totals at their settlement bars (null elsewhere). */
+  readonly funding?: readonly (number | null)[];
+  /** Mark prices per bar; falls back to the bar close when absent. */
+  readonly marks?: readonly number[];
+  /** Index prices per bar; null in the frame when absent. */
+  readonly index?: readonly number[];
 };
 
 type WorkingPosition = {
@@ -181,31 +192,42 @@ type WorkingOrder = {
   placedAtBar: number;
 };
 
-function carryCost(preset: PracticePreset | null, notional: number, hours: number): number {
+function swapCost(preset: PracticePreset | null, notional: number, hours: number): number {
   if (preset === null || hours <= 0 || notional <= 0) {
     return 0;
   }
-  switch (preset.costModel) {
-    case "swap": {
-      const rate = preset.swapDailyRatePct;
-      if (rate === null) {
-        return 0;
-      }
-      return notional * (rate / 100) * (hours / 24);
-    }
-    case "funding": {
-      if (!preset.venueFundingChangesBalance || preset.fundingRatePerHour === null) {
-        return 0;
-      }
-      return notional * preset.fundingRatePerHour * hours;
-    }
-    case "off":
-      return 0;
-    default: {
-      const unexpected: never = preset.costModel;
-      throw new Error(`unexpected cost model ${String(unexpected)}`);
-    }
+  if (preset.costModel !== "swap") {
+    return 0;
   }
+  const rate = preset.swapDailyRatePct;
+  if (rate === null) {
+    return 0;
+  }
+  return notional * (rate / 100) * (hours / 24);
+}
+
+/**
+ * Funding settles at the window's last bar from the synthetic sequence.
+ * Positive rate: longs pay shorts. Without a sequence the preset's flat
+ * hourly stub keeps the original continuous behaviour.
+ */
+function fundingCost(
+  preset: PracticePreset | null,
+  notional: number,
+  hours: number,
+  side: Side,
+  rate: number | null,
+): number {
+  if (preset === null || preset.costModel !== "funding" || !preset.venueFundingChangesBalance) {
+    return 0;
+  }
+  if (rate !== null) {
+    return sideSign(side) * notional * rate;
+  }
+  if (preset.fundingRatePerHour === null) {
+    return 0;
+  }
+  return sideSign(side) * notional * preset.fundingRatePerHour * hours;
 }
 
 function phaseOf(input: {
@@ -279,6 +301,7 @@ export function replaySession(input: SessionInput): Frame {
   let position: WorkingPosition | null = null;
   let feesPaid = 0;
   let carryPaid = 0;
+  let fundingPaid = 0;
   let liquidated = false;
   let propBreach: PropBreach | null = null;
   let targetHit = false;
@@ -369,12 +392,29 @@ export function replaySession(input: SessionInput): Frame {
 
     if (position !== null && previous !== undefined) {
       const hours = (bar.timeMs - previous.timeMs) / SAMPLE_BAR_MS;
-      const cost = carryCost(input.preset, position.qty * previous.close, hours);
-      if (cost !== 0) {
+      const notional = position.qty * previous.close;
+      const swap = swapCost(input.preset, notional, hours);
+      const funding =
+        input.preset?.costModel === "funding"
+          ? fundingCost(
+              input.preset,
+              notional,
+              hours,
+              position.side,
+              input.funding?.[index] ?? null,
+            )
+          : 0;
+      const cost = swap + funding;
+      if (cost > 0) {
         const fromCash = Math.max(0, Math.min(cash, cost));
         cash -= fromCash;
         position.isolatedMargin -= cost - fromCash;
         carryPaid += cost;
+        fundingPaid += funding;
+      } else if (cost < 0) {
+        cash += -cost;
+        carryPaid += cost;
+        fundingPaid += funding;
       }
       position.liqPrice = actualLiqPrice(position);
     }
@@ -509,6 +549,7 @@ export function replaySession(input: SessionInput): Frame {
 
     const frozen = liquidated || propBreach !== null;
     const price = bar.close;
+    const mark = input.marks?.[index] ?? price;
     for (const action of input.actions) {
       if (action.barIndex !== index) {
         continue;
@@ -671,7 +712,7 @@ export function replaySession(input: SessionInput): Frame {
 
     // Close check catches floors the intrabar solve skips (e.g. rules on realized equity).
     if (input.preset !== null && propBreach === null && !liquidated) {
-      const closed = equityAt(price);
+      const closed = equityAt(mark);
       const assessed = propEquity(closed.equity, closed.upnl, useUPnL);
       const daily = dailyFloor();
       const floor = maxFloor();
@@ -686,7 +727,7 @@ export function replaySession(input: SessionInput): Frame {
         propBreach = breach;
       }
     }
-    const settled = equityAt(price);
+    const settled = equityAt(mark);
     const settledAssessed = propEquity(settled.equity, settled.upnl, useUPnL);
     if (propBreach === null && !liquidated) {
       peak = Math.max(peak, settledAssessed);
@@ -705,7 +746,7 @@ export function replaySession(input: SessionInput): Frame {
   if (lastBar === undefined) {
     throw new Error("cursor is empty");
   }
-  const mark = lastBar.close;
+  const mark = input.marks?.[cursor] ?? lastBar.close;
   const marked = equityAt(mark);
   const pos = position as WorkingPosition | null;
   const maxDrawdownFloor = maxFloor();
@@ -751,6 +792,9 @@ export function replaySession(input: SessionInput): Frame {
     liquidated,
     feesPaid,
     carryPaid,
+    fundingPaid,
+    fundingSettlement: input.funding?.[cursor] ?? null,
+    indexPrice: input.index?.[cursor] ?? null,
     fills,
     rejects,
     pendingOrders:

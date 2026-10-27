@@ -34,6 +34,8 @@ import {
   seriesTimeframeMin,
   sessionStats,
   simpleMovingAverage,
+  syntheticFunding,
+  syntheticMarks,
   syntheticSeries,
   timeframeSupported,
   type Bar,
@@ -153,6 +155,9 @@ type DeskState = {
   screen: "setup" | "play";
   setup: SessionSetup;
   series: readonly Bar[];
+  funding: readonly (number | null)[];
+  marks: readonly number[];
+  indexSeries: readonly number[];
   countdown: number | null;
   speedMs: number;
   stopLossText: string;
@@ -364,6 +369,9 @@ export function mountDesk(root: HTMLElement): void {
     screen: "setup",
     setup: stored,
     series: [],
+    funding: [],
+    marks: [],
+    indexSeries: [],
     countdown: null,
     speedMs: SPEEDS[0].ms,
     stopLossText: "",
@@ -636,6 +644,24 @@ export function mountDesk(root: HTMLElement): void {
       bars: setup.bars,
       timeframeMin: setup.timeframeMin,
     });
+    state.funding =
+      sessionPreset?.costModel === "funding" && sessionPreset.fundingRatePerHour !== null
+        ? syntheticFunding({
+            seed: setup.seed,
+            bars: setup.bars,
+            timeframeMin: setup.timeframeMin,
+            meanPerHour: sessionPreset.fundingRatePerHour,
+            intervalHours: sessionPreset.fundingIntervalHours ?? 8,
+          })
+        : [];
+    {
+      const { index, mark } = syntheticMarks({
+        seed: setup.seed,
+        closes: state.series.map((bar) => bar.close),
+      });
+      state.marks = mark;
+      state.indexSeries = index;
+    }
     const sourceMin = setup.timeframeMin;
     state.primaryTf = timeframeSupported(sourceMin, state.primaryTf) ? state.primaryTf : sourceMin;
     state.secondaryTf = timeframeSupported(sourceMin, state.secondaryTf)
@@ -659,6 +685,9 @@ export function mountDesk(root: HTMLElement): void {
       preset: preset(),
       actions: state.actions,
       cursor: state.cursor,
+      funding: state.funding,
+      marks: state.marks,
+      index: state.indexSeries,
     });
 
   let chartPlacements: ChartPlacement[] = [];
@@ -1457,7 +1486,7 @@ export function mountDesk(root: HTMLElement): void {
       ]),
       el("div", { className: "stats" }, [
         stat(t("market.mid"), formatNumber(frame.mark, locale())),
-        stat(t("market.index"), formatNumber(index, locale())),
+        stat(t("market.index"), formatNumber(frame.indexPrice ?? index, locale())),
         stat(t("market.change"), formatPct(change, locale())),
         stat(t("market.funding"), funding),
         stat(t("market.oi"), t("liq.none")),

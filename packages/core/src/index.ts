@@ -63,6 +63,8 @@ export {
   SYNTHETIC_TIMEFRAMES_MIN,
   isSyntheticTimeframe,
   randomSeed,
+  syntheticFunding,
+  syntheticMarks,
   syntheticSeries,
 } from "./synthetic.ts";
 export type { SyntheticSpec, SyntheticTimeframe } from "./synthetic.ts";

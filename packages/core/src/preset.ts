@@ -39,6 +39,8 @@ export type PracticePreset = {
   readonly makerBps: number | null;
   readonly swapDailyRatePct: number | null;
   readonly fundingRatePerHour: number | null;
+  /** Settlement window for the synthetic funding sequence. Null when no funding. */
+  readonly fundingIntervalHours: number | null;
   readonly venueFundingChangesBalance: boolean;
   readonly startingBalanceUsd: number | null;
   readonly markets: readonly MarketId[] | null;
@@ -261,6 +263,19 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
     }
     fundingRatePerHour = value.fundingRatePerHour;
   }
+  let fundingIntervalHours: number | null = null;
+  if (value.fundingIntervalHours !== undefined && value.fundingIntervalHours !== null) {
+    if (
+      value.fundingIntervalHours !== 1 &&
+      value.fundingIntervalHours !== 4 &&
+      value.fundingIntervalHours !== 8
+    ) {
+      return { ok: false, error: "funding interval must be 1, 4 or 8 hours" };
+    }
+    fundingIntervalHours = value.fundingIntervalHours;
+  } else if (fundingRatePerHour !== null) {
+    fundingIntervalHours = 8;
+  }
   const venueFundingChangesBalance = value.venueFundingChangesBalance === true;
   let startingBalanceUsd: number | null = null;
   if (value.startingBalanceUsd !== undefined && value.startingBalanceUsd !== null) {
@@ -349,6 +364,7 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
       makerBps,
       swapDailyRatePct,
       fundingRatePerHour,
+      fundingIntervalHours,
       venueFundingChangesBalance,
       startingBalanceUsd,
       markets,

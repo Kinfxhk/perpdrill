@@ -1,5 +1,36 @@
 import { expect, test } from "@playwright/test";
 
+/** Pause playback and confirm it took: the button must flip back to Play. */
+async function ensurePaused(page: import("@playwright/test").Page): Promise<void> {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const pause = page.getByRole("button", { name: "Pause" });
+    if (await pause.isVisible().catch(() => false)) {
+      await pause.click();
+      try {
+        await page
+          .getByRole("button", { name: "Play" })
+          .waitFor({ state: "visible", timeout: 2000 });
+        return;
+      } catch {
+        // The click was swallowed by a render; try again.
+      }
+    } else {
+      await page.waitForTimeout(300);
+    }
+  }
+}
+
+/** Wait until the bar counter stops changing: the desk is no longer rendering. */
+async function waitForQuietDesk(page: import("@playwright/test").Page): Promise<void> {
+  const barStat = page.locator(".replay-meters .stat-value").last();
+  const first = await barStat.textContent();
+  await page.waitForTimeout(1300);
+  const second = await barStat.textContent();
+  if (first !== second) {
+    await waitForQuietDesk(page);
+  }
+}
+
 /**
  * Device matrix: the same session flow at phone, tablet and desktop sizes.
  * Geometry comes from explicit viewports, not the device registry.
@@ -32,13 +63,22 @@ test.describe("working orders", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test("places and cancels a working limit order", async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem("perpdrill.lang", "en"));
+    await page.addInitScript(() => {
+      localStorage.setItem("perpdrill.lang", "en");
+      localStorage.setItem("perpdrill.countdown", "1");
+    });
     await page.goto("/");
+    // Free practice: no drawdown floors can end the session mid-test.
+    await page.locator("#setup-rules").selectOption({ label: "No rules (free practice)" });
     await page.getByRole("button", { name: "Start backtest" }).click();
-    const cancel = page.getByRole("button", { name: "Cancel" });
-    if (await cancel.isVisible().catch(() => false)) {
-      await cancel.click();
+    try {
+      await page.getByRole("button", { name: "Skip" }).waitFor({ state: "visible", timeout: 2000 });
+      await page.getByRole("button", { name: "Skip" }).click();
+    } catch {
+      // The intro already finished on its own.
     }
+    await ensurePaused(page);
+    await waitForQuietDesk(page);
     await expect(page.locator(".chart-stage")).toBeVisible();
 
     const ticket = page.locator(".workspace > .ticket");
@@ -65,8 +105,15 @@ for (const size of SIZES) {
     });
 
     test.beforeEach(async ({ page }) => {
-      await page.addInitScript(() => localStorage.setItem("perpdrill.lang", "en"));
+      await page.addInitScript(() => {
+        localStorage.setItem("perpdrill.lang", "en");
+        // The desk skips the 3-2-1 intro in automated browsers; force it so
+        // the test drives the same path a player sees.
+        localStorage.setItem("perpdrill.countdown", "1");
+      });
       await page.goto("/");
+      // Free practice: no drawdown floors can end the session mid-test.
+      await page.locator("#setup-rules").selectOption({ label: "No rules (free practice)" });
     });
 
     test("fits the setup screen without sideways scroll", async ({ page }) => {
@@ -81,16 +128,18 @@ for (const size of SIZES) {
 
     test("runs a session and places a market order", async ({ page }) => {
       await page.getByRole("button", { name: "Start backtest" }).click();
-      // Cancel stops the intro without starting playback, so the desk stays
-      // stable while the test trades. (Skip starts playback and re-renders.)
-      const cancel = page.getByRole("button", { name: "Cancel" });
-      if (await cancel.isVisible().catch(() => false)) {
-        await cancel.click();
+      // Skip ends the intro and starts playback; pausing right after leaves
+      // the desk still for the test. (Cancel leaves the practice screen.)
+      try {
+        await page
+          .getByRole("button", { name: "Skip" })
+          .waitFor({ state: "visible", timeout: 2000 });
+        await page.getByRole("button", { name: "Skip" }).click();
+      } catch {
+        // The intro already finished on its own.
       }
-      const pause = page.getByRole("button", { name: "Pause" });
-      if (await pause.isVisible().catch(() => false)) {
-        await pause.click();
-      }
+      await ensurePaused(page);
+      await waitForQuietDesk(page);
       await expect(page.locator(".chart-stage")).toBeVisible();
 
       const widths = await page.evaluate(() => ({
