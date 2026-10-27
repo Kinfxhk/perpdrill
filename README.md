@@ -2,11 +2,11 @@
 
 本機優先的教育用模擬／回放練習台骨架，用來對照加密永續合約、類 prop 規則做練習。這不是交易所客戶端，也不會下真單。
 
-**狀態：0.3.0 回測台。** 生成合成數據、設定規則（自訂／社群預設／無）、每組數據第一次開始前倒數 3 秒，然後逐根播放、下市價單、設停利停損，結束後看檢討報告。強平是隔離教學近似，不是交易所公式，也不是官方評測結果。
+**狀態：1.0.0 練習台。** 生成合成數據或載入真實行情（CSV／Binance 公開資料），設定規則（自訂／社群預設／無），逐根播放、下市價／限價／觸價單、加減倉、資金費結算、mark price 強平，檢討有完整指標與蒙特卡羅穩健性參考。強平仍是隔離教學近似，不是交易所公式，也不是官方評測結果。
 
 儲存庫：<https://github.com/Kinfxhk/perpdrill>
 
-線上版面（GitHub Pages，與本機同一張 0.1 練習台：可下市價單、看持倉與損益；強平是教學近似）：<https://kinfxhk.github.io/perpdrill/>。由 `main` 的 Pages workflow 部署，內容安全政策仍是 `default-src 'self'`。
+線上版面（GitHub Pages，與本機同一版本；手機、平板、桌面三種版面）：<https://kinfxhk.github.io/perpdrill/>。由 `main` 的 Pages workflow 部署。
 
 ## 這是什麼
 
@@ -88,11 +88,11 @@ npm start
 
 Local-first educational simulator and replay desk for crypto perpetuals and prop-style rules. It is not an exchange client and it does not send live orders.
 
-**Status: 0.3.0 backtest desk.** Generate synthetic data, set rules (custom, community preset, or none), count down 3 seconds on the first run of each data set, then play bar by bar with market orders, stop loss and take profit, and read the review when the session ends. Liquidation is an isolated teaching approximation, not an exchange formula and not an official evaluation result.
+**Status: 1.0.0 practice desk.** Generate synthetic data or load real quotes (CSV / Binance public data), set rules (custom, community preset, or none), then play bar by bar with market, limit and stop orders, stack and reduce positions, settle funding, liquidate on mark price, and read the review with full metrics and a Monte Carlo stability gauge. Liquidation is an isolated teaching approximation, not an exchange formula and not an official evaluation result.
 
 Repository: <https://github.com/Kinfxhk/perpdrill>
 
-Online desk (GitHub Pages, the same 0.1 practice desk: market orders, position, and PnL; liquidation is a teaching approximation): <https://kinfxhk.github.io/perpdrill/>. The Pages workflow on `main` deploys it. The page policy stays `default-src 'self'`.
+Online desk (GitHub Pages, the same build; phone, tablet and desktop layouts): <https://kinfxhk.github.io/perpdrill/>. The Pages workflow on `main` deploys it.
 
 ## What it is
 
