@@ -129,6 +129,7 @@ type Tab = "positions" | "history" | "fills" | "rules" | "review";
 /** Bars drawn at once; older bars scroll off the left edge. */
 const CHART_WINDOW = 140;
 const SPEEDS = [
+  { label: "0.5×", ms: 1600 },
   { label: "1×", ms: 800 },
   { label: "2×", ms: 400 },
   { label: "4×", ms: 200 },
