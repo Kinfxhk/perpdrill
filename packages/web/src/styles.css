@@ -50,6 +50,10 @@ body {
   line-height: 1.4;
 }
 
+button {
+  touch-action: manipulation;
+}
+
 button,
 input {
   font: inherit;
@@ -842,7 +846,7 @@ td.empty {
   color: var(--accent);
 }
 
-@media (min-width: 861px) and (min-height: 700px) {
+@media (min-width: 900px) and (min-height: 700px) {
   .shell {
     height: 100dvh;
     overflow: hidden;
@@ -862,7 +866,7 @@ td.empty {
   }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 899px) {
   .topnav,
   .market,
   .colophon {
@@ -974,9 +978,9 @@ td.empty {
 }
 
 /* Readable floor only outside the height-locked desk. Inside
-   (min-width: 861px) and (min-height: 700px) the shell rule keeps
+   (min-width: 900px) and (min-height: 700px) the shell rule keeps
    min-height: 0 so both split stages can shrink in the fixed 100dvh. */
-@media (max-width: 860px), (max-height: 699px) {
+@media (max-width: 899px), (max-height: 699px) {
   .chart-panes.is-split .chart-stage {
     min-height: 180px;
   }
@@ -1352,7 +1356,7 @@ button:disabled {
 }
 
 /* Phone and tablet: the replay row stays in the chart column, above the stage. */
-@media (max-width: 860px) {
+@media (max-width: 899px) {
   .replay-controls {
     flex: 1 1 100%;
   }
@@ -1738,4 +1742,221 @@ button:disabled {
   --long-rgb: 182 235 200;
   --short-rgb: 240 180 192;
   --shade-rgb: 4 6 8;
+}
+
+/* ---------- Responsive desk: tablet column, phone drawer + trade bar ---------- */
+
+.panel-toggle,
+.trade-order-row {
+  display: none;
+}
+
+.drawer-overlay {
+  display: none;
+}
+
+/* Tablet: keep the two columns with a narrower ticket. */
+@media (min-width: 900px) and (max-width: 1199px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+}
+
+/* Touch tablets in the two-column band get the same tap floor as phones. */
+@media (pointer: coarse) and (min-width: 900px) {
+  button,
+  select {
+    min-height: 44px;
+  }
+
+  input,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* Phone: chart-first single column. Ticket and blotter fold into an
+   off-canvas drawer; the replay row becomes the fixed bottom trade bar. */
+@media (max-width: 899px) {
+  .shell {
+    padding-bottom: calc(240px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .panel-toggle {
+    display: inline-flex;
+  }
+
+  .replay {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 30;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: var(--bg-header);
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+  }
+
+  .replay-controls {
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+  }
+
+  .replay-controls button {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 8px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .replay-controls select {
+    flex: 0 0 56px;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .replay-meters {
+    flex-wrap: nowrap;
+    gap: 10px;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+
+  .replay-meters .stat {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    align-items: baseline;
+  }
+
+  .replay-meters .stat-value {
+    font-size: 12px;
+  }
+
+  .trade-order-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .trade-order-row .side {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  .trade-order-row .pct-row {
+    flex: 1 1 auto;
+    display: flex;
+    gap: 4px;
+  }
+
+  .trade-order-row .pct {
+    flex: 1 1 0;
+    min-height: 36px;
+    padding: 0 4px;
+    font-size: 13px;
+  }
+
+  .trade-order-row .submit-row {
+    flex: 1 1 100%;
+    display: flex;
+  }
+
+  .trade-order-row .submit {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  .workspace > .ticket,
+  .desk-bottom {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 50%;
+    width: min(88vw, 420px);
+    z-index: 40;
+    margin: 0;
+    max-width: none;
+    transform: translateX(105%);
+    transition: transform 200ms ease-out;
+    background: var(--bg-header);
+    border-left: 1px solid var(--line);
+    border-right: 0;
+  }
+
+  .workspace > .ticket {
+    overflow: hidden;
+  }
+
+  .ticket-scroll {
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .desk-bottom {
+    top: 50%;
+    bottom: 0;
+  }
+
+  .desk-bottom .blotter {
+    overflow: auto;
+  }
+
+  .shell.drawer-open > .workspace > .ticket,
+  .shell.drawer-open .desk-bottom {
+    transform: none;
+  }
+
+  .shell.drawer-open .drawer-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    background: var(--overlay);
+  }
+}
+
+/* Phone landscape: reclaim height for the chart. */
+@media (max-height: 520px) {
+  .replay-meters {
+    display: none;
+  }
+
+  .replay-controls {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .replay-controls button {
+    flex: 0 0 auto;
+    font-size: 12px;
+  }
+
+  .shell {
+    padding-bottom: calc(170px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .chart-stage {
+    min-height: 120px;
+  }
+
+  .topnav,
+  .market {
+    padding: 4px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace > .ticket,
+  .desk-bottom {
+    transition: none;
+  }
 }

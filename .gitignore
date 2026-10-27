@@ -10,3 +10,6 @@ coverage/
 Thumbs.db
 *.log
 uploads/
+test-results/
+playwright-report/
+
