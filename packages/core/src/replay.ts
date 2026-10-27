@@ -35,6 +35,24 @@ export type SessionAction =
         readonly leverage: number;
         readonly powerPct: BuyingPowerPct;
       })
+  | (SlipSettings &
+      Bracket & {
+        readonly kind: "limit";
+        readonly barIndex: number;
+        readonly side: Side;
+        readonly leverage: number;
+        readonly powerPct: BuyingPowerPct;
+        readonly price: number;
+      })
+  | (SlipSettings &
+      Bracket & {
+        readonly kind: "stop";
+        readonly barIndex: number;
+        readonly side: Side;
+        readonly leverage: number;
+        readonly powerPct: BuyingPowerPct;
+        readonly price: number;
+      })
   | (SlipSettings & {
       readonly kind: "close";
       readonly barIndex: number;
@@ -59,7 +77,8 @@ export type Position = {
   readonly openedAtBar: number;
 };
 
-export type FillKind = "open" | "close" | "stop" | "take-profit" | "breach" | "liquidation";
+export type FillKind =
+  "open" | "close" | "stop" | "take-profit" | "breach" | "liquidation" | "limit" | "stop-entry";
 
 export type FillEvent = {
   readonly barIndex: number;
@@ -79,6 +98,16 @@ export type RejectEvent = {
 };
 
 export type Phase = "practice" | "target" | "drawdown" | "daily" | "liquidated";
+
+/** A working limit/stop order the engine still holds at the cursor. */
+export type PendingOrderInfo = {
+  readonly kind: "limit" | "stop";
+  readonly side: Side;
+  readonly price: number;
+  readonly leverage: number;
+  readonly powerPct: BuyingPowerPct;
+  readonly placedAtBar: number;
+};
 
 export type Frame = {
   readonly barIndex: number;
@@ -107,6 +136,8 @@ export type Frame = {
   readonly carryPaid: number;
   readonly fills: readonly FillEvent[];
   readonly rejects: readonly RejectEvent[];
+  /** Working limit/stop orders, oldest first. */
+  readonly pendingOrders: readonly PendingOrderInfo[];
   /** Equity at each bar close from bar 0 to the cursor. */
   readonly equityCurve: readonly number[];
 };
@@ -133,6 +164,21 @@ type WorkingPosition = {
   impactBps: number;
   openedAtMs: number;
   openedAtBar: number;
+};
+
+/** A limit/stop order waiting for its price. Single-position desk: any market
+    open cancels all of them; cancelling an order removes its action. */
+type WorkingOrder = {
+  kind: "limit" | "stop";
+  side: Side;
+  price: number;
+  leverage: number;
+  powerPct: BuyingPowerPct;
+  slipToleranceBps: number;
+  realizedImpactBps: number;
+  stopLoss: number | null;
+  takeProfit: number | null;
+  placedAtBar: number;
 };
 
 function carryCost(preset: PracticePreset | null, notional: number, hours: number): number {
@@ -240,6 +286,7 @@ export function replaySession(input: SessionInput): Frame {
   let dayStart = starting;
   let peak = starting;
   let lastCloseEquity = starting;
+  let pending: WorkingOrder[] = [];
   const fills: FillEvent[] = [];
   const rejects: RejectEvent[] = [];
   const equityCurve: number[] = [];
@@ -397,6 +444,69 @@ export function replaySession(input: SessionInput): Frame {
       }
     }
 
+    // Working limit/stop orders trigger intrabar while the desk is flat.
+    if (position === null && !liquidated && propBreach === null && pending.length > 0) {
+      for (const order of pending) {
+        const long = order.side === "long";
+        let fill: { price: number; impactBps: number } | null = null;
+        if (order.kind === "limit") {
+          if (long ? bar.low <= order.price : bar.high >= order.price) {
+            fill = { price: order.price, impactBps: 0 };
+          }
+        } else if (long ? bar.high >= order.price : bar.low <= order.price) {
+          // A gap through the trigger fills at the open, like the bracket stop.
+          const level = long ? Math.max(order.price, bar.open) : Math.min(order.price, bar.open);
+          fill = { price: level, impactBps: order.realizedImpactBps };
+        }
+        if (fill === null) {
+          continue;
+        }
+        const quote = quoteOpen({
+          side: order.side,
+          leverage: order.leverage,
+          powerPct: order.powerPct,
+          cash,
+          mark: fill.price,
+          takerBps,
+          slipToleranceBps: order.slipToleranceBps,
+          realizedImpactBps: fill.impactBps,
+        });
+        if (!quote.ok) {
+          continue;
+        }
+        cash -= quote.initialMargin + quote.fee;
+        feesPaid += quote.fee;
+        position = {
+          market: input.market,
+          side: order.side,
+          qty: quote.qty,
+          entry: quote.fillPrice,
+          leverage: order.leverage,
+          initialMargin: quote.initialMargin,
+          isolatedMargin: quote.initialMargin,
+          liqPrice: quote.liqPrice,
+          stopLoss: order.stopLoss,
+          takeProfit: order.takeProfit,
+          impactBps: order.realizedImpactBps,
+          openedAtMs: bar.timeMs,
+          openedAtBar: index,
+        };
+        fills.push({
+          barIndex: index,
+          timeMs: bar.timeMs,
+          market: input.market,
+          side: order.side,
+          kind: order.kind === "limit" ? "limit" : "stop-entry",
+          price: quote.fillPrice,
+          qty: quote.qty,
+          fee: quote.fee,
+          pricePnl: 0,
+        });
+        pending = pending.filter((item) => item !== order);
+        break;
+      }
+    }
+
     const frozen = liquidated || propBreach !== null;
     const price = bar.close;
     for (const action of input.actions) {
@@ -467,6 +577,50 @@ export function replaySession(input: SessionInput): Frame {
             qty: quote.qty,
             fee: quote.fee,
             pricePnl: 0,
+          });
+          // Single-position desk: a market entry cancels working orders.
+          pending = [];
+          break;
+        }
+        case "limit":
+        case "stop": {
+          const kind = action.kind;
+          if (frozen) {
+            rejects.push({ barIndex: index, reason: "account-frozen" });
+            continue;
+          }
+          if (position !== null) {
+            rejects.push({ barIndex: index, reason: "position-open" });
+            continue;
+          }
+          const allowed = input.preset?.markets;
+          if (allowed !== null && allowed !== undefined && !allowed.includes(input.market)) {
+            rejects.push({ barIndex: index, reason: "market-not-allowed" });
+            continue;
+          }
+          if (action.leverage > leverageCap(input.preset, input.market)) {
+            rejects.push({ barIndex: index, reason: "invalid-leverage" });
+            continue;
+          }
+          if (!Number.isFinite(action.price) || action.price <= 0) {
+            rejects.push({ barIndex: index, reason: "invalid-price" });
+            continue;
+          }
+          if (!bracketValid(action.side, action.price, action)) {
+            rejects.push({ barIndex: index, reason: "invalid-bracket" });
+            continue;
+          }
+          pending.push({
+            kind,
+            side: action.side,
+            price: action.price,
+            leverage: action.leverage,
+            powerPct: action.powerPct,
+            slipToleranceBps: action.slipToleranceBps,
+            realizedImpactBps: action.realizedImpactBps,
+            stopLoss: action.stopLoss ?? null,
+            takeProfit: action.takeProfit ?? null,
+            placedAtBar: index,
           });
           break;
         }
@@ -599,6 +753,17 @@ export function replaySession(input: SessionInput): Frame {
     carryPaid,
     fills,
     rejects,
+    pendingOrders:
+      liquidated || propBreach !== null
+        ? []
+        : pending.map((order) => ({
+            kind: order.kind,
+            side: order.side,
+            price: order.price,
+            leverage: order.leverage,
+            powerPct: order.powerPct,
+            placedAtBar: order.placedAtBar,
+          })),
     equityCurve,
   };
 }

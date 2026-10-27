@@ -28,7 +28,8 @@ export type RejectReason =
   | "account-frozen"
   | "flat"
   | "market-not-allowed"
-  | "invalid-bracket";
+  | "invalid-bracket"
+  | "invalid-price";
 
 export type SlipSettings = {
   readonly slipToleranceBps: number;

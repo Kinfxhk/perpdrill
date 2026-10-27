@@ -28,6 +28,33 @@ const SIZES = [
   },
 ] as const;
 
+test.describe("working orders", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("places and cancels a working limit order", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("perpdrill.lang", "en"));
+    await page.goto("/");
+    await page.getByRole("button", { name: "Start backtest" }).click();
+    const cancel = page.getByRole("button", { name: "Cancel" });
+    if (await cancel.isVisible().catch(() => false)) {
+      await cancel.click();
+    }
+    await expect(page.locator(".chart-stage")).toBeVisible();
+
+    const ticket = page.locator(".workspace > .ticket");
+    await ticket.getByRole("button", { name: "Limit", exact: true }).click();
+    // The price field prefills with the current mark.
+    const price = ticket.locator("#order-price");
+    await expect(price).toHaveValue(/.+/);
+    // A far-away price keeps the order working instead of filling.
+    await price.fill("1");
+    await ticket.getByRole("button", { name: "Place order" }).click();
+    await expect(ticket.locator(".orders")).toContainText("Limit");
+    await ticket.locator(".orders").getByRole("button", { name: "Cancel" }).click();
+    await expect(ticket.locator(".orders")).toHaveCount(0);
+  });
+});
+
 for (const size of SIZES) {
   test.describe(size.name, () => {
     test.use({
