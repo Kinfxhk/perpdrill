@@ -29,6 +29,10 @@
   (time,open,high,low,close) or live klines fetched in the browser from
   Binance's public data endpoint, attributed on the desk and never
   bundled. Funding on imported bars keeps the synthetic sequence.
+- The review adds a Monte Carlo stability gauge: trades are shuffled and
+  replayed (seeded, 1000 samples) to show how often the drawdown floor
+  breaks and the 50/95th drawdown percentiles. Teaching gauge, not a
+  prediction.
 - The review adds session Sharpe and Sortino (per-bar returns, not
   annualized), Calmar, average hold in bars, and a split ledger of fees,
   carry, and funding.

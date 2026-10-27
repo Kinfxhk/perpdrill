@@ -54,8 +54,8 @@ export type {
   PracticePreset,
   PresetParseResult,
 } from "./preset.ts";
-export { pairTrades, reviewMetrics, sessionStats } from "./stats.ts";
-export type { SessionStats, Trade } from "./stats.ts";
+export { monteCarlo, pairTrades, reviewMetrics, sessionStats } from "./stats.ts";
+export type { MonteCarloResult, SessionStats, Trade } from "./stats.ts";
 export {
   DEFAULT_SYNTHETIC_BARS,
   MAX_SYNTHETIC_BARS,
@@ -68,6 +68,7 @@ export {
   syntheticSeries,
 } from "./synthetic.ts";
 export type { SyntheticSpec, SyntheticTimeframe } from "./synthetic.ts";
+export { createRng } from "./synthetic.ts";
 export { parseOhlcCsv, type CsvImportError, type CsvImportResult } from "./csv.ts";
 export {
   logicalDayKey,

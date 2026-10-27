@@ -24,6 +24,7 @@ import {
   leverageCap,
   coarserTimeframe,
   parseOhlcCsv,
+  monteCarlo,
   pairTrades,
   quoteClose,
   quoteOpen,
@@ -2806,6 +2807,37 @@ export function mountDesk(root: HTMLElement): void {
         stat(t("review.carry"), money(frame.carryPaid)),
         stat(t("review.funding"), money(frame.fundingPaid)),
       ]),
+      ...(() => {
+        const trades = pairTrades(frame.fills);
+        const mc = monteCarlo({
+          netPnls: trades.map((trade) => trade.netPnl),
+          startingBalance: startingBalance(),
+          floor: frame.maxDrawdownFloor,
+          seed: state.setup.seed,
+        });
+        if (mc.breachProbability === null) {
+          return [];
+        }
+        const pctOrDash = (value: number | null): string =>
+          value === null ? dash : formatPct(value, locale());
+        return [
+          el("div", { className: "monte-carlo", attrs: { "aria-label": t("review.mc") } }, [
+            el("h3", { text: t("review.mc") }),
+            el("p", { className: "hint", text: t("review.mcNote") }),
+            el("div", { className: "review-grid" }, [
+              stat(
+                t("review.mcBreach"),
+                mc.breachProbability === null
+                  ? dash
+                  : formatPct(mc.breachProbability * 100, locale()),
+              ),
+              stat(t("review.mcDd50"), pctOrDash(mc.maxDrawdownP50)),
+              stat(t("review.mcDd95"), pctOrDash(mc.maxDrawdownP95)),
+              stat(t("review.mcSamples"), String(mc.samples)),
+            ]),
+          ]),
+        ];
+      })(),
       spark,
       el("p", { className: "hint", text: t("review.carryNote") }),
       el("table", {}, [
