@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.1.0 — 2026-10-27
+
 - The chart can draw VWAP, Keltner channels and Donchian channels beside the
   existing averages. VWAP is anchored at the first bar and weighted by volume,
   so synthetic bars now carry a fictional size from their own seeded stream:
