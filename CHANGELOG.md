@@ -25,6 +25,10 @@
   bars, clock-aligned, including a still-forming last bar. A finer chart, or
   one the bar size does not divide, stays disabled instead of relabeling the
   same candles. Split opens a second pane on that same sample.
+- Market entries now stack and reverse: a same-side entry adds to the
+  position at a weighted average entry, an opposite-side entry closes the
+  held position first, and the close control takes a 25/50/75/100%
+  fraction so a position can be reduced without flattening.
 - The ticket places limit and stop orders beside market. A limit fills
   intrabar at its own price once a bar touches it; a stop triggers on the
   high or low and fills with the same impact as a market entry, gapped

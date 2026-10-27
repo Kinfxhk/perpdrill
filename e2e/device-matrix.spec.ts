@@ -175,11 +175,17 @@ for (const size of SIZES) {
         await page.locator(".drawer-overlay").click({ position: { x: 20, y: 20 } });
         await expect(page.locator(".shell")).not.toHaveClass(/drawer-open/);
 
-        // Order from the bar: 100% buying power, buy, then flatten.
+        // Order from the bar: 100% buying power, buy, then flatten from
+        // the drawer's close row (the bar submit becomes Add while held).
         await bar.getByRole("button", { name: "100%" }).click();
         await bar.getByRole("button", { name: "Buy / Long", exact: true }).click();
-        await expect(bar.getByRole("button", { name: "Close" })).toBeVisible();
-        await bar.getByRole("button", { name: "Close" }).click();
+        await expect(bar.getByRole("button", { name: "Add", exact: true })).toBeVisible();
+        await toggle.click();
+        await expect(page.locator(".shell")).toHaveClass(/drawer-open/);
+        await page
+          .locator(".workspace > .ticket")
+          .getByRole("button", { name: "Close", exact: true })
+          .click();
         await expect(bar.getByRole("button", { name: "Buy / Long", exact: true })).toBeVisible();
 
         // The fixed bar never covers the last content in the flow.
@@ -202,9 +208,12 @@ for (const size of SIZES) {
           .getByRole("button", { name: "Buy / Long", exact: true })
           .click();
         await expect(
-          page.locator(".workspace > .ticket").getByRole("button", { name: "Close" }),
+          page.locator(".workspace > .ticket").getByRole("button", { name: "Add", exact: true }),
         ).toBeVisible();
-        await page.locator(".workspace > .ticket").getByRole("button", { name: "Close" }).click();
+        await page
+          .locator(".workspace > .ticket")
+          .getByRole("button", { name: "Close", exact: true })
+          .click();
       }
     });
   });
