@@ -107,6 +107,25 @@ export function visibleIndexRange(
 }
 
 /**
+ * Overlay and band samples that can still meet the plot.
+ * One bar past the visible window lets a stroke run to the clip edge.
+ */
+export function indicatorIndexSpan(
+  plotWidth: number,
+  barCount: number,
+  view: TimeViewport,
+): { readonly from: number; readonly to: number } {
+  const visible = visibleIndexRange(plotWidth, barCount, view);
+  if (visible.to < visible.from) {
+    return { from: 0, to: -1 };
+  }
+  return {
+    from: Math.max(0, visible.from - 1),
+    to: Math.min(barCount - 1, visible.to + 1),
+  };
+}
+
+/**
  * Keep the same candles on screen when revealed history grows.
  * If the last bar is in view, the right offset stays put so playback follows
  * the new bar (`shiftVisibleRangeOnNewBar`). Otherwise the offset steps back
@@ -124,6 +143,40 @@ export function advanceViewport(
     rightOffset -= addedBars;
   }
   return clampViewport(plotWidth, nextCount, { barSpacing: view.barSpacing, rightOffset });
+}
+
+/**
+ * How far the revealed end may fall before the view is a rewind.
+ * Pause drops the uncommitted forming preview, which is one bar.
+ */
+export const PREVIEW_END_DROP = 1;
+
+/**
+ * Keep bar spacing when the revealed end moves.
+ * A one-bar drop is the forming preview leaving: same zoom, and the same
+ * candles stay put when the tail is off screen. A larger drop returns null
+ * so the caller can open the recent range again.
+ */
+export function viewportAfterEndChange(
+  plotWidth: number,
+  previousCount: number,
+  nextCount: number,
+  previousEnd: number,
+  nextEnd: number,
+  view: TimeViewport,
+): TimeViewport | null {
+  const delta = nextEnd - previousEnd;
+  if (delta < -PREVIEW_END_DROP) {
+    return null;
+  }
+  if (delta < 0) {
+    let rightOffset = view.rightOffset;
+    if (previousCount > 0 && !lastBarVisible(plotWidth, previousCount, view)) {
+      rightOffset += -delta;
+    }
+    return clampViewport(plotWidth, nextCount, { barSpacing: view.barSpacing, rightOffset });
+  }
+  return advanceViewport(plotWidth, previousCount, nextCount, delta, view);
 }
 
 export function indexToCoordinate(

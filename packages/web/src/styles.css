@@ -375,6 +375,10 @@ button {
   height: 100%;
 }
 
+.indicator-layer {
+  overflow: hidden;
+}
+
 .wick-up,
 .candle-up {
   fill: var(--long);

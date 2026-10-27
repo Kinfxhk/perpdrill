@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   advanceViewport,
   coordinateToFloatIndex,
+  indicatorIndexSpan,
   lastBarVisible,
   logicalBorders,
   pinchZoomScale,
   showRecentViewport,
+  viewportAfterEndChange,
   viewportAfterWheel,
+  visibleIndexRange,
   wheelChartDeltas,
 } from "./chart-scale.ts";
 import {
@@ -139,6 +142,35 @@ describe("practice time scale", () => {
     const scrolled = viewportAfterWheel(width, count, view, x, { deltaX: 0.5, deltaY: 0 });
     expect(scrolled.rightOffset).toBeCloseTo(view.rightOffset + (0.5 * 80) / view.barSpacing, 5);
     expect(pinchZoomScale(1.2, 1)).toBeCloseTo(1);
+  });
+
+  it("keeps zoom when a forming preview drops, and resets when the end falls further", () => {
+    const width = 700;
+    const zoomed = { barSpacing: 18, rightOffset: 6 };
+    expect(lastBarVisible(width, 140, zoomed)).toBe(true);
+    const paused = viewportAfterEndChange(width, 140, 140, 200, 199, zoomed);
+    expect(paused?.barSpacing).toBeCloseTo(18, 5);
+    expect(paused?.rightOffset).toBeCloseTo(6, 5);
+
+    const held = { barSpacing: 30, rightOffset: -40 };
+    expect(lastBarVisible(width, 140, held)).toBe(false);
+    const kept = viewportAfterEndChange(width, 140, 140, 200, 199, held);
+    expect(kept?.barSpacing).toBeCloseTo(30, 5);
+    expect(kept?.rightOffset).toBeCloseTo(-39, 5);
+
+    expect(viewportAfterEndChange(width, 140, 130, 200, 198, zoomed)).toBeNull();
+  });
+
+  it("draws indicator samples only for the visible window", () => {
+    const width = 640;
+    const count = 140;
+    const view = { barSpacing: 24, rightOffset: -30 };
+    const visible = visibleIndexRange(width, count, view);
+    const span = indicatorIndexSpan(width, count, view);
+    expect(visible.to - visible.from).toBeLessThan(count - 1);
+    expect(span.from).toBe(Math.max(0, visible.from - 1));
+    expect(span.to).toBe(Math.min(count - 1, visible.to + 1));
+    expect(span.to).toBeLessThan(count - 1);
   });
 
   it("follows a new bar when the last bar is visible, and holds still when it is not", () => {

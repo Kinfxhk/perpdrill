@@ -49,6 +49,7 @@ import {
   type SyntheticTimeframe,
 } from "@perpdrill/core";
 import {
+  connectedChartHost,
   mountChart,
   releaseDetachedCharts,
   type ChartBand,
@@ -191,6 +192,21 @@ function practiceSourceMin(
 }
 
 type Attrs = Record<string, string>;
+
+type ChartPlacement = {
+  slot: HTMLElement;
+  stage: HTMLElement;
+  mount: () => void;
+};
+
+function stripChartChrome(stage: HTMLElement): void {
+  for (const child of [...stage.children]) {
+    const keep = child instanceof SVGSVGElement && child.classList.contains("chart-svg");
+    if (!keep) {
+      child.remove();
+    }
+  }
+}
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -631,12 +647,35 @@ export function mountDesk(root: HTMLElement): void {
       cursor: state.cursor,
     });
 
+  let chartPlacements: ChartPlacement[] = [];
+
   const render = (): void => {
     const active = document.activeElement;
     const restore = active instanceof HTMLInputElement && root.contains(active) ? active.id : "";
     document.documentElement.lang = state.lang;
     applyDocumentTheme(state.theme);
-    root.replaceChildren(build());
+    // Keep the live stage in the document so a press-drag or pinch survives this paint.
+    const holder = document.createElement("div");
+    holder.setAttribute("data-chart-park", "");
+    holder.style.position = "fixed";
+    holder.style.width = "0";
+    holder.style.height = "0";
+    holder.style.overflow = "hidden";
+    document.body.append(holder);
+    try {
+      for (const stage of [...root.querySelectorAll<HTMLElement>(".chart-stage")]) {
+        holder.append(stage);
+      }
+      chartPlacements = [];
+      const shell = build();
+      root.replaceChildren(shell);
+      for (const placement of chartPlacements) {
+        placement.slot.replaceWith(placement.stage);
+        placement.mount();
+      }
+    } finally {
+      holder.remove();
+    }
     releaseDetachedCharts();
     if (restore.length > 0) {
       const next = root.querySelector(`#${CSS.escape(restore)}`);
@@ -1634,34 +1673,44 @@ export function mountDesk(root: HTMLElement): void {
         });
       }
       const labelTf = selected === null ? t("chart.tfUnsupported") : formatTimeframe(selected);
-      const stage = el("div", { className: "chart-stage" });
-      mountChart(stage, {
-        candles: drawn,
-        lines,
-        overlays,
-        bands,
-        label: `${labelTf} · ${t("chart.sample")} · ${t("replay.bar")} ${state.cursor + 1}/${series.length}`,
-        formatPrice: money,
-        seriesKey: `${dataKey({ ...state.setup, market: state.market })}:${selected ?? "none"}:${paneIndex}`,
-        endIndex: view === null || view.length === 0 ? 0 : view.length - 1,
+      const seriesKey = `${dataKey({ ...state.setup, market: state.market })}:${selected ?? "none"}:${paneIndex}`;
+      const stage = connectedChartHost(seriesKey) ?? el("div", { className: "chart-stage" });
+      const slot = el("div", { attrs: { "data-chart-slot": seriesKey } });
+      chartPlacements.push({
+        slot,
+        stage,
+        mount: () => {
+          stripChartChrome(stage);
+          mountChart(stage, {
+            candles: drawn,
+            lines,
+            overlays,
+            bands,
+            label: `${labelTf} · ${t("chart.sample")} · ${t("replay.bar")} ${state.cursor + 1}/${series.length}`,
+            formatPrice: money,
+            seriesKey,
+            // Counts the forming preview. Pause removes that one bar and keeps the zoom.
+            endIndex: view === null || view.length === 0 ? 0 : view.length - 1,
+          });
+          if (view === null) {
+            stage.append(el("p", { className: "chart-empty", text: t("chart.tfUnsupported") }));
+          } else if (view.length === 0) {
+            stage.append(el("p", { className: "chart-empty", text: t("chart.tfEmpty") }));
+          }
+          if (showLegend) {
+            stage.append(
+              el("ul", { className: "legend" }, [
+                el("li", { className: "legend-entry", text: t("legend.entry") }),
+                el("li", { className: "legend-liq", text: t("legend.liquidation") }),
+                el("li", { className: "legend-prop", text: t("legend.fail") }),
+                el("li", { className: "legend-daily", text: t("legend.daily") }),
+                el("li", { className: "legend-sl", text: t("legend.sl") }),
+                el("li", { className: "legend-tp", text: t("legend.tp") }),
+              ]),
+            );
+          }
+        },
       });
-      if (view === null) {
-        stage.append(el("p", { className: "chart-empty", text: t("chart.tfUnsupported") }));
-      } else if (view.length === 0) {
-        stage.append(el("p", { className: "chart-empty", text: t("chart.tfEmpty") }));
-      }
-      if (showLegend) {
-        stage.append(
-          el("ul", { className: "legend" }, [
-            el("li", { className: "legend-entry", text: t("legend.entry") }),
-            el("li", { className: "legend-liq", text: t("legend.liquidation") }),
-            el("li", { className: "legend-prop", text: t("legend.fail") }),
-            el("li", { className: "legend-daily", text: t("legend.daily") }),
-            el("li", { className: "legend-sl", text: t("legend.sl") }),
-            el("li", { className: "legend-tp", text: t("legend.tp") }),
-          ]),
-        );
-      }
       const chips = mountTimeframeChips(source, selected, (minutes) => {
         if (paneIndex === 0) {
           state.primaryTf = minutes;
@@ -1682,7 +1731,7 @@ export function mountDesk(root: HTMLElement): void {
           className: "chart-pane",
           attrs: { "aria-label": `${t("chart.pane")} ${paneIndex + 1}` },
         },
-        [chips, stage],
+        [chips, slot],
       );
     };
 

@@ -1,9 +1,11 @@
 import {
-  advanceViewport,
+  clampViewport,
   indexToCoordinate,
+  indicatorIndexSpan,
   pinchZoomScale,
   scrollChartTo,
   showRecentViewport,
+  viewportAfterEndChange,
   viewportAfterWheel,
   visibleIndexRange,
   wheelChartDeltas,
@@ -369,7 +371,8 @@ function collectPrices(
 function appendOverlay(
   root: SVGSVGElement,
   overlay: ChartOverlay,
-  limit: number,
+  from: number,
+  to: number,
   xOf: (index: number) => number,
   yOf: (price: number) => number,
 ): void {
@@ -397,8 +400,8 @@ function appendOverlay(
     run = [];
   };
 
-  const end = Math.min(limit, overlay.points.length);
-  for (let index = 0; index < end; index += 1) {
+  const end = Math.min(to, overlay.points.length - 1);
+  for (let index = Math.max(0, from); index <= end; index += 1) {
     const price = overlay.points[index];
     if (price === null || price === undefined || !Number.isFinite(price)) {
       flush();
@@ -412,11 +415,12 @@ function appendOverlay(
 function appendBand(
   root: SVGSVGElement,
   band: ChartBand,
-  limit: number,
+  from: number,
+  to: number,
   xOf: (index: number) => number,
   yOf: (price: number) => number,
 ): void {
-  const end = Math.min(limit, band.upper.length, band.lower.length);
+  const end = Math.min(to, band.upper.length - 1, band.lower.length - 1);
   let top: string[] = [];
   let bottom: string[] = [];
   const flush = (): void => {
@@ -433,7 +437,7 @@ function appendBand(
     bottom = [];
   };
 
-  for (let index = 0; index < end; index += 1) {
+  for (let index = Math.max(0, from); index <= end; index += 1) {
     const upper = band.upper[index];
     const lower = band.lower[index];
     if (
@@ -466,8 +470,21 @@ type ViewportMemory = {
   rightOffset: number;
 };
 
+type ChartExtent = {
+  seriesKey: string;
+  endIndex: number;
+  barCount: number;
+};
+
+type GestureSession = {
+  retarget: (read: () => ChartExtent, paint: () => void) => void;
+  detach: () => void;
+};
+
 type HostChart = {
+  seriesKey: string;
   paint: () => void;
+  retarget: (read: () => ChartExtent, paint: () => void) => void;
   detach: () => void;
 };
 
@@ -480,6 +497,9 @@ const paints = new Map<HTMLElement, HostChart>();
 
 /** Zoom for each pane. A desk re-render keeps the entry for that series key. */
 const viewports = new Map<string, ViewportMemory>();
+
+/** Series keys with a pointer still down. Playback paints must not shift that pan. */
+const activeGestures = new Set<string>();
 
 const resizeObserver =
   typeof ResizeObserver === "undefined"
@@ -495,6 +515,16 @@ const resizeObserver =
 
 function viewportFor(seriesKey: string): ViewportMemory | null {
   return viewports.get(seriesKey) ?? null;
+}
+
+/** Stage element already showing this series, so a playback paint can keep its pan. */
+export function connectedChartHost(seriesKey: string): HTMLElement | null {
+  for (const [host, chart] of paints) {
+    if (chart.seriesKey === seriesKey && host.isConnected) {
+      return host;
+    }
+  }
+  return null;
 }
 
 /** Drop hosts the desk already removed so a split re-render does not leak them. */
@@ -523,24 +553,25 @@ function reconcileViewport(
   seriesKey: string,
 ): TimeViewport {
   const previous = viewportFor(seriesKey);
-  if (
-    previous === null ||
-    previous.seriesKey !== seriesKey ||
-    endIndex < previous.endIndex ||
-    barCount <= 0 ||
-    plotWidth <= 0
-  ) {
+  if (previous === null || previous.seriesKey !== seriesKey || barCount <= 0 || plotWidth <= 0) {
     const next = showRecentViewport(plotWidth, barCount);
     viewports.set(seriesKey, { seriesKey, endIndex, barCount, ...next });
     return next;
   }
-  const next = advanceViewport(
+  if (activeGestures.has(seriesKey)) {
+    const next = clampViewport(plotWidth, barCount, viewportFrom(previous));
+    viewports.set(seriesKey, { seriesKey, endIndex, barCount, ...next });
+    return next;
+  }
+  const stepped = viewportAfterEndChange(
     plotWidth,
     previous.barCount,
     barCount,
-    endIndex - previous.endIndex,
+    previous.endIndex,
+    endIndex,
     viewportFrom(previous),
   );
+  const next = stepped ?? showRecentViewport(plotWidth, barCount);
   viewports.set(seriesKey, { seriesKey, endIndex, barCount, ...next });
   return next;
 }
@@ -576,15 +607,24 @@ function isWindowsChromium(): boolean {
   return uaData.platform === "Windows" && chromium;
 }
 
-function touchDistance(a: Touch, b: Touch): number {
-  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+type PointerPoint = {
+  x: number;
+  y: number;
+};
+
+function pointerDistance(a: PointerPoint, b: PointerPoint): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
 function bindGestures(
   host: HTMLElement,
-  read: () => { seriesKey: string; endIndex: number; barCount: number },
+  read: () => ChartExtent,
   paint: () => void,
-): () => void {
+): GestureSession {
+  let currentRead = read;
+  let currentPaint = paint;
+  const heldKeys = new Set<string>();
+  const pointers = new Map<number, PointerPoint>();
   let drag: { startX: number; startOffset: number; spacing: number } | null = null;
   let finger: {
     startX: number;
@@ -595,17 +635,55 @@ function bindGestures(
   } | null = null;
   let pinch: { distance: number; previousScale: number } | null = null;
 
+  const capturePointer = (pointerId: number): void => {
+    try {
+      host.setPointerCapture(pointerId);
+    } catch {
+      // The pointer can end before the stage claims it.
+    }
+  };
+
+  const releasePointer = (pointerId: number): void => {
+    try {
+      if (host.hasPointerCapture(pointerId)) {
+        host.releasePointerCapture(pointerId);
+      }
+    } catch {
+      // Already released with the pointer.
+    }
+  };
+
+  const remember = (active: boolean): void => {
+    const key = currentRead().seriesKey;
+    if (active) {
+      heldKeys.add(key);
+      activeGestures.add(key);
+      return;
+    }
+    for (const held of heldKeys) {
+      activeGestures.delete(held);
+    }
+    heldKeys.clear();
+  };
+
+  const releaseGesture = (): void => {
+    if (drag !== null || finger !== null || pinch !== null || pointers.size > 0) {
+      return;
+    }
+    remember(false);
+  };
+
   const apply = (view: TimeViewport): void => {
-    const ctx = read();
+    const ctx = currentRead();
     if (ctx.barCount <= 0) {
       return;
     }
     commitViewport(ctx.seriesKey, ctx.endIndex, ctx.barCount, view);
-    paint();
+    currentPaint();
   };
 
   const onWheel = (event: WheelEvent): void => {
-    const ctx = read();
+    const ctx = currentRead();
     const current = viewportFor(ctx.seriesKey);
     if ((event.deltaX === 0 && event.deltaY === 0) || current === null) {
       return;
@@ -635,112 +713,129 @@ function bindGestures(
     );
   };
 
-  const onMouseMove = (event: MouseEvent): void => {
-    if (drag === null) {
-      return;
+  const trackedPair = (): { a: PointerPoint; b: PointerPoint } | null => {
+    const points = [...pointers.values()];
+    const a = points[0];
+    const b = points[1];
+    if (a === undefined || b === undefined) {
+      return null;
     }
-    const ctx = read();
-    apply(
-      scrollChartTo(
-        plotWidthOf(host),
-        ctx.barCount,
-        drag.spacing,
-        drag.startOffset,
-        drag.startX,
-        event.clientX,
-      ),
-    );
+    return { a, b };
   };
 
-  const endDrag = (): void => {
-    drag = null;
-    window.removeEventListener("mousemove", onMouseMove);
-    window.removeEventListener("mouseup", endDrag);
-  };
-
-  const onMouseDown = (event: MouseEvent): void => {
-    const current = viewportFor(read().seriesKey);
-    if (event.button !== 0 || current === null) {
+  const onPointerDown = (event: PointerEvent): void => {
+    if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
-    drag = {
-      startX: event.clientX,
-      startOffset: current.rightOffset,
-      spacing: current.barSpacing,
-    };
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", endDrag);
-    event.preventDefault();
-  };
-
-  const onTouchStart = (event: TouchEvent): void => {
-    if (event.touches.length === 2) {
-      finger = null;
-      const first = event.touches[0];
-      const second = event.touches[1];
-      if (first === undefined || second === undefined) {
-        return;
-      }
-      pinch = { distance: touchDistance(first, second), previousScale: 1 };
+    const current = viewportFor(currentRead().seriesKey);
+    if (current === null) {
       return;
     }
-    const first = event.touches[0];
-    const current = viewportFor(read().seriesKey);
-    if (event.touches.length !== 1 || current === null || first === undefined) {
-      return;
-    }
-    pinch = null;
-    finger = {
-      startX: first.clientX,
-      startY: first.clientY,
-      startOffset: current.rightOffset,
-      spacing: current.barSpacing,
-      mode: "pending",
-    };
-  };
-
-  const onTouchMove = (event: TouchEvent): void => {
-    const first = event.touches[0];
-    const second = event.touches[1];
-    const current = viewportFor(read().seriesKey);
-    if (
-      event.touches.length === 2 &&
-      pinch !== null &&
-      current !== null &&
-      first !== undefined &&
-      second !== undefined &&
-      pinch.distance > 0
-    ) {
-      const scale = touchDistance(first, second) / pinch.distance;
-      const zoomScale = pinchZoomScale(scale, pinch.previousScale);
-      pinch = { distance: pinch.distance, previousScale: scale };
-      const ctx = read();
-      const rect = host.getBoundingClientRect();
-      const pointX = (first.clientX + second.clientX) / 2 - rect.left - PAD_LEFT;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (event.pointerType !== "touch") {
+      capturePointer(event.pointerId);
+      drag = {
+        startX: event.clientX,
+        startOffset: current.rightOffset,
+        spacing: current.barSpacing,
+      };
       if (event.cancelable) {
         event.preventDefault();
       }
-      apply(zoomTime(plotWidthOf(host), ctx.barCount, viewportFrom(current), pointX, zoomScale));
+    } else if (pointers.size >= 2) {
+      const pair = trackedPair();
+      if (pair !== null) {
+        finger = null;
+        drag = null;
+        pinch = {
+          distance: pointerDistance(pair.a, pair.b),
+          previousScale: 1,
+        };
+        for (const pointerId of pointers.keys()) {
+          capturePointer(pointerId);
+        }
+      }
+    } else {
+      pinch = null;
+      finger = {
+        startX: event.clientX,
+        startY: event.clientY,
+        startOffset: current.rightOffset,
+        spacing: current.barSpacing,
+        mode: "pending",
+      };
+      // Claim the stage before the next paint replaces the candle under the finger.
+      capturePointer(event.pointerId);
+    }
+    remember(true);
+  };
+
+  const onPointerMove = (event: PointerEvent): void => {
+    if (!pointers.has(event.pointerId)) {
       return;
     }
-    if (finger === null || event.touches.length !== 1 || first === undefined) {
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const pair = trackedPair();
+    const current = viewportFor(currentRead().seriesKey);
+    if (
+      pointers.size >= 2 &&
+      pinch !== null &&
+      current !== null &&
+      pair !== null &&
+      pinch.distance > 0
+    ) {
+      const scale = pointerDistance(pair.a, pair.b) / pinch.distance;
+      const zoomScale = pinchZoomScale(scale, pinch.previousScale);
+      pinch = { distance: pinch.distance, previousScale: scale };
+      const rect = host.getBoundingClientRect();
+      const pointX = (pair.a.x + pair.b.x) / 2 - rect.left - PAD_LEFT;
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      apply(
+        zoomTime(
+          plotWidthOf(host),
+          currentRead().barCount,
+          viewportFrom(current),
+          pointX,
+          zoomScale,
+        ),
+      );
+      return;
+    }
+    if (drag !== null) {
+      const ctx = currentRead();
+      apply(
+        scrollChartTo(
+          plotWidthOf(host),
+          ctx.barCount,
+          drag.spacing,
+          drag.startOffset,
+          drag.startX,
+          event.clientX,
+        ),
+      );
+      return;
+    }
+    if (finger === null || pointers.size !== 1) {
       return;
     }
     if (finger.mode === "pending") {
-      const xOffset = Math.abs(first.clientX - finger.startX);
-      const yOffset = Math.abs(first.clientY - finger.startY);
+      const xOffset = Math.abs(event.clientX - finger.startX);
+      const yOffset = Math.abs(event.clientY - finger.startY);
       if (xOffset + yOffset < TOUCH_SLOP) {
         return;
       }
       // Vertical drag scrolls the page. A horizontal drag pans the bars.
-      finger = { ...finger, mode: yOffset >= xOffset * 0.5 ? "page" : "pan" };
+      const mode = yOffset >= xOffset * 0.5 ? "page" : "pan";
+      finger = { ...finger, mode };
     }
     switch (finger.mode) {
       case "pending":
       case "page":
         return;
       case "pan": {
-        const ctx = read();
+        const ctx = currentRead();
         if (event.cancelable) {
           event.preventDefault();
         }
@@ -751,7 +846,7 @@ function bindGestures(
             finger.spacing,
             finger.startOffset,
             finger.startX,
-            first.clientX,
+            event.clientX,
           ),
         );
         return;
@@ -763,30 +858,48 @@ function bindGestures(
     }
   };
 
-  const onTouchEnd = (event: TouchEvent): void => {
-    if (event.touches.length < 2) {
+  const onPointerUp = (event: PointerEvent): void => {
+    if (!pointers.has(event.pointerId) && drag === null && finger === null && pinch === null) {
+      return;
+    }
+    pointers.delete(event.pointerId);
+    releasePointer(event.pointerId);
+    if (pointers.size === 0) {
+      drag = null;
+      finger = null;
+      pinch = null;
+    } else if (pointers.size < 2) {
       pinch = null;
     }
-    if (event.touches.length === 0) {
-      finger = null;
-    }
+    releaseGesture();
   };
 
   host.addEventListener("wheel", onWheel, { passive: false });
-  host.addEventListener("mousedown", onMouseDown);
-  host.addEventListener("touchstart", onTouchStart, { passive: true });
-  host.addEventListener("touchmove", onTouchMove, { passive: false });
-  host.addEventListener("touchend", onTouchEnd);
-  host.addEventListener("touchcancel", onTouchEnd);
+  host.addEventListener("pointerdown", onPointerDown);
+  host.addEventListener("pointermove", onPointerMove);
+  host.addEventListener("pointerup", onPointerUp);
+  host.addEventListener("pointercancel", onPointerUp);
 
-  return () => {
-    endDrag();
-    host.removeEventListener("wheel", onWheel);
-    host.removeEventListener("mousedown", onMouseDown);
-    host.removeEventListener("touchstart", onTouchStart);
-    host.removeEventListener("touchmove", onTouchMove);
-    host.removeEventListener("touchend", onTouchEnd);
-    host.removeEventListener("touchcancel", onTouchEnd);
+  return {
+    retarget(nextRead, nextPaint) {
+      currentRead = nextRead;
+      currentPaint = nextPaint;
+    },
+    detach() {
+      drag = null;
+      finger = null;
+      pinch = null;
+      for (const pointerId of pointers.keys()) {
+        releasePointer(pointerId);
+      }
+      pointers.clear();
+      remember(false);
+      host.removeEventListener("wheel", onWheel);
+      host.removeEventListener("pointerdown", onPointerDown);
+      host.removeEventListener("pointermove", onPointerMove);
+      host.removeEventListener("pointerup", onPointerUp);
+      host.removeEventListener("pointercancel", onPointerUp);
+    },
   };
 }
 
@@ -799,9 +912,9 @@ export function mountChart(
     readonly bands: readonly ChartBand[];
     readonly label: string;
     readonly formatPrice: (price: number) => string;
-    /** Same series keeps the zoom. A new key, or a cursor rewind, shows recent bars. */
+    /** Same series keeps the zoom. A new key, or an end that falls by more than one bar, shows recent bars. */
     readonly seriesKey: string;
-    /** Absolute index of the last revealed bar. Grows by one as playback steps. */
+    /** Index of the last revealed bar, including a forming preview. Grows as playback steps. */
     readonly endIndex: number;
   },
 ): void {
@@ -856,14 +969,26 @@ export function mountChart(
     }
     root.append(wicks, bodies);
 
-    const xOf = (index: number): number =>
-      laid.plotLeft + indexToCoordinate(plotWidth, revealed, timeScale, index);
+    // Plot coordinates, clipped to the candle pane so a zoomed line cannot cover the price scale.
+    const xInPlot = (index: number): number =>
+      indexToCoordinate(plotWidth, revealed, timeScale, index);
+    const span = indicatorIndexSpan(plotWidth, revealed, timeScale);
+    const indicators = svg("svg", {
+      class: "indicator-layer",
+      x: px(laid.plotLeft),
+      y: "0",
+      width: px(plotWidth),
+      height: px(height),
+      overflow: "hidden",
+      "aria-hidden": "true",
+    });
     for (const band of input.bands) {
-      appendBand(root, band, revealed, xOf, laid.yOf);
+      appendBand(indicators, band, span.from, span.to, xInPlot, laid.yOf);
     }
     for (const overlay of input.overlays) {
-      appendOverlay(root, overlay, revealed, xOf, laid.yOf);
+      appendOverlay(indicators, overlay, span.from, span.to, xInPlot, laid.yOf);
     }
+    root.append(indicators);
 
     // Price scale: five evenly spaced labels on the right edge, from visible bars.
     let hiPrice = Number.NEGATIVE_INFINITY;
@@ -930,22 +1055,26 @@ export function mountChart(
     }
   };
 
+  const read = (): ChartExtent => ({
+    seriesKey: input.seriesKey,
+    endIndex: input.endIndex,
+    barCount: input.candles.length,
+  });
   const existing = paints.get(host);
   if (existing === undefined) {
     resizeObserver?.observe(host);
-  } else {
-    existing.detach();
-  }
-  const detach = bindGestures(
-    host,
-    () => ({
+    const session = bindGestures(host, read, paint);
+    paints.set(host, {
       seriesKey: input.seriesKey,
-      endIndex: input.endIndex,
-      barCount: input.candles.length,
-    }),
-    paint,
-  );
-  paints.set(host, { paint, detach });
+      paint,
+      retarget: session.retarget,
+      detach: session.detach,
+    });
+  } else {
+    existing.retarget(read, paint);
+    existing.seriesKey = input.seriesKey;
+    existing.paint = paint;
+  }
   paint();
   if (typeof requestAnimationFrame === "function") {
     requestAnimationFrame(() => {
