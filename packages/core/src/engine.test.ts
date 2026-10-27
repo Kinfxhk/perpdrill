@@ -38,6 +38,7 @@ function preset(overrides: Partial<PracticePreset> = {}): PracticePreset {
     makerBps: null,
     swapDailyRatePct: null,
     fundingRatePerHour: null,
+    fundingIntervalHours: null,
     venueFundingChangesBalance: false,
     startingBalanceUsd: 10_000,
     markets: null,
