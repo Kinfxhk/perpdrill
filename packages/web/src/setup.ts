@@ -182,6 +182,7 @@ export function customPreset(rules: CustomRules): PracticePreset {
     makerBps: null,
     swapDailyRatePct: rules.swapDailyRatePct > 0 ? rules.swapDailyRatePct : null,
     fundingRatePerHour: null,
+    fundingIntervalHours: null,
     venueFundingChangesBalance: false,
     startingBalanceUsd: rules.startingBalanceUsd,
     markets: null,

@@ -114,6 +114,55 @@ export function syntheticSeries(spec: SyntheticSpec): readonly Bar[] {
   return bars;
 }
 
+/**
+ * Synthetic funding sequence. The value sits only on the last bar of each
+ * settlement window and is the signed per-window total (long pays short when
+ * positive), scaled around the preset mean with occasional sign flips.
+ */
+export function syntheticFunding(input: {
+  readonly seed: number;
+  readonly bars: number;
+  readonly timeframeMin: SyntheticTimeframe;
+  readonly meanPerHour: number;
+  readonly intervalHours: number;
+}): readonly (number | null)[] {
+  const rng = createRng(input.seed ^ 0x9e3779b9);
+  const barMs = input.timeframeMin * 60_000;
+  const barsPerWindow = Math.max(1, Math.round((input.intervalHours * 3_600_000) / barMs));
+  const rates: (number | null)[] = Array.from({ length: input.bars }, () => null);
+  for (let windowStart = 0; windowStart < input.bars; windowStart += barsPerWindow) {
+    const settle = windowStart + barsPerWindow - 1;
+    if (settle >= input.bars) {
+      break;
+    }
+    const flip = rng.next() < 0.12 ? -1 : 1;
+    const noise = 0.55 + 0.9 * rng.next();
+    rates[settle] = input.meanPerHour * input.intervalHours * noise * flip;
+  }
+  return rates;
+}
+
+/** Synthetic index and mark. Index is a smoothed close; mark adds a small,
+    persistent basis, so marks can diverge from the last price on wicks. */
+export function syntheticMarks(input: {
+  readonly seed: number;
+  readonly closes: readonly number[];
+}): { readonly index: readonly number[]; readonly mark: readonly number[] } {
+  const rng = createRng(input.seed ^ 0x85ebca6b);
+  const index: number[] = [];
+  const mark: number[] = [];
+  let smooth: number | null = null;
+  let basis = 0;
+  for (const close of input.closes) {
+    smooth = smooth === null ? close : smooth * 0.95 + close * 0.05;
+    basis = basis * 0.8 + (rng.next() - 0.5) * 0.0004;
+    const basisBps = Math.max(-0.003, Math.min(0.003, basis));
+    index.push(Number(smooth.toFixed(6)));
+    mark.push(Number((smooth * (1 + basisBps)).toFixed(6)));
+  }
+  return { index, mark };
+}
+
 export function randomSeed(): number {
   return Math.floor(Math.random() * 0xffffffff);
 }
