@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- On phone setup screens, give the brand, navigation and preference controls
+  their own rows so Chinese/Japanese/Korean labels stay horizontal. Keep theme
+  and language selection visible together without squeezing the navigation.
+
 - On short phone screens, scroll the entire order ticket instead of pinning its
   submit section over the controls. Landscape users can reveal full order-type
   buttons and price/leverage inputs, place/cancel a limit order, and still reach
