@@ -95,6 +95,59 @@ test.describe("data sources", () => {
   });
 });
 
+test.describe("chart controls", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("perpdrill.lang", "en");
+      localStorage.setItem("perpdrill.countdown", "1");
+    });
+    await page.goto("/");
+    await page.locator("#setup-rules").selectOption({ label: "No rules (free practice)" });
+    await page.getByRole("button", { name: "Start backtest" }).click();
+    try {
+      await page.getByRole("button", { name: "Skip" }).waitFor({ state: "visible", timeout: 2000 });
+      await page.getByRole("button", { name: "Skip" }).click();
+    } catch {
+      // Intro finished on its own.
+    }
+    await ensurePaused(page);
+    await waitForQuietDesk(page);
+    await expect(page.locator(".chart-stage")).toBeVisible();
+  });
+
+  test("switches the timeframe chip on the primary pane", async ({ page }) => {
+    // The default source is 15m, so finer chips stay disabled and 1h/4h work.
+    const toolbar = page.locator(".pane-toolbar").first();
+    await toolbar.getByRole("button", { name: "1h" }).click();
+    await expect(toolbar.locator(".chip.is-current")).toHaveText("1h");
+  });
+
+  test("opens and closes the split pane", async ({ page }) => {
+    await expect(page.locator(".chart-pane")).toHaveCount(1);
+    await page.getByRole("button", { name: "Split" }).click();
+    await expect(page.locator(".chart-pane")).toHaveCount(2);
+    await page.getByRole("button", { name: "Split" }).click();
+    await expect(page.locator(".chart-pane")).toHaveCount(1);
+  });
+
+  test("zooms the chart with the wheel", async ({ page }) => {
+    // Zoom changes the bar spacing, so the candle width is the observable.
+    const candle = page.locator(".chart-svg rect.candle-up, .chart-svg rect.candle-down").first();
+    const before = (await candle.boundingBox())?.width ?? 0;
+    const stage = page.locator(".chart-stage").first();
+    await stage.hover();
+    await page.mouse.wheel(0, -240);
+    await expect(async () => {
+      const width = (await candle.boundingBox())?.width ?? 0;
+      expect(width).not.toBe(before);
+    }).toPass({ timeout: 3000 });
+    const after = (await candle.boundingBox())?.width ?? 0;
+    expect(after).toBeGreaterThan(before);
+  });
+});
+
 test.describe("working orders", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
