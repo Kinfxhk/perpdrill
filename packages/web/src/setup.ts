@@ -39,6 +39,8 @@ export type SessionSetup = {
   seed: number;
   /** Stress data: amplified volatility and jumps. */
   stress: boolean;
+  /** Where the bars come from: the seeded generator or imported data. */
+  dataSource: "synthetic" | "imported";
   rulesMode: RulesMode;
   presetId: string | null;
   /** Buyer options picked for the preset; `undefined` keeps the preset default. */
@@ -65,6 +67,7 @@ export function defaultSetup(): SessionSetup {
     bars: DEFAULT_SYNTHETIC_BARS,
     seed: randomSeed(),
     stress: false,
+    dataSource: "synthetic",
     rulesMode: "custom",
     presetId: null,
     custom: { ...DEFAULT_CUSTOM_RULES },
@@ -144,6 +147,7 @@ export function sanitizeSetup(raw: unknown): SessionSetup {
     bars: Math.round(num(value.bars, MIN_SYNTHETIC_BARS, MAX_SYNTHETIC_BARS, base.bars)),
     seed: Math.round(num(value.seed, 0, 0xffffffff, base.seed)),
     stress: value.stress === true,
+    dataSource: value.dataSource === "imported" ? "imported" : "synthetic",
     rulesMode:
       value.rulesMode === "none" || value.rulesMode === "preset" || value.rulesMode === "custom"
         ? value.rulesMode
@@ -226,6 +230,9 @@ export function writeStoredSetup(setup: SessionSetup): void {
 }
 
 export function dataKey(setup: SessionSetup): string {
+  if (setup.dataSource === "imported") {
+    return `imported:${setup.bars}:${setup.seed}`;
+  }
   return `${setup.market}:${setup.timeframeMin}:${setup.bars}:${setup.seed}`;
 }
 
