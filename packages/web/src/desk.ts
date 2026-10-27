@@ -18,22 +18,24 @@ import {
   TEACHING_MAX_LEVERAGE,
   TEACHING_MIN_LEVERAGE,
   bollingerBands,
-  closesThrough,
   exponentialMovingAverage,
   isBuyingPowerPct,
   isMarketId,
-  isSyntheticTimeframe,
   leverageCap,
+  coarserTimeframe,
   pairTrades,
   quoteClose,
   quoteOpen,
   replaySession,
   randomSeed,
+  resampleBars,
   resolvedMaxDrawdownUsd,
   resolvedTakerBps,
+  seriesTimeframeMin,
   sessionStats,
   simpleMovingAverage,
   syntheticSeries,
+  timeframeSupported,
   type Bar,
   type BuyingPowerPct,
   type FillKind,
@@ -44,9 +46,11 @@ import {
   type RejectReason,
   type SessionAction,
   type Side,
+  type SyntheticTimeframe,
 } from "@perpdrill/core";
 import {
   mountChart,
+  releaseDetachedCharts,
   type ChartBand,
   type ChartLine,
   type ChartOverlay,
@@ -72,7 +76,7 @@ import {
   formingStep,
   type FormingState,
 } from "./forming.ts";
-import { formatNumber, formatPct, formatQty, signedNumber } from "./format.ts";
+import { formatNumber, formatPct, formatQty, formatTimeframe, signedNumber } from "./format.ts";
 import {
   LANG_CHOICES,
   THEMES,
@@ -169,7 +173,22 @@ type DeskState = {
   formingPart: number | null;
   movingAverages: MovingAverageInstance[];
   bollingerVisible: boolean;
+  /** Second price pane. Each pane resamples the session bars; it does not invent a finer series. */
+  splitChart: boolean;
+  primaryTf: SyntheticTimeframe;
+  secondaryTf: SyntheticTimeframe;
 };
+
+/** Spacing the generator actually wrote, or null when the series is not that timeframe. */
+function practiceSourceMin(
+  series: readonly Bar[],
+  setupMin: SyntheticTimeframe,
+): SyntheticTimeframe | null {
+  if (series.length < 2) {
+    return setupMin;
+  }
+  return seriesTimeframeMin(series) === setupMin ? setupMin : null;
+}
 
 type Attrs = Record<string, string>;
 
@@ -339,6 +358,9 @@ export function mountDesk(root: HTMLElement): void {
     formingPart: null,
     movingAverages: defaultMovingAverages(),
     bollingerVisible: false,
+    splitChart: false,
+    primaryTf: stored.timeframeMin,
+    secondaryTf: stored.timeframeMin,
   };
   let introTimer = 0;
   let intro: PracticeIntro = idlePracticeIntro();
@@ -584,6 +606,11 @@ export function mountDesk(root: HTMLElement): void {
       bars: setup.bars,
       timeframeMin: setup.timeframeMin,
     });
+    const sourceMin = setup.timeframeMin;
+    state.primaryTf = timeframeSupported(sourceMin, state.primaryTf) ? state.primaryTf : sourceMin;
+    state.secondaryTf = timeframeSupported(sourceMin, state.secondaryTf)
+      ? state.secondaryTf
+      : sourceMin;
     state.screen = "play";
     resetSession();
     const key = dataKey({ ...setup, market: state.market });
@@ -610,6 +637,7 @@ export function mountDesk(root: HTMLElement): void {
     document.documentElement.lang = state.lang;
     applyDocumentTheme(state.theme);
     root.replaceChildren(build());
+    releaseDetachedCharts();
     if (restore.length > 0) {
       const next = root.querySelector(`#${CSS.escape(restore)}`);
       if (next instanceof HTMLInputElement) {
@@ -924,8 +952,25 @@ export function mountDesk(root: HTMLElement): void {
     const setRule = <K extends keyof CustomRules>(key: K, value: CustomRules[K]): void => {
       state.setup = { ...state.setup, custom: { ...state.setup.custom, [key]: value } };
     };
-    const tfLabel = (minutes: number): string =>
-      minutes >= 60 ? `${minutes / 60}h` : `${minutes}m`;
+    const tfRow = el("div", {
+      className: "tf-chips",
+      attrs: { role: "group", "aria-label": t("setup.timeframe") },
+    });
+    for (const minutes of SYNTHETIC_TIMEFRAMES_MIN) {
+      const button = el("button", {
+        className: minutes === setup.timeframeMin ? "chip is-current" : "chip",
+        text: formatTimeframe(minutes),
+        attrs: {
+          type: "button",
+          "aria-pressed": minutes === setup.timeframeMin ? "true" : "false",
+        },
+      });
+      button.addEventListener("click", () => {
+        state.setup = { ...state.setup, timeframeMin: minutes };
+        render();
+      });
+      tfRow.append(button);
+    }
     const data = el(
       "section",
       { className: "setup-card", attrs: { "aria-label": t("setup.data") } },
@@ -946,21 +991,11 @@ export function mountDesk(root: HTMLElement): void {
             }
           },
         ),
-        selectField(
-          "setup-tf",
-          t("setup.timeframe"),
-          SYNTHETIC_TIMEFRAMES_MIN.map((minutes) => ({
-            value: String(minutes),
-            text: tfLabel(minutes),
-          })),
-          String(setup.timeframeMin),
-          (value) => {
-            const minutes = Number(value);
-            if (isSyntheticTimeframe(minutes)) {
-              state.setup = { ...state.setup, timeframeMin: minutes };
-            }
-          },
-        ),
+        el("div", { className: "field" }, [
+          el("span", { text: t("setup.timeframe") }),
+          tfRow,
+          el("span", { className: "hint", text: t("setup.timeframeHint") }),
+        ]),
         numberField(
           "setup-bars",
           t("setup.bars"),
@@ -1487,6 +1522,39 @@ export function mountDesk(root: HTMLElement): void {
     return row;
   }
 
+  function mountTimeframeChips(
+    source: SyntheticTimeframe | null,
+    selected: SyntheticTimeframe | null,
+    onSelect: (minutes: SyntheticTimeframe) => void,
+  ): HTMLElement {
+    const row = el("div", {
+      className: "pane-toolbar",
+      attrs: { role: "group", "aria-label": t("chart.timeframe") },
+    });
+    for (const minutes of SYNTHETIC_TIMEFRAMES_MIN) {
+      const supported = source !== null && timeframeSupported(source, minutes);
+      const current = minutes === selected;
+      const button = el("button", {
+        className: current ? "chip is-current" : "chip",
+        text: formatTimeframe(minutes),
+        disabled: !supported,
+        attrs: {
+          type: "button",
+          "aria-pressed": current ? "true" : "false",
+          ...(supported ? {} : { title: t("chart.tfUnsupported") }),
+        },
+      });
+      button.addEventListener("click", () => {
+        if (!supported || current) {
+          return;
+        }
+        onSelect(minutes);
+      });
+      row.append(button);
+    }
+    return row;
+  }
+
   function mountChartSection(
     series: readonly Bar[],
     frame: Frame,
@@ -1512,68 +1580,152 @@ export function mountDesk(root: HTMLElement): void {
     if (frame.position?.takeProfit !== null && frame.position?.takeProfit !== undefined) {
       lines.push({ price: frame.position.takeProfit, kind: "tp" });
     }
-    const closes = closesThrough(series, state.cursor);
-    // Indicators use the full revealed history; only the last window is drawn.
-    // The unclosed preview takes the last slot. It is not fed to the engine.
+    const source = practiceSourceMin(series, state.setup.timeframeMin);
+    const closed = series.slice(0, Math.max(0, state.cursor) + 1);
+    // The unclosed preview is paint only. The engine still closes on `cursor`.
     const previewBar = state.formingPart === null ? undefined : series[state.cursor + 1];
     const preview =
       previewBar === undefined || state.formingPart === null
         ? null
-        : formingSnapshot(previewBar, state.formingPart);
-    const closedWindow = preview === null ? CHART_WINDOW : Math.max(1, CHART_WINDOW - 1);
-    const from = Math.max(0, closes.length - closedWindow);
-    const revealed = series.slice(from, closes.length);
-    const candles = preview === null ? revealed : [...revealed, preview];
-    const overlays: ChartOverlay[] = [];
-    for (const instance of state.movingAverages) {
-      if (!instance.visible) {
-        continue;
+        : { ...previewBar, ...formingSnapshot(previewBar, state.formingPart) };
+    const painted = preview === null ? closed : [...closed, preview];
+
+    const mountPane = (paneIndex: number, requested: SyntheticTimeframe, showLegend: boolean) => {
+      const selected =
+        source === null ? null : timeframeSupported(source, requested) ? requested : source;
+      const closedView =
+        source === null || selected === null ? null : resampleBars(closed, source, selected);
+      const view =
+        closedView === null || source === null || selected === null
+          ? null
+          : preview === null
+            ? closedView
+            : (resampleBars(painted, source, selected) ?? closedView);
+      const closes = closedView === null ? [] : closedView.map((bar) => bar.close);
+      // Indicators use the closed resample. A new preview candle takes the last slot.
+      const previewExtra = view !== null && closedView !== null && view.length > closedView.length;
+      const closedWindow = previewExtra ? Math.max(1, CHART_WINDOW - 1) : CHART_WINDOW;
+      const from = Math.max(0, closes.length - closedWindow);
+      const drawn = view === null ? [] : view.slice(from);
+      const overlays: ChartOverlay[] = [];
+      for (const instance of state.movingAverages) {
+        if (!instance.visible) {
+          continue;
+        }
+        overlays.push({
+          points: movingAveragePoints(instance.kind, closes, instance.period).slice(from),
+          stroke: instance.stroke,
+        });
       }
-      overlays.push({
-        points: movingAveragePoints(instance.kind, closes, instance.period).slice(from),
-        stroke: instance.stroke,
+      const bands: ChartBand[] = [];
+      if (state.bollingerVisible && view !== null) {
+        const band = bollingerBands(
+          closes,
+          DEFAULT_BOLLINGER_PERIOD,
+          DEFAULT_BOLLINGER_DEVIATIONS,
+        ).slice(from);
+        overlays.push({
+          points: band.map((point) => point.mid),
+          stroke: "line-strong",
+        });
+        bands.push({
+          upper: band.map((point) => point.upper),
+          lower: band.map((point) => point.lower),
+        });
+      }
+      const labelTf = selected === null ? t("chart.tfUnsupported") : formatTimeframe(selected);
+      const stage = el("div", { className: "chart-stage" });
+      mountChart(stage, {
+        candles: drawn,
+        lines,
+        overlays,
+        bands,
+        label: `${labelTf} · ${t("chart.sample")} · ${t("replay.bar")} ${state.cursor + 1}/${series.length}`,
+        formatPrice: money,
       });
-    }
-    const bands: ChartBand[] = [];
-    if (state.bollingerVisible) {
-      const band = bollingerBands(
-        closes,
-        DEFAULT_BOLLINGER_PERIOD,
-        DEFAULT_BOLLINGER_DEVIATIONS,
-      ).slice(from);
-      overlays.push({
-        points: band.map((point) => point.mid),
-        stroke: "line-strong",
+      if (view === null) {
+        stage.append(el("p", { className: "chart-empty", text: t("chart.tfUnsupported") }));
+      } else if (view.length === 0) {
+        stage.append(el("p", { className: "chart-empty", text: t("chart.tfEmpty") }));
+      }
+      if (showLegend) {
+        stage.append(
+          el("ul", { className: "legend" }, [
+            el("li", { className: "legend-entry", text: t("legend.entry") }),
+            el("li", { className: "legend-liq", text: t("legend.liquidation") }),
+            el("li", { className: "legend-prop", text: t("legend.fail") }),
+            el("li", { className: "legend-daily", text: t("legend.daily") }),
+            el("li", { className: "legend-sl", text: t("legend.sl") }),
+            el("li", { className: "legend-tp", text: t("legend.tp") }),
+          ]),
+        );
+      }
+      const chips = mountTimeframeChips(source, selected, (minutes) => {
+        if (paneIndex === 0) {
+          state.primaryTf = minutes;
+        } else {
+          state.secondaryTf = minutes;
+        }
+        render();
       });
-      bands.push({
-        upper: band.map((point) => point.upper),
-        lower: band.map((point) => point.lower),
-      });
-    }
-    const stage = el("div", { className: "chart-stage" });
-    mountChart(stage, {
-      candles,
-      lines,
-      overlays,
-      bands,
-      label: `${t("chart.sample")} ${state.cursor + 1}/${series.length}`,
-      formatPrice: money,
+      chips.append(
+        el("span", {
+          className: "pane-count",
+          text: view === null ? "" : `${t("replay.bar")} ${view.length}`,
+        }),
+      );
+      return el(
+        "div",
+        {
+          className: "chart-pane",
+          attrs: { "aria-label": `${t("chart.pane")} ${paneIndex + 1}` },
+        },
+        [chips, stage],
+      );
+    };
+
+    const split = el("button", {
+      className: state.splitChart ? "chip split-toggle is-on" : "chip split-toggle",
+      text: t("chart.split"),
+      attrs: {
+        type: "button",
+        "aria-pressed": state.splitChart ? "true" : "false",
+        title: state.splitChart ? t("chart.singleHint") : t("chart.splitHint"),
+      },
     });
-    const legend = el("ul", { className: "legend" }, [
-      el("li", { className: "legend-entry", text: t("legend.entry") }),
-      el("li", { className: "legend-liq", text: t("legend.liquidation") }),
-      el("li", { className: "legend-prop", text: t("legend.fail") }),
-      el("li", { className: "legend-daily", text: t("legend.daily") }),
-      el("li", { className: "legend-sl", text: t("legend.sl") }),
-      el("li", { className: "legend-tp", text: t("legend.tp") }),
-    ]);
-    stage.append(legend);
+    split.addEventListener("click", () => {
+      const enabling = !state.splitChart;
+      state.splitChart = enabling;
+      if (enabling && source !== null) {
+        const primary = timeframeSupported(source, state.primaryTf) ? state.primaryTf : source;
+        const secondary = timeframeSupported(source, state.secondaryTf)
+          ? state.secondaryTf
+          : source;
+        if (secondary === primary) {
+          const next = coarserTimeframe(SYNTHETIC_TIMEFRAMES_MIN, source, primary);
+          if (next !== null) {
+            state.secondaryTf = next;
+          }
+        }
+      }
+      render();
+    });
+
+    const panes = el("div", {
+      className: state.splitChart ? "chart-panes is-split" : "chart-panes",
+    });
+    panes.append(mountPane(0, state.primaryTf, true));
+    if (state.splitChart) {
+      panes.append(mountPane(1, state.secondaryTf, false));
+    }
+
     return el("section", { className: "chart", attrs: { "aria-label": "Chart" } }, [
       el("div", { className: "chart-toolbar" }, [
         el("span", {
           className: "chip is-current",
-          text: `${sampleMarketLabel(state.lang, state.market)} · ${state.setup.timeframeMin >= 60 ? `${state.setup.timeframeMin / 60}h` : `${state.setup.timeframeMin}m`} · ${t("setup.seed")} ${state.setup.seed}`,
+          text: `${sampleMarketLabel(state.lang, state.market)} · ${formatTimeframe(state.setup.timeframeMin)} · ${t("setup.seed")} ${state.setup.seed}`,
         }),
+        split,
         el("span", {
           className: "toolbar-note",
           text: `${t("replay.bar")} ${state.cursor + 1}/${series.length} · ${t("teaching.mark")}`,
@@ -1581,7 +1733,7 @@ export function mountDesk(root: HTMLElement): void {
       ]),
       mountIndicatorControls(),
       replay,
-      stage,
+      panes,
     ]);
   }
 

@@ -32,7 +32,7 @@ const en = {
   "sample.gc": "SYNTH-GC",
   "sample.es": "SYNTH-ES",
   "chart.empty": "Step the series. Candles are a local sample, not a live feed.",
-  "chart.sample": "1h sample",
+  "chart.sample": "Practice sample",
   "indicator.label": "Indicators",
   "indicator.sma": "SMA",
   "indicator.ema": "EMA",
@@ -217,6 +217,14 @@ const en = {
   "theme.aqua": "Lagoon",
   "theme.violet": "Iris",
   "theme.daylight": "Daylight",
+  "chart.split": "Split",
+  "chart.splitHint": "Open a second chart of this sample.",
+  "chart.singleHint": "Close the second chart.",
+  "chart.timeframe": "Chart timeframe",
+  "chart.tfUnsupported": "This sample has no finer bars for that timeframe.",
+  "chart.tfEmpty": "No bar of this timeframe is open in the revealed sample.",
+  "chart.pane": "Chart pane",
+  "setup.timeframeHint": "Chart views can resample this bar upward. Finer views stay off.",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -246,7 +254,7 @@ const zhHant = catalog({
   "sample.gc": "SYNTH-GC",
   "sample.es": "SYNTH-ES",
   "chart.empty": "逐步播放樣本。K 線是本機資料，不是即時行情。",
-  "chart.sample": "1小時樣本",
+  "chart.sample": "練習樣本",
   "indicator.label": "指標",
   "indicator.sma": "SMA",
   "indicator.ema": "EMA",
@@ -429,6 +437,14 @@ const zhHant = catalog({
   "theme.aqua": "潟湖",
   "theme.violet": "鳶尾",
   "theme.daylight": "日間",
+  "chart.split": "分割",
+  "chart.splitHint": "用同一組樣本再開一張圖。",
+  "chart.singleHint": "關掉第二張圖。",
+  "chart.timeframe": "圖表週期",
+  "chart.tfUnsupported": "這組樣本沒有更細的 K 線，不能組成這個週期。",
+  "chart.tfEmpty": "已揭示的樣本裡還沒有這個週期的 K 線。",
+  "chart.pane": "圖表面板",
+  "setup.timeframeHint": "圖表只能把這個週期往上合併。更細的週期不會補出來。",
 });
 
 const zhHans = catalog({
@@ -450,7 +466,7 @@ const zhHans = catalog({
   "sample.gc": "SYNTH-GC",
   "sample.es": "SYNTH-ES",
   "chart.empty": "逐步播放样本。K 线是本机数据，不是实时行情。",
-  "chart.sample": "1小时样本",
+  "chart.sample": "练习样本",
   "indicator.label": "指标",
   "indicator.sma": "SMA",
   "indicator.ema": "EMA",
@@ -633,6 +649,14 @@ const zhHans = catalog({
   "theme.aqua": "泻湖",
   "theme.violet": "鸢尾",
   "theme.daylight": "日间",
+  "chart.split": "分割",
+  "chart.splitHint": "用同一组样本再开一张图。",
+  "chart.singleHint": "关掉第二张图。",
+  "chart.timeframe": "图表周期",
+  "chart.tfUnsupported": "这组样本没有更细的 K 线，不能组成这个周期。",
+  "chart.tfEmpty": "已揭示的样本里还没有这个周期的 K 线。",
+  "chart.pane": "图表面板",
+  "setup.timeframeHint": "图表只能把这个周期往上合并。更细的周期不会补出来。",
 });
 
 const ja = catalog({
@@ -655,7 +679,7 @@ const ja = catalog({
   "sample.gc": "SYNTH-GC",
   "sample.es": "SYNTH-ES",
   "chart.empty": "バーを進めます。ローソクはローカルのサンプルで、ライブ相場ではありません。",
-  "chart.sample": "1時間サンプル",
+  "chart.sample": "練習サンプル",
   "indicator.label": "指標",
   "indicator.sma": "SMA",
   "indicator.ema": "EMA",
@@ -840,6 +864,14 @@ const ja = catalog({
   "theme.aqua": "ラグーン",
   "theme.violet": "アイリス",
   "theme.daylight": "デイライト",
+  "chart.split": "分割",
+  "chart.splitHint": "同じサンプルでもう一枚のチャートを開く。",
+  "chart.singleHint": "下のチャートを閉じる。",
+  "chart.timeframe": "時間足",
+  "chart.tfUnsupported": "このサンプルには、その時間足を作る短い足がありません。",
+  "chart.tfEmpty": "表示済みのサンプルに、この時間足の足はまだありません。",
+  "chart.pane": "チャート枠",
+  "setup.timeframeHint": "チャートはこの足をより長い足にまとめられます。より短い足は出しません。",
 });
 
 const ko = catalog({
@@ -862,7 +894,7 @@ const ko = catalog({
   "sample.gc": "SYNTH-GC",
   "sample.es": "SYNTH-ES",
   "chart.empty": "봉을 진행합니다. 캔들은 로컬 샘플이며 실시간 시세가 아닙니다.",
-  "chart.sample": "1시간 샘플",
+  "chart.sample": "연습 샘플",
   "indicator.label": "지표",
   "indicator.sma": "SMA",
   "indicator.ema": "EMA",
@@ -1048,6 +1080,14 @@ const ko = catalog({
   "theme.aqua": "라군",
   "theme.violet": "아이리스",
   "theme.daylight": "데이라이트",
+  "chart.split": "분할",
+  "chart.splitHint": "같은 샘플로 차트를 하나 더 엽니다.",
+  "chart.singleHint": "아래 차트를 닫습니다.",
+  "chart.timeframe": "타임프레임",
+  "chart.tfUnsupported": "이 샘플에는 그 타임프레임을 만들 더 짧은 봉이 없습니다.",
+  "chart.tfEmpty": "드러난 샘플에는 이 타임프레임의 봉이 아직 없습니다.",
+  "chart.pane": "차트 창",
+  "setup.timeframeHint": "차트는 이 봉을 더 긴 봉으로만 합칩니다. 더 짧은 봉은 만들지 않습니다.",
 });
 
 const catalogs: Record<Lang, Catalog> = {

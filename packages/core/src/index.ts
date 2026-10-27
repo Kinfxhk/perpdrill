@@ -85,6 +85,12 @@ export type {
   Position,
   SessionAction,
 } from "./replay.ts";
+export {
+  coarserTimeframe,
+  resampleBars,
+  seriesTimeframeMin,
+  timeframeSupported,
+} from "./resample.ts";
 export { SIMULATION_POLICY, markPrice, sampleSeries } from "./series.ts";
 export type { Bar } from "./series.ts";
 export {
