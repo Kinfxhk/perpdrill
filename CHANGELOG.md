@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- On short phone screens, scroll the entire order ticket instead of pinning its
+  submit section over the controls. Landscape users can reveal full order-type
+  buttons and price/leverage inputs, place/cancel a limit order, and still reach
+  the source link and teaching notices. Taller phone and desktop layouts are unchanged.
 - Add SYNTH-BTC as the fourth fictional generated market for custom rules and
   free practice. It uses only local seeded randomness, never exchange history.
   Existing market ids, parameters, seed outputs and plan market scopes stay
