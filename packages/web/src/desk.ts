@@ -2425,6 +2425,8 @@ export function mountDesk(root: HTMLElement): void {
   }
 
   function commitClose(): void {
+    // Flattening from the phone drawer should hand the chart back.
+    state.drawerOpen = false;
     commit({
       kind: "close",
       barIndex: state.cursor,
