@@ -1703,6 +1703,37 @@ summary:focus-visible {
 }
 
 @media (max-width: 899px) {
+  /* Setup has all navigation/preferences visible; give each group its own row. */
+  .shell:not(.shell-desk) .topnav {
+    display: grid;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .shell:not(.shell-desk) .brand-kicker {
+    display: none;
+  }
+
+  .shell:not(.shell-desk) .topnav nav {
+    display: grid;
+    grid-template-columns: max-content repeat(2, minmax(0, 1fr));
+  }
+
+  .shell:not(.shell-desk) .nav-btn {
+    padding-inline: 4px;
+    white-space: nowrap;
+  }
+
+  .shell:not(.shell-desk) .top-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .shell:not(.shell-desk) .top-actions select {
+    width: 100%;
+    min-width: 0;
+  }
+
   .shell-desk .topnav {
     padding: 4px 8px;
     gap: 8px;
