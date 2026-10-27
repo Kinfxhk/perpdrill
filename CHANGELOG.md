@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- The chart can draw VWAP, Keltner channels and Donchian channels beside the
+  existing averages. VWAP is anchored at the first bar and weighted by volume,
+  so synthetic bars now carry a fictional size from their own seeded stream:
+  the pinned seeded price paths and stored sessions stay unchanged. Imported
+  CSV rows and live Binance bars keep their real size. VWAP is left out of the
+  price-scale fit, so a far-off anchored average cannot squash the candles.
+  All five languages label the new studies.
+
 - On phone setup screens, give the brand, navigation and preference controls
   their own rows so Chinese/Japanese/Korean labels stay horizontal. Keep theme
   and language selection visible together without squeezing the navigation.

@@ -36,6 +36,7 @@ export const INDICATOR_STROKES = [
   "danger",
   "prop",
   "line-strong",
+  "anchor",
 ] as const;
 
 export type IndicatorStroke = (typeof INDICATOR_STROKES)[number];
@@ -43,6 +44,8 @@ export type IndicatorStroke = (typeof INDICATOR_STROKES)[number];
 export type ChartOverlay = {
   readonly points: readonly (number | null)[];
   readonly stroke: IndicatorStroke;
+  /** False when the study should not widen the price scale, e.g. an anchor from bar 0. */
+  readonly fitsScale?: boolean;
 };
 
 export type ChartBand = {
@@ -122,6 +125,8 @@ function strokeClass(stroke: IndicatorStroke): string {
       return "stroke-prop";
     case "line-strong":
       return "stroke-line-strong";
+    case "anchor":
+      return "stroke-anchor";
     default: {
       const unexpected: never = stroke;
       return unexpected;
@@ -931,6 +936,9 @@ export function mountChart(
     const visible = visibleIndexRange(plotWidth, revealed, timeScale);
     const extraPrices = input.lines.map((line) => line.price);
     for (const overlay of input.overlays) {
+      if (overlay.fitsScale === false) {
+        continue;
+      }
       collectPrices(extraPrices, overlay.points, visible.from, visible.to);
     }
     for (const band of input.bands) {

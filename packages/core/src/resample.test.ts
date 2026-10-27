@@ -86,6 +86,7 @@ describe("chart resampling", () => {
       high: Math.max(...group.map((item) => item.high)),
       low: Math.min(...group.map((item) => item.low)),
       close: close?.close,
+      volume: group.reduce((sum, item) => sum + (item.volume ?? 0), 0),
     });
     expect(resampleBars(bars, 3, 5)).toBeNull();
     expect(resampleBars(bars, 3, 1)).toBeNull();

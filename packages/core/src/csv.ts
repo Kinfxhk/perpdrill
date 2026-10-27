@@ -2,10 +2,10 @@ import { MAX_SYNTHETIC_BARS, MIN_SYNTHETIC_BARS } from "./synthetic.ts";
 import type { Bar } from "./series.ts";
 
 /**
- * Strict OHLCV CSV import. Columns: time, open, high, low, close (volume
- * ignored). Time is a Unix epoch in milliseconds or an ISO date string.
- * Teaching-grade: prices must be positive, OHLC consistent, times strictly
- * increasing, and the row count inside the synthetic bounds.
+ * Strict OHLCV CSV import. Columns: time, open, high, low, close, volume (the volume
+ * column is optional and kept only when it parses). Time is a Unix epoch in
+ * milliseconds or an ISO date string. Teaching-grade: prices must be positive, OHLC
+ * consistent, times strictly increasing, and the row count inside the synthetic bounds.
  */
 export type CsvImportError = "empty" | "columns" | "times" | "prices" | "count";
 
@@ -36,6 +36,15 @@ function parsePrice(value: string): number | null {
   }
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+/** Optional size column. A blank or unparsable value leaves the bar without volume. */
+function parseVolume(value: string | undefined): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  const parsed = Number(value.trim());
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
 export function parseOhlcCsv(text: string): CsvImportResult {
@@ -77,7 +86,8 @@ export function parseOhlcCsv(text: string): CsvImportResult {
     if (previous !== undefined && timeMs <= previous.timeMs) {
       return { ok: false, error: "times" };
     }
-    bars.push({ timeMs, open, high, low, close });
+    const volume = parseVolume(parts[5]);
+    bars.push({ timeMs, open, high, low, close, ...(volume === undefined ? {} : { volume }) });
   }
   return { ok: true, bars };
 }
