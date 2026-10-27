@@ -57,6 +57,15 @@ npm start
 - perpsdrill 與任何交易場所、prop 廠商沒有附屬、背書或客戶關係。請勿把本專案當成他們的官方軟體。
 - 專案方向是不加廣告、不收集遙測、不以付費牆當作使用條件。
 
+## 真實資料（選用）
+
+練習資料預設係合成 K 線。設定頁可以改來源：
+
+- **CSV 檔案**：匯入 `time,open,high,low,close[,volume]` 格式（time 為 Unix 毫秒或 ISO 日期），嚴格驗證後逐根練習。
+- **實時（Binance）**：瀏覽器直接從 Binance 公開資料端點（data-api.binance.vision）下載 klines，無需 API key、不經伺服器、不綑綁任何資料檔；畫面標示「Market data by Binance」。資料只存於你的瀏覽器，練習結束不會上傳。
+
+真實行情同合成資料一樣，強平仍是教學近似，唔係交易所公式。
+
 ## 預設來源
 
 `presets/` 有 13 份教學方案 JSON（Instant、Evaluation、2-Step）。下拉選單與規則標題只用教學名，不寫廠商名稱。最大回撤是靜態金額（`maxDrawdownUsd`）：地板＝起始資金減去該金額。來源網址留在 JSON，畫面上不以網址當文字。模擬結果不是官方評測。產品程式碼（`packages/`）不寫廠商名稱。沒有核到的規則不要補數字。
@@ -125,6 +134,15 @@ npm start
 - Perps and leverage can consume the whole margin balance. The liquidation price on screen is an estimate, not an exchange's closed form.
 - perpsdrill is not affiliated with, endorsed by, or a client of any trading venue or prop firm. Do not treat it as their software.
 - The project commits to no ads, no telemetry, and no paywall as a condition of use.
+
+## Real data (optional)
+
+Practice data is synthetic by default. The setup screen can switch the source:
+
+- **CSV file**: import `time,open,high,low,close[,volume]` rows (Unix milliseconds or ISO dates); strictly validated before the bars run.
+- **Live (Binance)**: the browser downloads klines straight from Binance's public data endpoint (data-api.binance.vision) — no API key, no server, nothing bundled; the desk shows "Market data by Binance". Data stays in your browser.
+
+Real quotes use the same teaching liquidation approximation, not an exchange formula.
 
 ## Preset sources
 

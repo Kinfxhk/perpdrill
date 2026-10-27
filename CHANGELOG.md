@@ -25,6 +25,10 @@
   bars, clock-aligned, including a still-forming last bar. A finer chart, or
   one the bar size does not divide, stays disabled instead of relabeling the
   same candles. Split opens a second pane on that same sample.
+- The setup screen can trade real data: a strict CSV import
+  (time,open,high,low,close) or live klines fetched in the browser from
+  Binance's public data endpoint, attributed on the desk and never
+  bundled. Funding on imported bars keeps the synthetic sequence.
 - The review adds session Sharpe and Sortino (per-bar returns, not
   annualized), Calmar, average hold in bars, and a split ledger of fees,
   carry, and funding.

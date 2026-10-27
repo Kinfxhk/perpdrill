@@ -68,6 +68,7 @@ export {
   syntheticSeries,
 } from "./synthetic.ts";
 export type { SyntheticSpec, SyntheticTimeframe } from "./synthetic.ts";
+export { parseOhlcCsv, type CsvImportError, type CsvImportResult } from "./csv.ts";
 export {
   logicalDayKey,
   priceForEquityFloor,
