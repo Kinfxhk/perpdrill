@@ -23,8 +23,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc -p tsconfig.json && tsc -p packages/core && tsc -p packages/web && tsc -p packages/web/tsconfig.node.json && tsc -p packages/server",
+    "typecheck": "tsc -p tsconfig.json && tsc -p packages/core && tsc -p packages/web && tsc -p packages/web/tsconfig.node.json && tsc -p packages/server && tsc -p tsconfig.e2e.json",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "check:licenses": "node scripts/check-licenses.mjs",
     "check:hygiene": "node scripts/check-hygiene.mjs",
     "check:secrets": "node scripts/check-secrets.mjs",
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^22.19.1",
     "eslint": "^9.39.1",
     "globals": "^16.4.0",
