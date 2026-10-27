@@ -1,4 +1,69 @@
+import { createRng } from "./synthetic.ts";
 import type { FillEvent } from "./replay.ts";
+
+export type MonteCarloResult = {
+  /** Fraction of shuffles whose running equity breached the floor. */
+  readonly breachProbability: number | null;
+  /** Shuffled-trade max drawdown percentiles, in percent of starting equity. */
+  readonly maxDrawdownP50: number | null;
+  readonly maxDrawdownP95: number | null;
+  readonly samples: number;
+};
+
+/**
+ * Shuffles the realized trade PnLs and replays the equity path. Teaching
+ * stability gauge, not a prediction: reports how often the drawdown floor
+ * breaks under order permutation and the 50/95th drawdown percentiles.
+ */
+export function monteCarlo(input: {
+  readonly netPnls: readonly number[];
+  readonly startingBalance: number;
+  readonly floor: number | null;
+  readonly seed: number;
+  readonly samples?: number;
+}): MonteCarloResult {
+  const samples = input.samples ?? 1000;
+  if (input.netPnls.length === 0 || input.startingBalance <= 0) {
+    return { breachProbability: null, maxDrawdownP50: null, maxDrawdownP95: null, samples };
+  }
+  const rng = createRng(input.seed);
+  const drawdowns: number[] = [];
+  let breaches = 0;
+  for (let sample = 0; sample < samples; sample += 1) {
+    const shuffled = [...input.netPnls];
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const other = Math.floor(rng.next() * (index + 1));
+      const temp = shuffled[index] ?? 0;
+      shuffled[index] = shuffled[other] ?? temp;
+      shuffled[other] = temp;
+    }
+    let equity = input.startingBalance;
+    let peak = input.startingBalance;
+    let maxDrawdown = 0;
+    let breached = false;
+    for (const pnl of shuffled) {
+      equity += pnl;
+      peak = Math.max(peak, equity);
+      maxDrawdown = Math.max(maxDrawdown, ((peak - equity) / peak) * 100);
+      if (input.floor !== null && equity <= input.floor) {
+        breached = true;
+      }
+    }
+    drawdowns.push(maxDrawdown);
+    if (breached) {
+      breaches += 1;
+    }
+  }
+  drawdowns.sort((a, b) => a - b);
+  const percentile = (fraction: number): number =>
+    drawdowns[Math.min(drawdowns.length - 1, Math.floor(fraction * drawdowns.length))] ?? 0;
+  return {
+    breachProbability: breaches / samples,
+    maxDrawdownP50: percentile(0.5),
+    maxDrawdownP95: percentile(0.95),
+    samples,
+  };
+}
 
 export type Trade = {
   readonly side: FillEvent["side"];
