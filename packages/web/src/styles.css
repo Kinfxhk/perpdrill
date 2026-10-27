@@ -145,7 +145,7 @@ button {
   border: 1px solid var(--line);
   background: var(--bg-raised);
   border-radius: 8px;
-  padding: 7px 10px;
+  padding: 8px 12px;
   color: var(--text-dim);
 }
 
@@ -175,7 +175,7 @@ button {
 
 .stat {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   min-width: 72px;
 }
 
@@ -239,7 +239,7 @@ button {
 .chart-toolbar,
 .indicator-controls,
 .tabs {
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -590,21 +590,22 @@ button {
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
+  gap: 10px;
+  padding: 14px;
 }
 
 .ticket-pin {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 8px 12px 12px;
+  padding: 10px 14px 14px;
   border-top: 1px solid var(--line);
   background: var(--panel-deep);
 }
 
 .ticket-note {
   color: var(--text-dim);
+  font-size: 12px;
 }
 
 .side,
@@ -629,7 +630,7 @@ button {
 
 .field {
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 
 .field input,
@@ -758,7 +759,7 @@ output {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 2px 0;
+  padding: 3px 0;
 }
 
 .health {
@@ -856,7 +857,7 @@ table {
 
 th,
 td {
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   white-space: nowrap;
@@ -2008,5 +2009,27 @@ button:disabled {
   .workspace > .ticket,
   .desk-bottom {
     transition: none;
+  }
+}
+
+/* Two-column desks give the market stats more air than the phone row. */
+@media (min-width: 900px) {
+  .stats {
+    gap: 14px;
+  }
+
+  .stat {
+    min-width: 84px;
+  }
+}
+
+/* Short portrait phones (e.g. 375x667): keep the chart on screen. */
+@media (max-width: 899px) and (max-height: 700px) {
+  .shell {
+    padding-bottom: calc(210px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .chart-stage {
+    min-height: 160px;
   }
 }
