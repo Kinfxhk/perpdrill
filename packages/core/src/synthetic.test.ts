@@ -49,7 +49,26 @@ describe("synthetic markets", () => {
     (market, digest) => {
       if (!isMarketId(market)) throw new Error("legacy market is missing");
       const bars = syntheticSeries({ market, seed: 802840008, bars: 600, timeframeMin: 15 });
-      expect(createHash("sha256").update(JSON.stringify(bars)).digest("hex")).toBe(digest);
+      // Price path only: a stored session depends on these five fields. Volume is
+      // fictional activity and may grow without rewriting that contract.
+      const pricePath = bars.map(({ timeMs, open, high, low, close }) => ({
+        timeMs,
+        open,
+        high,
+        low,
+        close,
+      }));
+      expect(createHash("sha256").update(JSON.stringify(pricePath)).digest("hex")).toBe(digest);
     },
   );
+
+  it("gives every synthetic bar a positive fictional size", () => {
+    for (const market of SAMPLE_MARKETS) {
+      const bars = syntheticSeries({ market, seed: 802840008, bars: 200, timeframeMin: 5 });
+      for (const bar of bars) {
+        expect(Number.isInteger(bar.volume)).toBe(true);
+        expect(bar.volume).toBeGreaterThan(0);
+      }
+    }
+  });
 });

@@ -2,6 +2,8 @@ import {
   BUYING_POWER_PCTS,
   DEFAULT_BOLLINGER_DEVIATIONS,
   DEFAULT_BOLLINGER_PERIOD,
+  DEFAULT_CHANNEL_PERIOD,
+  DEFAULT_KELTNER_MULTIPLIER,
   DEFAULT_REALIZED_IMPACT_BPS,
   DEFAULT_SLIP_TOLERANCE_BPS,
   ENGINE_STATUS,
@@ -17,8 +19,11 @@ import {
   SYNTHETIC_TIMEFRAMES_MIN,
   TEACHING_MAX_LEVERAGE,
   TEACHING_MIN_LEVERAGE,
+  anchoredVwap,
   bollingerBands,
+  donchianChannels,
   exponentialMovingAverage,
+  keltnerChannels,
   isBuyingPowerPct,
   isMarketId,
   leverageCap,
@@ -43,6 +48,7 @@ import {
   type CsvImportError,
   type Bar,
   type BuyingPowerPct,
+  type ChannelPoint,
   type FillKind,
   type Frame,
   type MarketId,
@@ -192,6 +198,9 @@ type DeskState = {
   formingPart: number | null;
   movingAverages: MovingAverageInstance[];
   bollingerVisible: boolean;
+  vwapVisible: boolean;
+  keltnerVisible: boolean;
+  donchianVisible: boolean;
   /** Second price pane. Each pane resamples the session bars; it does not invent a finer series. */
   splitChart: boolean;
   /** Phone drawer (order ticket + blotter) is open. */
@@ -428,6 +437,9 @@ export function mountDesk(root: HTMLElement): void {
     formingPart: null,
     movingAverages: defaultMovingAverages(),
     bollingerVisible: false,
+    vwapVisible: true,
+    keltnerVisible: false,
+    donchianVisible: false,
     splitChart: false,
     drawerOpen: false,
     primaryTf: stored.timeframeMin,
@@ -1796,31 +1808,72 @@ export function mountDesk(root: HTMLElement): void {
       row.append(el("div", { className: "indicator-instance" }, [toggle, period]));
     }
 
-    const bollinger = el(
-      "button",
-      {
-        className: state.bollingerVisible ? "chip indicator-toggle is-on" : "chip indicator-toggle",
-        attrs: {
-          type: "button",
-          "aria-pressed": state.bollingerVisible ? "true" : "false",
-          title: t("indicator.revealed"),
+    const studyChip = (
+      label: string,
+      stroke: IndicatorStroke,
+      isVisible: () => boolean,
+      flip: () => void,
+    ): HTMLElement => {
+      const visible = isVisible();
+      const chip = el(
+        "button",
+        {
+          className: visible ? "chip indicator-toggle is-on" : "chip indicator-toggle",
+          attrs: {
+            type: "button",
+            "aria-pressed": visible ? "true" : "false",
+            title: t("indicator.revealed"),
+          },
         },
-      },
-      [
-        el("span", {
-          className: "swatch swatch-line-strong",
-          attrs: { "aria-hidden": "true" },
-        }),
-        el("span", {
-          text: `${t("indicator.bollinger")} ${DEFAULT_BOLLINGER_PERIOD}`,
-        }),
-      ],
+        [
+          el("span", {
+            className: `swatch swatch-${stroke}`,
+            attrs: { "aria-hidden": "true" },
+          }),
+          el("span", { text: label }),
+        ],
+      );
+      chip.addEventListener("click", () => {
+        flip();
+        render();
+      });
+      return chip;
+    };
+
+    row.append(
+      studyChip(
+        t("indicator.vwap"),
+        "anchor",
+        () => state.vwapVisible,
+        () => {
+          state.vwapVisible = !state.vwapVisible;
+        },
+      ),
+      studyChip(
+        `${t("indicator.bollinger")} ${DEFAULT_BOLLINGER_PERIOD}`,
+        "line-strong",
+        () => state.bollingerVisible,
+        () => {
+          state.bollingerVisible = !state.bollingerVisible;
+        },
+      ),
+      studyChip(
+        `${t("indicator.keltner")} ${DEFAULT_CHANNEL_PERIOD}`,
+        "accent",
+        () => state.keltnerVisible,
+        () => {
+          state.keltnerVisible = !state.keltnerVisible;
+        },
+      ),
+      studyChip(
+        `${t("indicator.donchian")} ${DEFAULT_CHANNEL_PERIOD}`,
+        "short",
+        () => state.donchianVisible,
+        () => {
+          state.donchianVisible = !state.donchianVisible;
+        },
+      ),
     );
-    bollinger.addEventListener("click", () => {
-      state.bollingerVisible = !state.bollingerVisible;
-      render();
-    });
-    row.append(bollinger);
     return row;
   }
 
@@ -1919,20 +1972,40 @@ export function mountDesk(root: HTMLElement): void {
         });
       }
       const bands: ChartBand[] = [];
-      if (state.bollingerVisible && view !== null) {
-        const band = bollingerBands(
-          closes,
-          DEFAULT_BOLLINGER_PERIOD,
-          DEFAULT_BOLLINGER_DEVIATIONS,
-        ).slice(from);
-        overlays.push({
-          points: band.map((point) => point.mid),
-          stroke: "line-strong",
-        });
+      const closedBars = closedView ?? [];
+      const pushChannel = (points: readonly ChannelPoint[], stroke: IndicatorStroke): void => {
+        if (points.length === 0) {
+          return;
+        }
+        overlays.push({ points: points.map((point) => point.mid).slice(from), stroke });
         bands.push({
-          upper: band.map((point) => point.upper),
-          lower: band.map((point) => point.lower),
+          upper: points.map((point) => point.upper).slice(from),
+          lower: points.map((point) => point.lower).slice(from),
         });
+      };
+      if (state.vwapVisible && closedBars.length > 0) {
+        overlays.push({
+          points: anchoredVwap(closedBars).slice(from),
+          stroke: "anchor",
+          // Anchored at bar 0: a long trend can put it off-screen, which must not
+          // squash the candles to fit it.
+          fitsScale: false,
+        });
+      }
+      if (state.bollingerVisible) {
+        pushChannel(
+          bollingerBands(closes, DEFAULT_BOLLINGER_PERIOD, DEFAULT_BOLLINGER_DEVIATIONS),
+          "line-strong",
+        );
+      }
+      if (state.keltnerVisible) {
+        pushChannel(
+          keltnerChannels(closedBars, DEFAULT_CHANNEL_PERIOD, DEFAULT_KELTNER_MULTIPLIER),
+          "accent",
+        );
+      }
+      if (state.donchianVisible) {
+        pushChannel(donchianChannels(closedBars, DEFAULT_CHANNEL_PERIOD), "short");
       }
       const labelTf = selected === null ? t("chart.tfUnsupported") : formatTimeframe(selected);
       const seriesKey = `${dataKey({ ...state.setup, market: state.market })}:${selected ?? "none"}:${paneIndex}`;

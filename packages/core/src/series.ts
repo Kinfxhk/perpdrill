@@ -6,6 +6,8 @@ export type Bar = {
   readonly high: number;
   readonly low: number;
   readonly close: number;
+  /** Base-asset size when the source has one. Imported or synthetic bars may omit it. */
+  readonly volume?: number;
 };
 
 /** Mark used by the teaching policy: (high + low) / 2. */

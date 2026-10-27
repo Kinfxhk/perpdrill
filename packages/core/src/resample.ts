@@ -118,9 +118,16 @@ export function resampleBars(
     }
     let high = openBar.high;
     let low = openBar.low;
+    let volume = 0;
+    let everyBarHasVolume = true;
     for (const bar of group) {
       high = Math.max(high, bar.high);
       low = Math.min(low, bar.low);
+      if (bar.volume === undefined || !Number.isFinite(bar.volume)) {
+        everyBarHasVolume = false;
+      } else {
+        volume += bar.volume;
+      }
     }
     out.push({
       timeMs: bucket,
@@ -128,6 +135,7 @@ export function resampleBars(
       high,
       low,
       close: closeBar.close,
+      ...(everyBarHasVolume ? { volume } : {}),
     });
   }
   return out;

@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  anchoredVwap,
+  averageTrueRange,
   bollingerBands,
   closesThrough,
+  donchianChannels,
   exponentialMovingAverage,
+  keltnerChannels,
   simpleMovingAverage,
 } from "./index.ts";
 
@@ -82,5 +86,58 @@ describe("moving averages on a revealed prefix", () => {
     const values = [1, 2, 3, Number.NaN, 5];
     expect(simpleMovingAverage(values, 2)).toEqual([null, 1.5, 2.5, null, null]);
     expect(exponentialMovingAverage(values, 2)).toEqual([null, 1.5, 2.5, null, null]);
+  });
+});
+
+describe("volume-anchored and volatility studies", () => {
+  it("weights VWAP by volume and stays null without a usable size", () => {
+    expect(
+      anchoredVwap([
+        { high: 12, low: 8, close: 10, volume: 1 },
+        { high: 21, low: 15, close: 18, volume: 3 },
+        { high: 30, low: 30, close: 30, volume: 0 },
+      ]),
+    ).toEqual([10, 16, 16]);
+    expect(anchoredVwap([{ high: 2, low: 1, close: 1.5 }])).toEqual([null]);
+    expect(anchoredVwap([])).toEqual([]);
+  });
+
+  it("seeds true range on the first bar and smooths with Wilder weights", () => {
+    const bars = [
+      { high: 10, low: 8, close: 9 },
+      { high: 12, low: 9, close: 11 },
+      { high: 11, low: 7, close: 8 },
+    ];
+    expect(averageTrueRange(bars, 2)).toEqual([null, 2.5, 3.25]);
+    expect(averageTrueRange(bars, 0)).toEqual([null, null, null]);
+  });
+
+  it("takes the rolling high and low over the window including the current bar", () => {
+    const bars = [
+      { high: 10, low: 8, close: 9 },
+      { high: 12, low: 9, close: 11 },
+      { high: 11, low: 7, close: 8 },
+    ];
+    expect(donchianChannels(bars, 2)).toEqual([
+      { mid: null, upper: null, lower: null },
+      { mid: 10, upper: 12, lower: 8 },
+      { mid: 9.5, upper: 12, lower: 7 },
+    ]);
+  });
+
+  it("stretches Keltner bands by the average true range around the EMA", () => {
+    const bars = [
+      { high: 10, low: 8, close: 9 },
+      { high: 12, low: 9, close: 11 },
+      { high: 11, low: 7, close: 8 },
+    ];
+    const [, second, third] = keltnerChannels(bars, 2, 1);
+    expect(second).toEqual({ mid: 10, upper: 12.5, lower: 7.5 });
+    expect(third?.mid).toBeCloseTo(8.6667, 3);
+    expect(third?.upper).toBeCloseTo(11.9167, 3);
+    expect(third?.lower).toBeCloseTo(5.4167, 3);
+    const flat = keltnerChannels(bars, 2, 0)[2];
+    expect(flat?.upper).toBe(flat?.mid);
+    expect(flat?.lower).toBe(flat?.mid);
   });
 });

@@ -51,7 +51,7 @@ export async function fetchLiveKlines(
     if (!Array.isArray(row)) {
       throw new Error("live data fetch failed: malformed row");
     }
-    const [openTime, open, high, low, close] = row as unknown[];
+    const [openTime, open, high, low, close, volume] = row as unknown[];
     if (
       typeof openTime !== "number" ||
       typeof open !== "string" ||
@@ -61,12 +61,14 @@ export async function fetchLiveKlines(
     ) {
       throw new Error("live data fetch failed: malformed row");
     }
+    const size = typeof volume === "string" ? Number(volume) : Number.NaN;
     bars.push({
       timeMs: openTime,
       open: Number(open),
       high: Number(high),
       low: Number(low),
       close: Number(close),
+      ...(Number.isFinite(size) ? { volume: size } : {}),
     });
   }
   return bars;

@@ -85,6 +85,8 @@ export function syntheticSeries(spec: SyntheticSpec): readonly Bar[] {
   let lastReturn = 0;
   let drift = 0;
   let close = roundTick(profile.price * (0.8 + rng.next() * 0.4), profile.tick);
+  // Separate stream: adding a bar field must not shift the price path.
+  const volumeRng = createRng(spec.seed ^ 0x27d4eb2f);
   const bars: Bar[] = [];
   for (let index = 0; index < spec.bars; index += 1) {
     // GARCH(1,1)-style clustering; weights sum to 1 so the long-run vol holds.
@@ -108,12 +110,21 @@ export function syntheticSeries(spec: SyntheticSpec): readonly Bar[] {
       Math.min(open, next) * Math.exp(-Math.abs(rng.normal()) * vol * 0.6),
       profile.tick,
     );
+    const barHigh = Math.max(high, open, next);
+    const barLow = Math.min(low, open, next);
+    // Fictional size, wider when the bar travelled further. Not exchange volume.
+    const span = next > 0 ? (barHigh - barLow) / next : 0;
+    const volume = Math.max(
+      1,
+      Math.round(2_000 * Math.sqrt(spec.timeframeMin) * (0.5 + volumeRng.next()) * (1 + span * 40)),
+    );
     bars.push({
       timeMs: START_MS + index * barMs,
       open,
-      high: Math.max(high, open, next),
-      low: Math.min(low, open, next),
+      high: barHigh,
+      low: barLow,
       close: next,
+      volume,
     });
     close = next;
   }

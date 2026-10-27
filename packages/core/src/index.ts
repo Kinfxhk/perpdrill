@@ -24,12 +24,19 @@ export { ENGINE_STATUS, PRODUCT_NAME, PRODUCT_VERSION } from "./identity.ts";
 export {
   DEFAULT_BOLLINGER_DEVIATIONS,
   DEFAULT_BOLLINGER_PERIOD,
+  DEFAULT_CHANNEL_PERIOD,
+  DEFAULT_KELTNER_MULTIPLIER,
+  DEFAULT_TRUE_RANGE_PERIOD,
+  anchoredVwap,
+  averageTrueRange,
   bollingerBands,
   closesThrough,
+  donchianChannels,
   exponentialMovingAverage,
+  keltnerChannels,
   simpleMovingAverage,
 } from "./indicators.ts";
-export type { BollingerPoint } from "./indicators.ts";
+export type { BollingerPoint, ChannelPoint, StudyBar } from "./indicators.ts";
 export {
   estimatedLiqPrice,
   initialMargin,

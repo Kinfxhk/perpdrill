@@ -18,6 +18,7 @@
   --short-bg: #3c262c;
   --danger: #e39a86;
   --prop: #c4b6f5;
+  --anchor: #8fb8ff;
   --radius: 12px;
   --font: "Segoe UI", "PingFang TC", "Noto Sans TC", ui-sans-serif, sans-serif;
   --mono: "Cascadia Mono", "Sarasa Mono TC", ui-monospace, monospace;
@@ -495,6 +496,10 @@ button {
   background: var(--line-strong);
 }
 
+.swatch-anchor {
+  background: var(--anchor);
+}
+
 .indicator-line,
 .indicator-point {
   stroke-width: 1.6;
@@ -542,6 +547,14 @@ button {
   stroke: var(--line-strong);
 }
 
+.stroke-anchor {
+  stroke: var(--anchor);
+}
+
+.indicator-line.stroke-anchor {
+  stroke-width: 2.2;
+}
+
 .indicator-point.stroke-text-dim {
   fill: var(--text-dim);
 }
@@ -568,6 +581,10 @@ button {
 
 .indicator-point.stroke-line-strong {
   fill: var(--line-strong);
+}
+
+.indicator-point.stroke-anchor {
+  fill: var(--anchor);
 }
 
 .indicator-band {
@@ -1446,6 +1463,7 @@ button:disabled {
   --short-bg: #f8dfe4;
   --danger: #9a3412;
   --prop: #5b3fbf;
+  --anchor: #2b4f9e;
   --banner-bg: #e7eee9;
   --panel-deep: #eef3f0;
   --long-line: #6a8a38;

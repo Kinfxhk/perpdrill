@@ -65,14 +65,14 @@ describe("synthetic series", () => {
     const spec = { seed: 42, bars: 120, timeframeMin: 15 } as const;
     const nq = syntheticSeries({ ...spec, market: "SYNTH-NQ" });
     const gc = syntheticSeries({ ...spec, market: "SYNTH-GC" });
-    expect(nq[0]).toEqual({
+    expect(nq[0]).toMatchObject({
       timeMs: 1_767_571_200_000,
       open: 67628.7,
       high: 67649,
       low: 67493.3,
       close: 67572.6,
     });
-    expect(nq[50]).toEqual({
+    expect(nq[50]).toMatchObject({
       timeMs: 1_767_616_200_000,
       open: 67286.4,
       high: 67917.3,
