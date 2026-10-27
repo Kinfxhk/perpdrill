@@ -217,6 +217,9 @@ const en = {
   "theme.aqua": "Lagoon",
   "theme.violet": "Iris",
   "theme.daylight": "Daylight",
+  "theme.dusk": "Dusk",
+  "theme.dark": "Dark",
+  "theme.slate": "Slate",
   "chart.split": "Split",
   "chart.splitHint": "Open a second chart of this sample.",
   "chart.singleHint": "Close the second chart.",
@@ -437,6 +440,9 @@ const zhHant = catalog({
   "theme.aqua": "潟湖",
   "theme.violet": "鳶尾",
   "theme.daylight": "日間",
+  "theme.dusk": "黃昏",
+  "theme.dark": "深黑",
+  "theme.slate": "石板灰",
   "chart.split": "分割",
   "chart.splitHint": "用同一組樣本再開一張圖。",
   "chart.singleHint": "關掉第二張圖。",
@@ -649,6 +655,9 @@ const zhHans = catalog({
   "theme.aqua": "泻湖",
   "theme.violet": "鸢尾",
   "theme.daylight": "日间",
+  "theme.dusk": "黄昏",
+  "theme.dark": "深黑",
+  "theme.slate": "石板灰",
   "chart.split": "分割",
   "chart.splitHint": "用同一组样本再开一张图。",
   "chart.singleHint": "关掉第二张图。",
@@ -864,6 +873,9 @@ const ja = catalog({
   "theme.aqua": "ラグーン",
   "theme.violet": "アイリス",
   "theme.daylight": "デイライト",
+  "theme.dusk": "黄昏",
+  "theme.dark": "ダーク",
+  "theme.slate": "スレート",
   "chart.split": "分割",
   "chart.splitHint": "同じサンプルでもう一枚のチャートを開く。",
   "chart.singleHint": "下のチャートを閉じる。",
@@ -1080,6 +1092,9 @@ const ko = catalog({
   "theme.aqua": "라군",
   "theme.violet": "아이리스",
   "theme.daylight": "데이라이트",
+  "theme.dusk": "황혼",
+  "theme.dark": "다크",
+  "theme.slate": "슬레이트",
   "chart.split": "분할",
   "chart.splitHint": "같은 샘플로 차트를 하나 더 엽니다.",
   "chart.singleHint": "아래 차트를 닫습니다.",
@@ -1136,7 +1151,16 @@ export function numberLocale(lang: Lang): string {
   }
 }
 
-export const THEMES = ["teal", "midnight", "aqua", "violet", "daylight"] as const;
+export const THEMES = [
+  "teal",
+  "midnight",
+  "aqua",
+  "violet",
+  "daylight",
+  "dusk",
+  "dark",
+  "slate",
+] as const;
 
 export type Theme = (typeof THEMES)[number];
 
@@ -1169,6 +1193,9 @@ export function applyDocumentTheme(theme: Theme): void {
     case "aqua":
     case "violet":
     case "daylight":
+    case "dusk":
+    case "dark":
+    case "slate":
       root.dataset.theme = theme;
       break;
     default: {
