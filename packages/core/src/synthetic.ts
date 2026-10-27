@@ -38,7 +38,7 @@ export function isSyntheticTimeframe(value: number): value is SyntheticTimeframe
 }
 
 /** Mulberry32. Not cryptographic; only for repeatable practice data. */
-function createRng(seed: number): { next: () => number; normal: () => number } {
+export function createRng(seed: number): { next: () => number; normal: () => number } {
   let state = seed >>> 0;
   const next = (): number => {
     state = (state + 0x6d2b79f5) >>> 0;
