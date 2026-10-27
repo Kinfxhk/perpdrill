@@ -169,6 +169,8 @@ type DeskState = {
   powerPct: BuyingPowerPct;
   orderType: "market" | "limit" | "stop";
   orderPriceText: string;
+  /** Fraction of the position the ticket close control closes. */
+  closePct: BuyingPowerPct;
   slipToleranceBps: number;
   realizedImpactBps: number;
   cursor: number;
@@ -383,6 +385,7 @@ export function mountDesk(root: HTMLElement): void {
     powerPct: 25,
     orderType: "market",
     orderPriceText: "",
+    closePct: 100,
     slipToleranceBps: DEFAULT_SLIP_TOLERANCE_BPS,
     realizedImpactBps: DEFAULT_REALIZED_IMPACT_BPS,
     cursor: 0,
@@ -2050,6 +2053,34 @@ export function mountDesk(root: HTMLElement): void {
                   ]),
             ]
           : []),
+        ...(view.frame.position === null
+          ? []
+          : [
+              el(
+                "div",
+                {
+                  className: "close-row",
+                  attrs: { role: "group", "aria-label": t("close.fraction") },
+                },
+                [
+                  ...BUYING_POWER_PCTS.map((pct) => {
+                    const chip = actionButton(
+                      `${pct}%`,
+                      pct === state.closePct ? "chip is-current" : "chip",
+                      () => {
+                        state.closePct = pct;
+                        render();
+                      },
+                    );
+                    if (pct === state.closePct) {
+                      chip.setAttribute("aria-pressed", "true");
+                    }
+                    return chip;
+                  }),
+                  actionButton(t("submit.close"), "ghost", commitClose),
+                ],
+              ),
+            ]),
         el("label", { className: "field" }, [el("span", { text: t("field.leverage") }), leverage]),
         el("p", {
           className: "hint",
@@ -2171,28 +2202,16 @@ export function mountDesk(root: HTMLElement): void {
   }
 
   function commitOpenOrClose(): void {
-    if (currentFrame().position === null) {
-      if (state.orderType !== "market") {
-        commit({
-          kind: state.orderType,
-          barIndex: state.cursor,
-          side: state.side,
-          leverage: state.leverage,
-          powerPct: state.powerPct,
-          price: parsePrice(state.orderPriceText) ?? Number.NaN,
-          slipToleranceBps: state.slipToleranceBps,
-          realizedImpactBps: state.realizedImpactBps,
-          stopLoss: parsePrice(state.stopLossText),
-          takeProfit: parsePrice(state.takeProfitText),
-        });
-        return;
-      }
+    // While holding, the side picker decides: same side adds, opposite
+    // side reverses. The engine does both; the close control flattens.
+    if (currentFrame().position === null && state.orderType !== "market") {
       commit({
-        kind: "open",
+        kind: state.orderType,
         barIndex: state.cursor,
         side: state.side,
         leverage: state.leverage,
         powerPct: state.powerPct,
+        price: parsePrice(state.orderPriceText) ?? Number.NaN,
         slipToleranceBps: state.slipToleranceBps,
         realizedImpactBps: state.realizedImpactBps,
         stopLoss: parsePrice(state.stopLossText),
@@ -2201,8 +2220,23 @@ export function mountDesk(root: HTMLElement): void {
       return;
     }
     commit({
+      kind: "open",
+      barIndex: state.cursor,
+      side: state.side,
+      leverage: state.leverage,
+      powerPct: state.powerPct,
+      slipToleranceBps: state.slipToleranceBps,
+      realizedImpactBps: state.realizedImpactBps,
+      stopLoss: parsePrice(state.stopLossText),
+      takeProfit: parsePrice(state.takeProfitText),
+    });
+  }
+
+  function commitClose(): void {
+    commit({
       kind: "close",
       barIndex: state.cursor,
+      powerPct: state.closePct,
       slipToleranceBps: state.slipToleranceBps,
       realizedImpactBps: state.realizedImpactBps,
     });
@@ -2211,18 +2245,15 @@ export function mountDesk(root: HTMLElement): void {
   function submitControl(frame: Frame): HTMLElement {
     const label =
       frame.position !== null
-        ? t("submit.close")
+        ? frame.position.side === state.side
+          ? t("submit.add")
+          : t("submit.reverse")
         : state.orderType !== "market"
           ? t("submit.place")
           : state.side === "long"
             ? t("submit.long")
             : t("submit.short");
-    const className =
-      frame.position !== null
-        ? "submit"
-        : state.side === "long"
-          ? "submit submit-long"
-          : "submit submit-short";
+    const className = state.side === "long" ? "submit submit-long" : "submit submit-short";
     const ended = state.endedAt !== null || state.countdown !== null;
     const button = actionButton(label, className, commitOpenOrClose);
     if (ended) {

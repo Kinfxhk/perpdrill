@@ -56,6 +56,8 @@ export type SessionAction =
   | (SlipSettings & {
       readonly kind: "close";
       readonly barIndex: number;
+      /** Fraction of the position to close; absent closes all of it. */
+      readonly powerPct?: BuyingPowerPct;
     })
   | (Bracket & {
       readonly kind: "bracket";
@@ -346,17 +348,31 @@ export function replaySession(input: SessionInput): Frame {
         });
 
   const exit = (index: number, bar: Bar, kind: FillKind, price: number): void => {
-    if (position === null) {
+    exitPart(index, bar, kind, price, 1);
+  };
+
+  /** Close a fraction of the position; the margin and PnL scale with it. */
+  const exitPart = (
+    index: number,
+    bar: Bar,
+    kind: FillKind,
+    price: number,
+    fraction: number,
+  ): void => {
+    if (position === null || fraction <= 0) {
       return;
     }
-    const rawPnl = unrealizedPnl(position.side, position.qty, position.entry, price);
+    const whole = fraction >= 1 - 1e-9;
+    const qty = whole ? position.qty : position.qty * fraction;
+    const rawPnl = unrealizedPnl(position.side, qty, position.entry, price);
     // Isolated: no exit (gap, slipped stop) can lose more than the position margin.
-    const pricePnl = Math.max(rawPnl, -position.isolatedMargin);
+    const marginShare = whole ? position.isolatedMargin : position.isolatedMargin * fraction;
+    const pricePnl = Math.max(rawPnl, -marginShare);
     const fee =
       kind === "liquidation"
         ? 0
-        : Math.min(position.qty * price * (takerBps / 10_000), position.isolatedMargin + pricePnl);
-    const back = Math.max(0, position.isolatedMargin + pricePnl - fee);
+        : Math.min(qty * price * (takerBps / 10_000), marginShare + pricePnl);
+    const back = Math.max(0, marginShare + pricePnl - fee);
     cash += back;
     feesPaid += fee;
     fills.push({
@@ -366,11 +382,18 @@ export function replaySession(input: SessionInput): Frame {
       side: position.side,
       kind,
       price,
-      qty: position.qty,
+      qty,
       fee,
       pricePnl,
     });
-    position = null;
+    if (whole) {
+      position = null;
+    } else {
+      position.qty -= qty;
+      position.initialMargin *= 1 - fraction;
+      position.isolatedMargin -= marginShare;
+      position.liqPrice = actualLiqPrice(position);
+    }
   };
 
   for (let index = 0; index <= cursor; index += 1) {
@@ -560,10 +583,6 @@ export function replaySession(input: SessionInput): Frame {
             rejects.push({ barIndex: index, reason: "account-frozen" });
             continue;
           }
-          if (position !== null) {
-            rejects.push({ barIndex: index, reason: "position-open" });
-            continue;
-          }
           const allowed = input.preset?.markets;
           if (allowed !== null && allowed !== undefined && !allowed.includes(input.market)) {
             rejects.push({ barIndex: index, reason: "market-not-allowed" });
@@ -591,23 +610,53 @@ export function replaySession(input: SessionInput): Frame {
             rejects.push({ barIndex: index, reason: "invalid-bracket" });
             continue;
           }
+          // A market entry against the held side reverses: flat first, then open.
+          if (position !== null && position.side !== action.side) {
+            const close = quoteClose({
+              side: position.side,
+              qty: position.qty,
+              entry: position.entry,
+              mark: price,
+              takerBps,
+              slipToleranceBps: action.slipToleranceBps,
+              realizedImpactBps: action.realizedImpactBps,
+            });
+            if (!close.ok) {
+              rejects.push({ barIndex: index, reason: close.reason });
+              continue;
+            }
+            exit(index, bar, "close", close.fillPrice);
+          }
           cash -= quote.initialMargin + quote.fee;
           feesPaid += quote.fee;
-          position = {
-            market: input.market,
-            side: action.side,
-            qty: quote.qty,
-            entry: quote.fillPrice,
-            leverage: action.leverage,
-            initialMargin: quote.initialMargin,
-            isolatedMargin: quote.initialMargin,
-            liqPrice: quote.liqPrice,
-            stopLoss: action.stopLoss ?? null,
-            takeProfit: action.takeProfit ?? null,
-            impactBps: action.realizedImpactBps,
-            openedAtMs: bar.timeMs,
-            openedAtBar: index,
-          };
+          if (position !== null && position.side === action.side) {
+            // Same side adds: average entry and stack the margin.
+            const totalQty = position.qty + quote.qty;
+            position.entry =
+              (position.qty * position.entry + quote.qty * quote.fillPrice) / totalQty;
+            position.qty = totalQty;
+            position.initialMargin += quote.initialMargin;
+            position.isolatedMargin += quote.initialMargin;
+            position.leverage = action.leverage;
+            position.impactBps = action.realizedImpactBps;
+            position.liqPrice = actualLiqPrice(position);
+          } else {
+            position = {
+              market: input.market,
+              side: action.side,
+              qty: quote.qty,
+              entry: quote.fillPrice,
+              leverage: action.leverage,
+              initialMargin: quote.initialMargin,
+              isolatedMargin: quote.initialMargin,
+              liqPrice: quote.liqPrice,
+              stopLoss: action.stopLoss ?? null,
+              takeProfit: action.takeProfit ?? null,
+              impactBps: action.realizedImpactBps,
+              openedAtMs: bar.timeMs,
+              openedAtBar: index,
+            };
+          }
           fills.push({
             barIndex: index,
             timeMs: bar.timeMs,
@@ -619,7 +668,7 @@ export function replaySession(input: SessionInput): Frame {
             fee: quote.fee,
             pricePnl: 0,
           });
-          // Single-position desk: a market entry cancels working orders.
+          // A market entry cancels working orders.
           pending = [];
           break;
         }
@@ -670,6 +719,11 @@ export function replaySession(input: SessionInput): Frame {
             rejects.push({ barIndex: index, reason: "flat" });
             continue;
           }
+          const fraction = (action.powerPct ?? 100) / 100;
+          if (!Number.isFinite(fraction) || fraction <= 0 || fraction > 1) {
+            rejects.push({ barIndex: index, reason: "invalid-power" });
+            continue;
+          }
           const quote = quoteClose({
             side: position.side,
             qty: position.qty,
@@ -683,7 +737,7 @@ export function replaySession(input: SessionInput): Frame {
             rejects.push({ barIndex: index, reason: quote.reason });
             continue;
           }
-          exit(index, bar, "close", quote.fillPrice);
+          exitPart(index, bar, "close", quote.fillPrice, fraction);
           break;
         }
         case "bracket": {
