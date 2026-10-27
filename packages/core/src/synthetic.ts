@@ -21,6 +21,8 @@ export type SyntheticSpec = {
   readonly seed: number;
   readonly bars: number;
   readonly timeframeMin: SyntheticTimeframe;
+  /** Stress mode: triple volatility and far more frequent jumps. */
+  readonly stress?: boolean;
 };
 
 const MARKET_PROFILE: Record<MarketId, { price: number; tick: number; annualVol: number }> = {
@@ -73,7 +75,9 @@ export function syntheticSeries(spec: SyntheticSpec): readonly Bar[] {
   const profile = MARKET_PROFILE[spec.market];
   const rng = createRng(spec.seed);
   const barMs = spec.timeframeMin * 60_000;
-  const sigma = profile.annualVol * Math.sqrt(spec.timeframeMin / (365 * 24 * 60));
+  const stress = spec.stress === true;
+  const sigma =
+    profile.annualVol * Math.sqrt(spec.timeframeMin / (365 * 24 * 60)) * (stress ? 3 : 1);
   const longRun = sigma * sigma;
   let variance = longRun;
   let lastReturn = 0;
@@ -83,12 +87,12 @@ export function syntheticSeries(spec: SyntheticSpec): readonly Bar[] {
   for (let index = 0; index < spec.bars; index += 1) {
     // GARCH(1,1)-style clustering; weights sum to 1 so the long-run vol holds.
     variance = 0.05 * longRun + 0.85 * variance + 0.1 * lastReturn * lastReturn;
-    if (rng.next() < 0.02) {
+    if (rng.next() < (stress ? 0.06 : 0.02)) {
       drift = (rng.next() - 0.5) * 0.3 * sigma;
     }
     const vol = Math.sqrt(variance);
     let move = drift + vol * rng.normal();
-    if (rng.next() < 0.003) {
+    if (rng.next() < (stress ? 0.015 : 0.003)) {
       move += (rng.next() < 0.5 ? -1 : 1) * 4 * vol;
     }
     lastReturn = move;

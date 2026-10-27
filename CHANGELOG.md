@@ -25,6 +25,14 @@
   bars, clock-aligned, including a still-forming last bar. A finer chart, or
   one the bar size does not divide, stays disabled instead of relabeling the
   same candles. Split opens a second pane on that same sample.
+- The review adds session Sharpe and Sortino (per-bar returns, not
+  annualized), Calmar, average hold in bars, and a split ledger of fees,
+  carry, and funding.
+- The ticket switches between isolated and cross margin. Cross counts the
+  free cash toward the liquidation cushion, so its liquidation price sits
+  farther away while cash remains.
+- The setup screen can generate stress data: triple volatility and five
+  times the jump rate for the same seed, clearly marked as synthetic.
 - Market entries now stack and reverse: a same-side entry adds to the
   position at a weighted average entry, an opposite-side entry closes the
   held position first, and the close control takes a 25/50/75/100%

@@ -37,6 +37,8 @@ export type SessionSetup = {
   timeframeMin: SyntheticTimeframe;
   bars: number;
   seed: number;
+  /** Stress data: amplified volatility and jumps. */
+  stress: boolean;
   rulesMode: RulesMode;
   presetId: string | null;
   /** Buyer options picked for the preset; `undefined` keeps the preset default. */
@@ -62,6 +64,7 @@ export function defaultSetup(): SessionSetup {
     timeframeMin: 15,
     bars: DEFAULT_SYNTHETIC_BARS,
     seed: randomSeed(),
+    stress: false,
     rulesMode: "custom",
     presetId: null,
     custom: { ...DEFAULT_CUSTOM_RULES },
@@ -140,6 +143,7 @@ export function sanitizeSetup(raw: unknown): SessionSetup {
         : base.timeframeMin,
     bars: Math.round(num(value.bars, MIN_SYNTHETIC_BARS, MAX_SYNTHETIC_BARS, base.bars)),
     seed: Math.round(num(value.seed, 0, 0xffffffff, base.seed)),
+    stress: value.stress === true,
     rulesMode:
       value.rulesMode === "none" || value.rulesMode === "preset" || value.rulesMode === "custom"
         ? value.rulesMode
