@@ -1977,6 +1977,17 @@ summary:focus-visible {
 }
 
 @media (max-width: 899px) and (max-height: 520px) {
+  /* A pinned submit section can consume the entire half-height drawer. */
+  .workspace > .ticket {
+    display: block;
+    overflow-y: auto;
+  }
+
+  .ticket-scroll {
+    height: auto;
+    overflow: visible;
+  }
+
   .replay-meters {
     display: none;
   }
