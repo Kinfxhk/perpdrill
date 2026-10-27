@@ -41,6 +41,8 @@ function sampleScale(market: MarketId): number {
       return 0.25;
     case "SYNTH-ES":
       return 0.5;
+    case "SYNTH-BTC":
+      return 6;
     default: {
       const unexpected: never = market;
       throw new Error(`unexpected market ${String(unexpected)}`);

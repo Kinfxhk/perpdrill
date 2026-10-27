@@ -59,6 +59,23 @@ const SIZES = [
   },
 ] as const;
 
+test.describe("theme preferences", () => {
+  test("starts in Slate and preserves a theme chosen by the user after reload", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "slate");
+    await expect(page.locator("#theme")).toHaveValue("slate");
+    await expect(page.locator("#theme option:checked")).toHaveText("Slate (default)");
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#171c22");
+    await page.locator("#theme").selectOption("teal");
+    await page.reload();
+    await expect(page.locator("#theme")).toHaveValue("teal");
+    await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#0e1f24");
+  });
+});
+
 test.describe("data sources", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -117,6 +134,25 @@ test.describe("chart controls", () => {
     await expect(page.locator(".chart-stage")).toBeVisible();
   });
 
+  test("keeps indicator settings optional without squeezing the chart", async ({ page }) => {
+    const settings = page.locator(".indicator-settings");
+    await expect(settings).not.toHaveAttribute("open", "");
+    const stage = page.locator(".chart-stage").first();
+    const before = await stage.boundingBox();
+    await settings.locator("summary").click();
+    await expect(settings).toHaveAttribute("open", "");
+    await settings.getByRole("button", { name: "SMA 9", exact: true }).click();
+    await expect(settings).toHaveAttribute("open", "");
+    await expect(settings.getByRole("button", { name: "SMA 9", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    const after = await stage.boundingBox();
+    expect(after?.height).toBe(before?.height);
+    await settings.locator("summary").click();
+    await expect(settings).not.toHaveAttribute("open", "");
+  });
+
   test("switches the timeframe chip on the primary pane", async ({ page }) => {
     // The default source is 15m, so finer chips stay disabled and 1h/4h work.
     const toolbar = page.locator(".pane-toolbar").first();
@@ -146,6 +182,72 @@ test.describe("chart controls", () => {
     const after = (await candle.boundingBox())?.width ?? 0;
     expect(after).toBeGreaterThan(before);
   });
+});
+
+test.describe("chart-first workspace", () => {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 1366, height: 768 },
+    { width: 1024, height: 768 },
+    { width: 390, height: 844 },
+    { width: 375, height: 667 },
+  ]) {
+    test(`reserves a visible chart at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.addInitScript(() => localStorage.setItem("perpdrill.lang", "en"));
+      await page.goto("/");
+      await page.getByRole("button", { name: "Start backtest" }).click();
+      await ensurePaused(page);
+      await expect(page.getByRole("button", { name: "Play", exact: true })).toBeVisible();
+      const stage = page.locator(".chart-stage").first();
+      await expect(stage).toBeVisible();
+      const geometry = await stage.evaluate((element) => {
+        const plot = element.getBoundingClientRect();
+        const pane = element.closest(".chart-pane")!.getBoundingClientRect();
+        const chart = element.closest(".chart")!.getBoundingClientRect();
+        const replay = document.querySelector(".replay")!.getBoundingClientRect();
+        return {
+          height: plot.height,
+          top: plot.top,
+          bottom: plot.bottom,
+          paneBottom: pane.bottom,
+          chartBottom: chart.bottom,
+          replayTop: replay.top,
+          documentWidth: document.documentElement.scrollWidth,
+          documentHeight: document.documentElement.scrollHeight,
+        };
+      });
+      expect(geometry.documentWidth).toBeLessThanOrEqual(viewport.width);
+      expect(geometry.documentHeight).toBeLessThanOrEqual(viewport.height + 1);
+      expect(geometry.height).toBeGreaterThanOrEqual(
+        viewport.height * (viewport.width < 900 ? 0.4 : 0.5),
+      );
+      expect(geometry.top).toBeLessThan(viewport.height * 0.3);
+      expect(geometry.bottom).toBeLessThanOrEqual(geometry.paneBottom + 1);
+      expect(geometry.bottom).toBeLessThanOrEqual(geometry.chartBottom + 1);
+      expect(geometry.bottom).toBeLessThanOrEqual(geometry.replayTop + 1);
+      if (viewport.width < 900) {
+        const before = await stage.boundingBox();
+        await page.getByRole("button", { name: "Panel", exact: true }).click();
+        await expect(page.locator(".source-link")).toBeVisible();
+        await page.locator(".desk-notices summary").click();
+        await expect(page.locator(".notice-content")).toBeVisible();
+        await page.locator(".desk-notices summary").click();
+        await page.locator(".tabs").getByRole("button", { name: "Review", exact: true }).click();
+        await expect(page.locator(".review")).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(page.locator(".shell")).not.toHaveClass(/drawer-open/);
+        const after = await stage.boundingBox();
+        expect(after?.height).toBe(before?.height);
+        for (const control of await page
+          .locator(".replay button:visible, .replay select:visible")
+          .all()) {
+          const box = await control.boundingBox();
+          expect(box?.height).toBeGreaterThanOrEqual(44);
+        }
+      }
+    });
+  }
 });
 
 test.describe("working orders", () => {

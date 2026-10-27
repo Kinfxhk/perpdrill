@@ -197,7 +197,7 @@ button {
   flex: 1 1 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
-  grid-template-rows: minmax(0, 1fr) fit-content(min(420px, 46vh));
+  grid-template-rows: minmax(0, 1fr) minmax(0, 112px);
   min-height: 0;
 }
 
@@ -230,6 +230,7 @@ button {
 }
 
 .chart {
+  position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -239,7 +240,7 @@ button {
 .chart-toolbar,
 .indicator-controls,
 .tabs {
-  padding: 10px 14px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -841,6 +842,7 @@ output {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
+  overflow: auto;
   border-top: 1px solid var(--line);
   background: var(--bg);
 }
@@ -897,83 +899,6 @@ td.empty {
   color: var(--accent);
 }
 
-@media (min-width: 900px) and (min-height: 700px) {
-  .shell {
-    height: 100dvh;
-    overflow: hidden;
-  }
-
-  .chart-panes.is-split .chart-stage {
-    min-height: 0;
-  }
-
-  .desk-bottom {
-    overflow: hidden;
-  }
-
-  .blotter {
-    min-height: 0;
-    overflow: auto;
-  }
-}
-
-@media (max-width: 899px) {
-  .topnav,
-  .market,
-  .colophon {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .workspace {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-  }
-
-  .blotter {
-    flex: none;
-    overflow: visible;
-  }
-
-  .workspace > .chart,
-  .workspace > .ticket,
-  .desk-bottom {
-    grid-column: 1;
-    grid-row: auto;
-  }
-
-  .chart {
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .desk-bottom {
-    border-right: 0;
-  }
-
-  .chart-stage {
-    min-height: 240px;
-  }
-
-  .ticket {
-    overflow: visible;
-  }
-
-  .ticket-scroll {
-    overflow: visible;
-    flex: none;
-  }
-
-  .pct {
-    min-height: 48px;
-  }
-
-  .toolbar-note {
-    margin-left: 0;
-    width: 100%;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   * {
     scroll-behavior: auto;
@@ -1024,19 +949,6 @@ td.empty {
   overflow-x: hidden;
 }
 
-.chart-stage {
-  min-height: 260px;
-}
-
-/* Readable floor only outside the height-locked desk. Inside
-   (min-width: 900px) and (min-height: 700px) the shell rule keeps
-   min-height: 0 so both split stages can shrink in the fixed 100dvh. */
-@media (max-width: 899px), (max-height: 699px) {
-  .chart-panes.is-split .chart-stage {
-    min-height: 180px;
-  }
-}
-
 .chart-stage .chart-empty {
   position: relative;
   z-index: 1;
@@ -1054,9 +966,8 @@ td.empty {
   font-size: 11px;
 }
 
-.speed-row {
-  display: flex;
-  gap: 4px;
+.speed-select {
+  min-width: 60px;
 }
 
 /* Setup screen */
@@ -1406,98 +1317,6 @@ button:disabled {
   transition: width 200ms ease-out;
 }
 
-/* Phone and tablet: the replay row stays in the chart column, above the stage. */
-@media (max-width: 899px) {
-  .replay-controls {
-    flex: 1 1 100%;
-  }
-
-  .replay-controls button {
-    min-height: 44px;
-    flex: 1 0 auto;
-  }
-
-  .replay-meters {
-    display: flex;
-    gap: 12px;
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .topnav,
-  .market {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-
-  .topnav nav {
-    order: 3;
-    flex: 1 1 100%;
-  }
-
-  .stats {
-    gap: 12px;
-  }
-
-  .indicator-controls {
-    flex-wrap: wrap;
-  }
-
-  .legend {
-    flex-wrap: wrap;
-    max-width: calc(100% - 80px);
-  }
-
-  button,
-  select,
-  input {
-    min-height: 44px;
-  }
-
-  .indicator-period {
-    min-height: 36px;
-  }
-
-  .side,
-  .submit {
-    min-height: 48px;
-  }
-
-  .ticket {
-    max-width: 640px;
-    width: 100%;
-    margin: 0 auto;
-  }
-
-  .ticket-pin {
-    position: static;
-  }
-
-  .tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-  }
-
-  .table-wrap {
-    overflow-x: auto;
-  }
-
-  .setup {
-    padding: 12px;
-  }
-
-  .setup-start {
-    width: 100%;
-    min-height: 52px;
-  }
-
-  input,
-  select {
-    font-size: 16px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .countdown-pop,
   .countdown-pop::after,
@@ -1510,68 +1329,6 @@ button:disabled {
 
   button:not(:disabled):active {
     transform: none;
-  }
-}
-
-/* Phone: get the chart onto the first screen */
-@media (max-width: 600px) {
-  .banner {
-    padding: 4px 10px;
-    font-size: 11px;
-  }
-
-  .topnav,
-  .market {
-    gap: 8px;
-    padding: 6px 10px;
-  }
-
-  .brand-kicker,
-  .market .toolbar-note,
-  .chart-toolbar .toolbar-note {
-    display: none;
-  }
-
-  /* Index repeats Mid on synthetic data; OI and Vol are always empty here. */
-  .stats .stat:nth-child(n + 4) {
-    display: none;
-  }
-
-  .indicator-controls {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .indicator-instance {
-    flex: none;
-  }
-
-  .chart-stage {
-    min-height: 300px;
-  }
-
-  .chart-panes.is-split .chart-stage {
-    min-height: 200px;
-  }
-
-  .pane-toolbar,
-  .tf-chips {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .pane-toolbar .chip,
-  .tf-chips .chip,
-  .split-toggle {
-    flex: none;
-    min-height: 44px;
-  }
-
-  .legend {
-    font-size: 10px;
-    gap: 6px;
   }
 }
 
@@ -1795,138 +1552,331 @@ button:disabled {
   --shade-rgb: 4 6 8;
 }
 
-/* ---------- Responsive desk: tablet column, phone drawer + trade bar ---------- */
+/* The desk owns the viewport; only the ticket and ledger scroll. */
+.shell-desk {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
 
-.panel-toggle,
-.trade-order-row {
+.shell-desk > :not(.workspace) {
+  flex-shrink: 0;
+}
+
+.shell-desk .topnav,
+.shell-desk .market {
+  padding: 6px 12px;
+  gap: 12px;
+}
+
+.shell-desk .brand-kicker {
   display: none;
 }
 
+.shell-desk .topnav button,
+.shell-desk .topnav select,
+.chart-toolbar button,
+.indicator-settings summary,
+.pane-toolbar button,
+.replay button,
+.replay select {
+  padding: 5px 10px;
+  min-height: 32px;
+}
+
+.shell-desk .colophon {
+  position: relative;
+  padding: 4px 12px;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.desk-notices {
+  margin-left: auto;
+}
+
+summary {
+  cursor: pointer;
+}
+
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.notice-content,
+.indicator-controls {
+  position: absolute;
+  z-index: 25;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg-header);
+  box-shadow: var(--shadow);
+  max-height: 50dvh;
+  overflow: auto;
+}
+
+.notice-content {
+  bottom: 100%;
+  right: 8px;
+  width: min(460px, calc(100vw - 16px));
+}
+
+.indicator-controls {
+  top: 100%;
+  left: 8px;
+  right: 8px;
+}
+
+.chart-toolbar {
+  position: relative;
+  flex: none;
+  gap: 8px;
+}
+
+.indicator-settings summary {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text-dim);
+}
+
+.pane-toolbar {
+  flex: none;
+  padding: 4px 12px;
+}
+
+.desk-bottom {
+  overflow: hidden;
+}
+
+.shell-review .workspace {
+  grid-template-rows: minmax(0, 1fr) minmax(0, 46%);
+}
+
+.tabs {
+  flex: none;
+  padding: 4px 12px;
+}
+
+.tabs .tab {
+  padding: 5px 10px;
+}
+
+.replay {
+  order: 1;
+  padding: 6px 12px;
+  border-top: 1px solid var(--line);
+  border-bottom: 0;
+}
+
+.replay-meters {
+  display: flex;
+  gap: 20px;
+}
+
+.replay-meters .stat {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.panel-toggle,
+.trade-order-row,
 .drawer-overlay {
   display: none;
 }
 
-/* Tablet: keep the two columns with a narrower ticket. */
 @media (min-width: 900px) and (max-width: 1199px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr) 280px;
   }
-}
 
-/* Touch tablets in the two-column band get the same tap floor as phones. */
-@media (pointer: coarse) and (min-width: 900px) {
-  button,
-  select {
-    min-height: 44px;
+  .market .toolbar-note,
+  .chart-toolbar .toolbar-note {
+    display: none;
   }
 
-  input,
-  select {
-    font-size: 16px;
+  .stats {
+    gap: 12px;
   }
 }
 
-/* Phone: chart-first single column. Ticket and blotter fold into an
-   off-canvas drawer; the replay row becomes the fixed bottom trade bar. */
 @media (max-width: 899px) {
-  .shell {
-    padding-bottom: calc(240px + env(safe-area-inset-bottom, 0px));
+  .shell-desk .topnav {
+    padding: 4px 8px;
+    gap: 8px;
+  }
+
+  .shell-desk .brand,
+  .shell-desk nav .nav-btn:not(:first-child),
+  .shell-desk .colophon > span,
+  .market .toolbar-note,
+  .chart-toolbar .toolbar-note {
+    display: none;
+  }
+
+  .shell-desk .topnav nav {
+    flex: 1;
+  }
+
+  .shell-desk .top-actions {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  /* Theme changes live on the setup screen; the phone header keeps chart width. */
+  .shell-desk .theme-select {
+    display: none;
+  }
+
+  .shell-desk .lang-select {
+    width: 92px;
   }
 
   .panel-toggle {
     display: inline-flex;
+    align-items: center;
+  }
+
+  .shell-desk .market {
+    padding: 4px 8px;
+    gap: 8px;
+  }
+
+  .market-select {
+    max-width: 130px;
+  }
+
+  .stats {
+    margin-left: auto;
+    gap: 10px;
+  }
+
+  .stats .stat:nth-child(2),
+  .stats .stat:nth-child(n + 4) {
+    display: none;
+  }
+
+  .stat {
+    min-width: 0;
+  }
+
+  .workspace,
+  .shell-review .workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .chart {
+    border-right: 0;
+  }
+
+  .chart-toolbar,
+  .pane-toolbar {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+
+  .chart-toolbar > .chip {
+    font-size: 12px;
+  }
+
+  .pane-toolbar {
+    flex-wrap: nowrap;
+  }
+
+  .pane-toolbar .chip {
+    flex: 1;
+    padding-inline: 4px;
+  }
+
+  .pane-count {
+    display: none;
+  }
+
+  .indicator-instance {
+    flex-wrap: wrap;
+  }
+
+  .legend {
+    max-width: calc(100% - 100px);
+    font-size: 10px;
+    gap: 4px 8px;
+    bottom: 8px;
+    left: 8px;
+  }
+
+  .shell-desk .colophon {
+    flex-direction: row;
+    padding: 2px 8px;
   }
 
   .replay {
-    position: fixed;
-    inset: auto 0 0 0;
-    z-index: 30;
     flex-direction: column;
-    flex-wrap: nowrap;
     align-items: stretch;
-    gap: 8px;
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
-    background: var(--bg-header);
-    border-top: 1px solid var(--line);
-    border-bottom: 0;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px));
   }
 
   .replay-controls {
-    flex: 0 0 auto;
-    flex-wrap: wrap;
-    gap: 4px 6px;
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 60px 1.4fr 1fr;
+    gap: 4px;
   }
 
-  .replay-controls button {
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: 44px;
-    padding: 0 8px;
-    font-size: 13px;
-    white-space: nowrap;
-  }
-
+  .replay-controls button,
   .replay-controls select {
-    flex: 0 0 56px;
     min-width: 0;
-    font-size: 13px;
+    padding-inline: 4px;
+    font-size: 12px;
   }
 
   .replay-meters {
-    flex-wrap: nowrap;
-    gap: 10px;
     justify-content: space-between;
+    gap: 6px;
     font-size: 11px;
   }
 
   .replay-meters .stat {
-    display: flex;
-    flex-direction: row;
-    gap: 5px;
-    align-items: baseline;
-  }
-
-  .replay-meters .stat-value {
-    font-size: 12px;
+    gap: 4px;
   }
 
   .trade-order-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 4px;
   }
 
   .trade-order-row .side {
     flex: 1 1 0;
     min-width: 0;
-    min-height: 44px;
+    padding-inline: 8px;
   }
 
   .trade-order-row .pct-row {
-    flex: 1 1 auto;
-    display: flex;
+    flex: 2 1 auto;
     gap: 4px;
   }
 
   .trade-order-row .pct {
-    flex: 1 1 0;
-    min-height: 36px;
-    padding: 0 4px;
-    font-size: 13px;
+    min-width: 0;
+    padding-inline: 4px;
+    font-size: 12px;
   }
 
   .trade-order-row .submit-row {
     flex: 1 1 100%;
-    display: flex;
   }
 
   .trade-order-row .submit {
-    flex: 1;
     min-height: 44px;
   }
 
   .workspace > .ticket,
-  .desk-bottom {
+  .desk-bottom,
+  .shell-desk .colophon {
     position: fixed;
     right: 0;
     top: 0;
@@ -1940,10 +1890,11 @@ button:disabled {
     background: var(--bg-header);
     border-left: 1px solid var(--line);
     border-right: 0;
+    visibility: hidden;
   }
 
   .workspace > .ticket {
-    overflow: hidden;
+    bottom: calc(50% + 52px);
   }
 
   .ticket-scroll {
@@ -1951,18 +1902,34 @@ button:disabled {
     overflow-y: auto;
   }
 
+  .shell-desk .colophon {
+    top: auto;
+    bottom: 50%;
+    height: 52px;
+    margin: 0;
+  }
+
+  .shell-desk .colophon .source-link,
+  .shell-desk .colophon summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .shell-desk .colophon summary {
+    white-space: nowrap;
+  }
+
   .desk-bottom {
     top: 50%;
     bottom: 0;
   }
 
-  .desk-bottom .blotter {
-    overflow: auto;
-  }
-
   .shell.drawer-open > .workspace > .ticket,
-  .shell.drawer-open .desk-bottom {
+  .shell.drawer-open .desk-bottom,
+  .shell.drawer-open .colophon {
     transform: none;
+    visibility: visible;
   }
 
   .shell.drawer-open .drawer-overlay {
@@ -1972,64 +1939,96 @@ button:disabled {
     z-index: 35;
     background: var(--overlay);
   }
+
+  .setup {
+    padding: 12px;
+  }
+
+  .setup-start {
+    width: 100%;
+    min-height: 52px;
+  }
 }
 
-/* Phone landscape: reclaim height for the chart. */
-@media (max-height: 520px) {
+@media (pointer: coarse), (max-width: 899px) {
+  button,
+  select,
+  input,
+  .shell-desk summary,
+  .shell-desk .topnav button,
+  .shell-desk .topnav select,
+  .chart-toolbar button,
+  .pane-toolbar button,
+  .replay button,
+  .replay select {
+    min-height: 44px;
+  }
+
+  /* WebKit native menus ignore min-height; keep their touch target explicit. */
+  select {
+    height: 44px;
+  }
+
+  input,
+  select,
+  .replay select {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 899px) and (max-height: 520px) {
   .replay-meters {
     display: none;
   }
 
-  .replay-controls {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
+  .replay {
+    flex-direction: row;
+    flex-wrap: wrap;
   }
 
-  .replay-controls button {
-    flex: 0 0 auto;
-    font-size: 12px;
+  .replay-controls,
+  .trade-order-row {
+    flex: 1 1 45%;
   }
 
-  .shell {
-    padding-bottom: calc(170px + env(safe-area-inset-bottom, 0px));
+  .trade-order-row .submit-row {
+    flex-basis: auto;
+  }
+}
+
+@media (max-width: 899px) and (max-height: 700px) {
+  .replay-meters {
+    display: none;
   }
 
-  .chart-stage {
-    min-height: 120px;
+  .shell-desk .topnav,
+  .shell-desk .market {
+    padding-block: 0;
   }
 
-  .topnav,
-  .market {
-    padding: 4px 10px;
+  .pane-toolbar {
+    padding: 2px 8px;
+  }
+
+  .replay {
+    padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* The seed chip is long: keep the toolbar on one row instead of wrapping. */
+@media (max-width: 899px) {
+  .chart-toolbar > .chip {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 44vw;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .workspace > .ticket,
-  .desk-bottom {
+  .desk-bottom,
+  .shell-desk .colophon {
     transition: none;
-  }
-}
-
-/* Two-column desks give the market stats more air than the phone row. */
-@media (min-width: 900px) {
-  .stats {
-    gap: 14px;
-  }
-
-  .stat {
-    min-width: 84px;
-  }
-}
-
-/* Short portrait phones (e.g. 375x667): keep the chart on screen. */
-@media (max-width: 899px) and (max-height: 700px) {
-  .shell {
-    padding-bottom: calc(210px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .chart-stage {
-    min-height: 160px;
   }
 }
