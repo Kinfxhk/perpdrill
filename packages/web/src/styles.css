@@ -767,6 +767,30 @@ output {
   border-top: 1px solid var(--line);
 }
 
+.orders {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.orders h2 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.order-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.order-row .mono {
+  font-size: 13px;
+}
+
 .health h2 {
   margin: 0 0 6px;
   font-size: 13px;
