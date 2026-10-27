@@ -54,7 +54,7 @@ export type {
   PracticePreset,
   PresetParseResult,
 } from "./preset.ts";
-export { pairTrades, sessionStats } from "./stats.ts";
+export { pairTrades, reviewMetrics, sessionStats } from "./stats.ts";
 export type { SessionStats, Trade } from "./stats.ts";
 export {
   DEFAULT_SYNTHETIC_BARS,
