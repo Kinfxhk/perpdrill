@@ -1431,6 +1431,39 @@ export function mountChart(
       }
     }
 
+    const lastBar = input.candles[input.candles.length - 1];
+    if (lastBar !== undefined && finitePrice(lastBar.close)) {
+      // Live price line: it moves as the forming candle prints, the way a desk shows it.
+      const y = laid.yOf(lastBar.close);
+      const up = lastBar.close >= lastBar.open;
+      root.append(
+        svg("line", {
+          class: up ? "last-price is-up" : "last-price is-down",
+          x1: String(laid.plotLeft),
+          x2: String(laid.plotRight),
+          y1: px(y),
+          y2: px(y),
+        }),
+      );
+      root.append(
+        svg("rect", {
+          class: up ? "last-price-tag is-up" : "last-price-tag is-down",
+          x: px(laid.plotRight + 1),
+          y: px(y - 8),
+          width: String(PAD_RIGHT - 1),
+          height: "16",
+          rx: "3",
+        }),
+      );
+      const tag = svg("text", {
+        class: "last-price-text",
+        x: px(laid.plotRight + 6),
+        y: px(y + 4),
+      });
+      tag.textContent = input.formatPrice(lastBar.close);
+      root.append(tag);
+    }
+
     if (input.times !== undefined && input.formatTime !== undefined) {
       // Time labels along the bottom edge, spaced so they never collide.
       const minGap = 76;

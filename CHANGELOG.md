@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 1.3.0 — 2026-10-27
+
+- The forming candle now prints four shapes instead of three: the open, the
+  adverse wick, both wicks, then the real bar. Every shape is built from prices
+  the bar already has, so the wick on the far side grows before the close lands
+  instead of appearing in one jump. The full bar budget still splits evenly
+  across the paints, and fills still happen only on a practice-bar close.
+
+- A live price line marks the last bar: a dashed hairline in the bar's direction
+  with a filled price tag on the axis, moving with each forming print.
+
 ## 1.2.0 — 2026-10-27
 
 - The chart reads like a desk chart. A crosshair follows the pointer with a

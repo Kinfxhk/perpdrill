@@ -1,16 +1,17 @@
 /**
  * Visual forming for one practice candle.
  *
- * A candle is three prints of prices it already has: the open, the adverse
+ * A candle is four prints of prices it already has: the open, the adverse
  * extreme (low when the close is at or above the open, otherwise the high),
- * then the real bar. Nothing is interpolated between those prices. The engine
- * still closes the practice bar on its own OHLC; these snapshots are paint only.
+ * the favourable extreme, then the real bar. Nothing is interpolated between
+ * those prices. The engine still closes the practice bar on its own OHLC;
+ * these snapshots are paint only.
  *
  * The first paint is immediate. The other `paintCount - 1` gaps share the whole
  * budget (`budget / (paintCount - 1)`). There is no 16ms floor and no 140ms cap.
  */
 
-export const FORMING_PARTS = 3;
+export const FORMING_PARTS = 4;
 
 /** One forward step. Play uses the speed interval as the budget instead. */
 export const FORMING_STEP_BUDGET_MS = 420;
@@ -48,6 +49,20 @@ function extremePrice(bar: FormingBar, direction: PrintDirection): number {
   }
 }
 
+/** The other end of the bar: the high on an up bar, the low on a down bar. */
+function farExtremePrice(bar: FormingBar, direction: PrintDirection): number {
+  switch (direction) {
+    case "up":
+      return bar.high;
+    case "down":
+      return bar.low;
+    default: {
+      const unexpected: never = direction;
+      return unexpected;
+    }
+  }
+}
+
 function openPrint(bar: FormingBar): FormingBar {
   const open = bar.open;
   return { open, high: open, low: open, close: open };
@@ -64,12 +79,24 @@ function extremePrint(bar: FormingBar): FormingBar {
   };
 }
 
+/** Both wicks on screen: the adverse extreme stays, the close reaches the far one. */
+function farExtremePrint(bar: FormingBar): FormingBar {
+  const first = extremePrint(bar);
+  const far = farExtremePrice(bar, printDirection(bar));
+  return {
+    open: first.open,
+    high: Math.max(first.high, far),
+    low: Math.min(first.low, far),
+    close: far,
+  };
+}
+
 function fullPrint(bar: FormingBar): FormingBar {
   return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
 }
 
 function formingPrints(bar: FormingBar): readonly FormingBar[] {
-  return [openPrint(bar), extremePrint(bar), fullPrint(bar)];
+  return [openPrint(bar), extremePrint(bar), farExtremePrint(bar), fullPrint(bar)];
 }
 
 function aggregatePrints(prints: readonly FormingBar[]): FormingBar {
@@ -129,8 +156,8 @@ export function formingPaintTimes(
 }
 
 /**
- * Candle after `partsPainted` prints (1 = open, 2 = adverse extreme, 3 = the bar).
- * The last snapshot is the bar's own OHLC.
+ * Candle after `partsPainted` prints (1 = open, 2 = adverse extreme, 3 = favourable
+ * extreme, 4 = the bar). The last snapshot is the bar's own OHLC.
  */
 export function formingSnapshot(bar: FormingBar, partsPainted: number): FormingBar {
   if (!Number.isInteger(partsPainted) || partsPainted < 1 || partsPainted > FORMING_PARTS) {

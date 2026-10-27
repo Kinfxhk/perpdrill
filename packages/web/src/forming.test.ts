@@ -24,18 +24,21 @@ function idle(cursor: number, playing = false): FormingState {
 }
 
 describe("forming paints", () => {
-  it("divides a practice candle into 3 prints and finishes on the real bar", () => {
-    expect(FORMING_PARTS).toBe(3);
+  it("divides a practice candle into 4 prints and finishes on the real bar", () => {
+    expect(FORMING_PARTS).toBe(4);
     expect(formingSnapshot(up, 1)).toEqual({ open: 10, high: 10, low: 10, close: 10 });
     expect(formingSnapshot(up, 2)).toEqual({ open: 10, high: 10, low: 9, close: 9 });
-    expect(formingSnapshot(up, 3)).toEqual(up);
+    expect(formingSnapshot(up, 3)).toEqual({ open: 10, high: 14, low: 9, close: 14 });
+    expect(formingSnapshot(up, 4)).toEqual(up);
 
     expect(formingSnapshot(down, 1)).toEqual({ open: 13, high: 13, low: 13, close: 13 });
     expect(formingSnapshot(down, 2)).toEqual({ open: 13, high: 13.5, low: 13, close: 13.5 });
-    expect(formingSnapshot(down, 3)).toEqual(down);
+    expect(formingSnapshot(down, 3)).toEqual({ open: 13, high: 13.5, low: 8, close: 8 });
+    expect(formingSnapshot(down, 4)).toEqual(down);
 
     expect(formingSnapshot(doji, 2)).toEqual({ open: 9, high: 9, low: 7, close: 7 });
-    expect(formingSnapshot(doji, 3)).toEqual(doji);
+    expect(formingSnapshot(doji, 3)).toEqual({ open: 9, high: 11, low: 7, close: 11 });
+    expect(formingSnapshot(doji, 4)).toEqual(doji);
   });
 
   it("paints the open as a one-pixel doji before the bar has a body", () => {
@@ -52,9 +55,9 @@ describe("forming paints", () => {
     expect(laid.candles[0]?.direction).toBe("up");
   });
 
-  it("rejects a paint outside the three parts", () => {
+  it("rejects a paint outside the four parts", () => {
     expect(() => formingSnapshot(up, 0)).toThrow(RangeError);
-    expect(() => formingSnapshot(up, 4)).toThrow(RangeError);
+    expect(() => formingSnapshot(up, 5)).toThrow(RangeError);
   });
 });
 
@@ -74,9 +77,10 @@ describe("forming gap", () => {
     // Six paints at a 1000ms budget used to clamp each gap at 140ms (span 700).
     expect(formingGapMs(1000, 6)).toBe(200);
     expect(formingPaintTimes(1000, 6)).toEqual([0, 200, 400, 600, 800, 1000]);
-    expect(formingPaintTimes(800)).toEqual([0, 400, 800]);
-    expect(formingPaintTimes(420)).toEqual([0, 210, 420]);
-    expect(formingPaintTimes(1600)).toEqual([0, 800, 1600]);
+    // Four paints by default: three gaps share the budget, the last lands on it.
+    expect(formingPaintTimes(800).map(Math.round)).toEqual([0, 267, 533, 800]);
+    expect(formingPaintTimes(420).map(Math.round)).toEqual([0, 140, 280, 420]);
+    expect(formingPaintTimes(1600).map(Math.round)).toEqual([0, 533, 1067, 1600]);
   });
 });
 
@@ -88,6 +92,8 @@ describe("forming playback", () => {
     state = formingStep(state, last);
     expect(state).toEqual({ cursor: 5, part: 2, playing: true });
     state = formingStep(state, last);
+    expect(state).toEqual({ cursor: 5, part: 3, playing: true });
+    state = formingStep(state, last);
     expect(state).toEqual({ cursor: 6, part: 1, playing: true });
   });
 
@@ -97,13 +103,14 @@ describe("forming playback", () => {
     expect(state).toEqual({ cursor: 5, part: 1, playing: false });
     state = formingStep(state, last);
     state = formingStep(state, last);
+    state = formingStep(state, last);
     expect(state).toEqual({ cursor: 6, part: null, playing: false });
   });
 
   it("a forward press during a preview only stops the chain", () => {
     const state = formingRequestStep({ cursor: 5, part: 1, playing: true }, 20);
     expect(state).toEqual({ cursor: 5, part: 1, playing: false });
-    expect(formingStep(formingStep(state, 20), 20)).toEqual({
+    expect(formingStep(formingStep(formingStep(state, 20), 20), 20)).toEqual({
       cursor: 6,
       part: null,
       playing: false,
@@ -118,7 +125,7 @@ describe("forming playback", () => {
     });
     const last = formingStart(idle(4), 4, true);
     expect(last).toEqual({ cursor: 4, part: null, playing: false });
-    expect(formingStep({ cursor: 3, part: 2, playing: true }, 4)).toEqual({
+    expect(formingStep({ cursor: 3, part: 3, playing: true }, 4)).toEqual({
       cursor: 4,
       part: null,
       playing: false,
