@@ -17,6 +17,11 @@
   (`budget / (parts - 1)`), with no 140ms cap. Play spends the speed interval.
   One forward step spends 420ms. The cursor, and therefore the fill, still
   moves on the last paint — the same beat play used to step on.
+- Practice chart timeframes are 1m, 3m, 5m, 15m, 1h, and 4h. 3m is a real
+  synthetic interval. A coarser chart is an OHLC resample of the session
+  bars, clock-aligned, including a still-forming last bar. A finer chart, or
+  one the bar size does not divide, stays disabled instead of relabeling the
+  same candles. Split opens a second pane on that same sample.
 - Plan presets keep their v0.3.0 ids. The desk shows teaching names only
   (`Teaching · Instant …`, `Teaching · Eval …`, `Teaching · 2-Step …`).
   `community-a` is removed; a stored `community-a` or `community-b` id is

@@ -7,7 +7,8 @@ import type { Bar } from "./series.ts";
  * and it does not read a live feed. SYNTH-NQ and SYNTH-GC keep the two anchors
  * this desk already generated. SYNTH-ES is a third anchor in the same generator.
  */
-export const SYNTHETIC_TIMEFRAMES_MIN = [1, 5, 15, 60, 240] as const;
+/** Bar sizes the generator emits. 3m is its own series, not a relabeled 1m or 5m run. */
+export const SYNTHETIC_TIMEFRAMES_MIN = [1, 3, 5, 15, 60, 240] as const;
 
 export type SyntheticTimeframe = (typeof SYNTHETIC_TIMEFRAMES_MIN)[number];
 

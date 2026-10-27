@@ -244,10 +244,56 @@ button {
   color: var(--text-faint);
 }
 
+.chart-panes {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-pane {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chart-pane + .chart-pane {
+  border-top: 1px solid var(--line);
+}
+
+.tf-chips,
+.pane-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.pane-toolbar {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pane-count {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.chip.is-on {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: var(--bg-inset);
+}
+
 .chart-stage {
   position: relative;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
   background-color: var(--bg-inset);
   background-image:
     linear-gradient(to top, rgb(var(--accent-rgb) / 10%), transparent 42%),
@@ -796,6 +842,10 @@ td.empty {
     overflow: hidden;
   }
 
+  .chart-panes.is-split .chart-stage {
+    min-height: 0;
+  }
+
   .desk-bottom {
     overflow: hidden;
   }
@@ -915,6 +965,21 @@ td.empty {
 
 .chart-stage {
   min-height: 260px;
+}
+
+/* Readable floor only outside the height-locked desk. Inside
+   (min-width: 861px) and (min-height: 700px) the shell rule keeps
+   min-height: 0 so both split stages can shrink in the fixed 100dvh. */
+@media (max-width: 860px), (max-height: 699px) {
+  .chart-panes.is-split .chart-stage {
+    min-height: 180px;
+  }
+}
+
+.chart-stage .chart-empty {
+  position: relative;
+  z-index: 1;
+  margin: 12px;
 }
 
 .price-grid {
@@ -1423,6 +1488,24 @@ button:disabled {
 
   .chart-stage {
     min-height: 300px;
+  }
+
+  .chart-panes.is-split .chart-stage {
+    min-height: 200px;
+  }
+
+  .pane-toolbar,
+  .tf-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .pane-toolbar .chip,
+  .tf-chips .chip,
+  .split-toggle {
+    flex: none;
+    min-height: 44px;
   }
 
   .legend {

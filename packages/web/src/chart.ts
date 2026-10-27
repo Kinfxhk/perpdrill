@@ -412,14 +412,33 @@ function appendBand(
   flush();
 }
 
-let activeHost: HTMLElement | null = null;
-let activePaint: (() => void) | null = null;
+/**
+ * One paint per host. Split panes mount more than one host, and a resize
+ * repaints only the host that changed. Wheel zoom can listen on `host` and
+ * repaint that host; this module does not keep a single active chart.
+ */
+const paints = new Map<HTMLElement, () => void>();
 const resizeObserver =
   typeof ResizeObserver === "undefined"
     ? null
-    : new ResizeObserver(() => {
-        activePaint?.();
+    : new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const host = entry.target;
+          if (host instanceof HTMLElement) {
+            paints.get(host)?.();
+          }
+        }
       });
+
+/** Drop hosts the desk already removed so a split re-render does not leak them. */
+export function releaseDetachedCharts(): void {
+  for (const host of paints.keys()) {
+    if (!host.isConnected) {
+      resizeObserver?.unobserve(host);
+      paints.delete(host);
+    }
+  }
+}
 
 export function mountChart(
   host: HTMLElement,
@@ -544,18 +563,14 @@ export function mountChart(
     }
   };
 
-  if (resizeObserver !== null && activeHost !== host) {
-    if (activeHost !== null) {
-      resizeObserver.unobserve(activeHost);
-    }
-    resizeObserver.observe(host);
-    activeHost = host;
+  if (!paints.has(host)) {
+    resizeObserver?.observe(host);
   }
-  activePaint = paint;
+  paints.set(host, paint);
   paint();
   if (typeof requestAnimationFrame === "function") {
     requestAnimationFrame(() => {
-      if (activePaint === paint) {
+      if (paints.get(host) === paint) {
         paint();
       }
     });
