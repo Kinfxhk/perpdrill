@@ -176,6 +176,8 @@ type DeskState = {
   bollingerVisible: boolean;
   /** Second price pane. Each pane resamples the session bars; it does not invent a finer series. */
   splitChart: boolean;
+  /** Phone drawer (order ticket + blotter) is open. */
+  drawerOpen: boolean;
   primaryTf: SyntheticTimeframe;
   secondaryTf: SyntheticTimeframe;
 };
@@ -375,6 +377,7 @@ export function mountDesk(root: HTMLElement): void {
     movingAverages: defaultMovingAverages(),
     bollingerVisible: false,
     splitChart: false,
+    drawerOpen: false,
     primaryTf: stored.timeframeMin,
     secondaryTf: stored.timeframeMin,
   };
@@ -574,6 +577,7 @@ export function mountDesk(root: HTMLElement): void {
     pausePlayback();
     cancelIntro();
     state.screen = "setup";
+    state.drawerOpen = false;
     render();
   };
 
@@ -684,6 +688,13 @@ export function mountDesk(root: HTMLElement): void {
       }
     }
   };
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && state.drawerOpen) {
+      state.drawerOpen = false;
+      render();
+    }
+  });
 
   const commit = (action: SessionAction): void => {
     if (state.endedAt !== null || state.countdown !== null) {
@@ -846,7 +857,15 @@ export function mountDesk(root: HTMLElement): void {
         : ((frame.mark - first.close) / first.close) * 100;
     const currentBar = series[state.cursor];
 
-    const shell = el("div", { className: "shell" }, [
+    const drawerOverlay = el("div", {
+      className: "drawer-overlay",
+      attrs: { "aria-hidden": "true" },
+    });
+    drawerOverlay.addEventListener("click", () => {
+      state.drawerOpen = false;
+      render();
+    });
+    const shell = el("div", { className: state.drawerOpen ? "shell drawer-open" : "shell" }, [
       el("p", { className: "banner", attrs: { role: "status" }, text: t("banner") }),
       mountNav(),
       mountMarket(frame, change, currentBar?.close ?? frame.mark),
@@ -867,6 +886,7 @@ export function mountDesk(root: HTMLElement): void {
           dash,
         }),
         el("div", { className: "desk-bottom" }, [mountBlotter(frame, money, dash)]),
+        drawerOverlay,
       ]),
       mountColophon(),
     ]);
@@ -1364,6 +1384,16 @@ export function mountDesk(root: HTMLElement): void {
     );
     leave.dataset.action = "leave-practice";
 
+    const panelToggle =
+      state.screen === "play"
+        ? actionButton(t("panel.label"), "panel-toggle", () => {
+            state.drawerOpen = !state.drawerOpen;
+            render();
+          })
+        : null;
+    if (panelToggle !== null) {
+      panelToggle.setAttribute("aria-expanded", String(state.drawerOpen));
+    }
     return el("header", { className: "topnav" }, [
       el("div", { className: "brand" }, [
         el("p", { className: "brand-kicker", text: t("kicker") }),
@@ -1389,7 +1419,11 @@ export function mountDesk(root: HTMLElement): void {
           }
         }),
       ]),
-      el("div", { className: "top-actions" }, [theme, lang]),
+      el("div", { className: "top-actions" }, [
+        theme,
+        lang,
+        ...(panelToggle === null ? [] : [panelToggle]),
+      ]),
     ]);
   }
 
@@ -1923,37 +1957,7 @@ export function mountDesk(root: HTMLElement): void {
       }
     });
 
-    const percents = el(
-      "div",
-      { className: "pct-row", attrs: { role: "group", "aria-label": t("power.label") } },
-      BUYING_POWER_PCTS.map((pct) => {
-        const node = actionButton(
-          `${pct}%`,
-          pct === state.powerPct ? "pct is-selected" : "pct",
-          () => {
-            state.powerPct = pct;
-            render();
-          },
-        );
-        if (pct === state.powerPct) {
-          node.setAttribute("aria-pressed", "true");
-        }
-        return node;
-      }),
-    );
-
-    const submitLabel =
-      view.frame.position !== null
-        ? t("submit.close")
-        : state.side === "long"
-          ? t("submit.long")
-          : t("submit.short");
-    const submitClass =
-      view.frame.position !== null
-        ? "submit"
-        : state.side === "long"
-          ? "submit submit-long"
-          : "submit submit-short";
+    const percents = pctChips();
 
     const ratio = healthRatio(view.frame);
     const meter = el(
@@ -1985,35 +1989,7 @@ export function mountDesk(root: HTMLElement): void {
           ? "mono pnl-down"
           : "mono";
 
-    const ended = state.endedAt !== null || state.countdown !== null;
-    const submit = el("div", { className: "submit-row" }, [
-      actionButton(submitLabel, submitClass, () => {
-        if (view.frame.position === null) {
-          commit({
-            kind: "open",
-            barIndex: state.cursor,
-            side: state.side,
-            leverage: state.leverage,
-            powerPct: state.powerPct,
-            slipToleranceBps: state.slipToleranceBps,
-            realizedImpactBps: state.realizedImpactBps,
-            stopLoss: parsePrice(state.stopLossText),
-            takeProfit: parsePrice(state.takeProfitText),
-          });
-          return;
-        }
-        commit({
-          kind: "close",
-          barIndex: state.cursor,
-          slipToleranceBps: state.slipToleranceBps,
-          realizedImpactBps: state.realizedImpactBps,
-        });
-      }),
-    ]);
-    const submitButton = submit.querySelector("button");
-    if (ended && submitButton !== null) {
-      submitButton.disabled = true;
-    }
+    const submit = submitControl(view.frame);
 
     return el("aside", { className: "ticket", attrs: { "aria-label": "Order ticket" } }, [
       el("div", { className: "ticket-scroll" }, [
@@ -2098,6 +2074,71 @@ export function mountDesk(root: HTMLElement): void {
     );
     node.setAttribute("aria-pressed", selected ? "true" : "false");
     return node;
+  }
+
+  function pctChips(): HTMLElement {
+    return el(
+      "div",
+      { className: "pct-row", attrs: { role: "group", "aria-label": t("power.label") } },
+      BUYING_POWER_PCTS.map((pct) => {
+        const node = actionButton(
+          `${pct}%`,
+          pct === state.powerPct ? "pct is-selected" : "pct",
+          () => {
+            state.powerPct = pct;
+            render();
+          },
+        );
+        if (pct === state.powerPct) {
+          node.setAttribute("aria-pressed", "true");
+        }
+        return node;
+      }),
+    );
+  }
+
+  function commitOpenOrClose(): void {
+    if (currentFrame().position === null) {
+      commit({
+        kind: "open",
+        barIndex: state.cursor,
+        side: state.side,
+        leverage: state.leverage,
+        powerPct: state.powerPct,
+        slipToleranceBps: state.slipToleranceBps,
+        realizedImpactBps: state.realizedImpactBps,
+        stopLoss: parsePrice(state.stopLossText),
+        takeProfit: parsePrice(state.takeProfitText),
+      });
+      return;
+    }
+    commit({
+      kind: "close",
+      barIndex: state.cursor,
+      slipToleranceBps: state.slipToleranceBps,
+      realizedImpactBps: state.realizedImpactBps,
+    });
+  }
+
+  function submitControl(frame: Frame): HTMLElement {
+    const label =
+      frame.position !== null
+        ? t("submit.close")
+        : state.side === "long"
+          ? t("submit.long")
+          : t("submit.short");
+    const className =
+      frame.position !== null
+        ? "submit"
+        : state.side === "long"
+          ? "submit submit-long"
+          : "submit submit-short";
+    const ended = state.endedAt !== null || state.countdown !== null;
+    const button = actionButton(label, className, commitOpenOrClose);
+    if (ended) {
+      button.disabled = true;
+    }
+    return el("div", { className: "submit-row" }, [button]);
   }
 
   function costHint(active: PracticePreset | null): string {
@@ -2537,6 +2578,12 @@ export function mountDesk(root: HTMLElement): void {
         stat(t("replay.equity"), money(frame.equity)),
         stat(t("replay.drawdown"), formatPct(drawdown, locale())),
         stat(t("replay.bar"), `${state.cursor + 1}/${last + 1}`),
+      ]),
+      el("div", { className: "trade-order-row", attrs: { "data-testid": "trade-bar" } }, [
+        pressSide("long"),
+        pressSide("short"),
+        pctChips(),
+        submitControl(frame),
       ]),
     ]);
   }

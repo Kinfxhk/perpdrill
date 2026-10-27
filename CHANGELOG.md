@@ -25,6 +25,13 @@
   bars, clock-aligned, including a still-forming last bar. A finer chart, or
   one the bar size does not divide, stays disabled instead of relabeling the
   same candles. Split opens a second pane on that same sample.
+- The desk is responsive across phone, tablet, and desktop. Under 900px the
+  order ticket and blotter fold into an off-canvas drawer opened from the
+  header, and the replay row becomes a fixed bottom trade bar with side,
+  buying power, and submit controls. Touch targets stay at 44px on coarse
+  pointers, inputs stay 16px so iOS does not zoom, and short landscape
+  screens reclaim chart height. A Playwright device matrix checks the three
+  layouts in Chromium and WebKit.
 - The practice chart zooms and scrolls: wheel up/down changes
   bar spacing around the cursor, a horizontal wheel or drag pans, and a pinch
   zooms. The view opens on the recent bars (150, with a small right margin)
