@@ -967,8 +967,13 @@ td.empty {
   min-height: 260px;
 }
 
-.chart-panes.is-split .chart-stage {
-  min-height: 180px;
+/* Readable floor only outside the height-locked desk. Inside
+   (min-width: 861px) and (min-height: 700px) the shell rule keeps
+   min-height: 0 so both split stages can shrink in the fixed 100dvh. */
+@media (max-width: 860px), (max-height: 699px) {
+  .chart-panes.is-split .chart-stage {
+    min-height: 180px;
+  }
 }
 
 .chart-stage .chart-empty {
