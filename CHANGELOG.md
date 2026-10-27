@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.0 — 2026-10-27
 
 - Desk themes use original cool-green accents. Grove, Lagoon, and Iris
   replace the venue-like palettes. Daylight uses a darker green so accent
