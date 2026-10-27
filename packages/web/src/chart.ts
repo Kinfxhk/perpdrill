@@ -225,6 +225,8 @@ export function layoutCandles(input: {
   readonly extraPrices?: readonly number[];
   /** When set, candles use this spacing instead of stretching to the pane. */
   readonly timeScale?: TimeViewport;
+  /** Vertical magnification around the window midpoint. 1 fits the visible range. */
+  readonly priceScale?: number;
 }): {
   readonly candles: readonly LaidCandle[];
   readonly yOf: (price: number) => number;
@@ -259,11 +261,16 @@ export function layoutCandles(input: {
   const low = prices.length === 0 ? 0 : Math.min(...prices);
   const high = prices.length === 0 ? 1 : Math.max(...prices);
   const span = high - low || 1;
+  const zoom = zoomedPriceScale(input.priceScale);
+  const mid = (low + high) / 2;
+  const half = span / 2 / zoom;
+  const floorPrice = mid - half;
+  const zoomedSpan = half * 2;
   const topMargin = plotHeight * CANDLE_PANE_MARGIN;
   const bottomMargin = plotHeight * CANDLE_PANE_MARGIN;
   const internal = Math.max(1, plotHeight - topMargin - bottomMargin);
   const yOf = (price: number): number => {
-    const inv = bottomMargin + ((internal - 1) * (price - low)) / span;
+    const inv = bottomMargin + ((internal - 1) * (price - floorPrice)) / zoomedSpan;
     return plotHeight - 1 - inv;
   };
 
@@ -522,6 +529,20 @@ function viewportFor(seriesKey: string): ViewportMemory | null {
   return viewports.get(seriesKey) ?? null;
 }
 
+/** Vertical magnification per series. 1 fits the visible price range to the pane. */
+const priceZooms = new Map<string, number>();
+
+const MAX_PRICE_ZOOM = 20;
+const PRICE_ZOOM_STEP = 1.15;
+
+/** Stored zoom, clamped to [1, MAX_PRICE_ZOOM]. 1 is the fitted view. */
+function zoomedPriceScale(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value) || value < 1) {
+    return 1;
+  }
+  return Math.min(MAX_PRICE_ZOOM, value);
+}
+
 /** Stage element already showing this series, so a playback paint can keep its pan. */
 export function connectedChartHost(seriesKey: string): HTMLElement | null {
   for (const [host, chart] of paints) {
@@ -691,6 +712,17 @@ function bindGestures(
     const ctx = currentRead();
     const current = viewportFor(ctx.seriesKey);
     if ((event.deltaX === 0 && event.deltaY === 0) || current === null) {
+      return;
+    }
+    const rect = host.getBoundingClientRect();
+    if (event.clientX - rect.left >= rect.width - PAD_RIGHT) {
+      // Over the price axis the wheel scales prices, the way a charting desk does it.
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      const step = event.deltaY < 0 ? PRICE_ZOOM_STEP : 1 / PRICE_ZOOM_STEP;
+      priceZooms.set(ctx.seriesKey, zoomedPriceScale((priceZooms.get(ctx.seriesKey) ?? 1) * step));
+      currentPaint();
       return;
     }
     const plotWidth = plotWidthOf(host);
@@ -954,6 +986,7 @@ export function mountChart(
       pixelRatio: ratio,
       extraPrices,
       timeScale,
+      priceScale: priceZooms.get(input.seriesKey) ?? 1,
     });
     const root = svg("svg", {
       class: "chart-svg",

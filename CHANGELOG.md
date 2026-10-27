@@ -4,6 +4,10 @@
 
 ## 1.1.0 — 2026-10-27
 
+- Wheel over the price axis scales prices vertically, the way a charting desk
+  does it, while the plot keeps zooming time. Scrolling back returns to the
+  fitted view. Replay now opens at 0.5× and offers 0.5× through 8×.
+
 - The chart can draw VWAP, Keltner channels and Donchian channels beside the
   existing averages. VWAP is anchored at the first bar and weighted by volume,
   so synthetic bars now carry a fictional size from their own seeded stream:

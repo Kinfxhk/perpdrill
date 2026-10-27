@@ -104,6 +104,24 @@ describe("practice candle geometry", () => {
     const fitted = plotWidth / candles.length;
     expect(timeScale.barSpacing).toBeGreaterThan(fitted);
   });
+
+  it("magnifies prices around the window midpoint for the price axis", () => {
+    const args = {
+      candles: [up, down, doji],
+      width: 640,
+      height: 360,
+      padLeft: 12,
+      padRight: 72,
+      pixelRatio: 1,
+    };
+    const fitted = layoutCandles(args);
+    const zoomed = layoutCandles({ ...args, priceScale: 2 });
+    const mid = (14 + 7) / 2;
+    expect(zoomed.yOf(mid)).toBeCloseTo(fitted.yOf(mid), 5);
+    expect(zoomed.yOf(14)).toBeLessThan(fitted.yOf(14));
+    expect(zoomed.yOf(7)).toBeGreaterThan(fitted.yOf(7));
+    expect(layoutCandles({ ...args, priceScale: 0.5 }).yOf(14)).toBeCloseTo(fitted.yOf(14), 5);
+  });
 });
 
 describe("practice time scale", () => {
