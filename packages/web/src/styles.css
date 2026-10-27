@@ -1646,3 +1646,96 @@ button:disabled {
   --shade-rgb: 20 32 26;
   --overlay: rgb(244 247 245 / 94%);
 }
+
+[data-theme="dusk"] {
+  /* Dusk: warm ember night, cool green accent. */
+  --bg: #1e1a1c;
+  --bg-raised: #2b2326;
+  --bg-inset: #161214;
+  --bg-header: #241e20;
+  --line: #524349;
+  --line-strong: #75606a;
+  --text: #f4eef0;
+  --text-dim: #d4c5ca;
+  --text-faint: #ab969e;
+  --accent: #6dce8a;
+  --accent-ink: #062414;
+  --long: #b6ebc8;
+  --long-bg: #1a4030;
+  --short: #f0b4c0;
+  --short-bg: #3a2229;
+  --danger: #e7b08a;
+  --prop: #d2c4f6;
+  --banner-bg: #241e20;
+  --panel-deep: #1c1719;
+  --long-line: #2f6a48;
+  --short-line: #8a4a56;
+  --accent-rgb: 109 206 138;
+  --grid-rgb: 82 67 73;
+  --bg-rgb: 30 26 28;
+  --long-rgb: 182 235 200;
+  --short-rgb: 240 180 192;
+  --shade-rgb: 8 6 7;
+}
+
+[data-theme="dark"] {
+  /* Dark: neutral near-black, no hue cast. */
+  --bg: #101214;
+  --bg-raised: #191d20;
+  --bg-inset: #0a0c0e;
+  --bg-header: #14181b;
+  --line: #394247;
+  --line-strong: #55646b;
+  --text: #eef1f3;
+  --text-dim: #c3cdd2;
+  --text-faint: #9aa7ad;
+  --accent: #6dce8a;
+  --accent-ink: #062414;
+  --long: #b6ebc8;
+  --long-bg: #17382c;
+  --short: #f0b4c0;
+  --short-bg: #38202a;
+  --danger: #e7b08a;
+  --prop: #d2c4f6;
+  --banner-bg: #14181b;
+  --panel-deep: #12161a;
+  --long-line: #2f6a48;
+  --short-line: #8a4a56;
+  --accent-rgb: 109 206 138;
+  --grid-rgb: 57 66 71;
+  --bg-rgb: 16 18 20;
+  --long-rgb: 182 235 200;
+  --short-rgb: 240 180 192;
+  --shade-rgb: 2 3 4;
+}
+
+[data-theme="slate"] {
+  /* Slate: dark gray-blue stone. */
+  --bg: #171c22;
+  --bg-raised: #222a32;
+  --bg-inset: #101419;
+  --bg-header: #1b2128;
+  --line: #3a4854;
+  --line-strong: #576a78;
+  --text: #eef2f4;
+  --text-dim: #c4d0d6;
+  --text-faint: #9aabb4;
+  --accent: #6dce8a;
+  --accent-ink: #062414;
+  --long: #b6ebc8;
+  --long-bg: #17382c;
+  --short: #f0b4c0;
+  --short-bg: #38202a;
+  --danger: #e7b08a;
+  --prop: #d2c4f6;
+  --banner-bg: #1b2128;
+  --panel-deep: #131920;
+  --long-line: #2f6a48;
+  --short-line: #8a4a56;
+  --accent-rgb: 109 206 138;
+  --grid-rgb: 58 72 84;
+  --bg-rgb: 23 28 34;
+  --long-rgb: 182 235 200;
+  --short-rgb: 240 180 192;
+  --shade-rgb: 4 6 8;
+}

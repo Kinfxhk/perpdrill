@@ -39,6 +39,12 @@ function themeLabelKey(theme: Theme): MessageKey {
       return "theme.violet";
     case "daylight":
       return "theme.daylight";
+    case "dusk":
+      return "theme.dusk";
+    case "dark":
+      return "theme.dark";
+    case "slate":
+      return "theme.slate";
     default: {
       const unexpected: never = theme;
       return unexpected;

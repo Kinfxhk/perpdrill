@@ -5,6 +5,9 @@
 - Desk themes use original cool-green accents. Grove, Lagoon, and Iris
   replace the venue-like palettes. Daylight uses a darker green so accent
   text stays readable. The header theme menu still saves the choice.
+- Three more desk themes complete the set of eight: Dusk (warm ember night),
+  Dark (neutral near-black), and Slate (gray-blue stone). Each keeps the
+  original cool-green accent and the saved header-menu choice.
 - Generate data names the samples SYNTH-NQ, SYNTH-GC, and SYNTH-ES. The seeded
   generator is unchanged. SYNTH-NQ and SYNTH-GC keep the previous two price
   anchors. Plan leverage stays 25× and 15× on those two names. SYNTH-ES is a
