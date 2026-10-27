@@ -22,6 +22,11 @@
   bars, clock-aligned, including a still-forming last bar. A finer chart, or
   one the bar size does not divide, stays disabled instead of relabeling the
   same candles. Split opens a second pane on that same sample.
+- The practice chart zooms and scrolls: wheel up/down changes
+  bar spacing around the cursor, a horizontal wheel or drag pans, and a pinch
+  zooms. The view opens on the recent bars (150, with a small right margin)
+  inside the existing 140-bar window. Resizing the pane keeps that bar spacing,
+  so a wider pane shows more bars. Each split pane keeps its own zoom.
 - Plan presets keep their v0.3.0 ids. The desk shows teaching names only
   (`Teaching · Instant …`, `Teaching · Eval …`, `Teaching · 2-Step …`).
   `community-a` is removed; a stored `community-a` or `community-b` id is
