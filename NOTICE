@@ -24,6 +24,19 @@ original. They are an isolated approximation for practice. They are not
 CandleDrill's fill model, and they are not an exchange's closed-form
 liquidation price.
 
+Synthetic practice data
+-----------------------
+
+SYNTH-NQ, SYNTH-GC, SYNTH-ES and SYNTH-BTC are fictional practice ids.
+The seeded generator runs locally without a market-data feed. Its price,
+tick and volatility settings are teaching assumptions, not calibrated
+exchange history, index replicas or futures contract specifications.
+The legacy NQ/GC ids preserve earlier crypto-like profiles for replay
+compatibility. SYNTH-BTC is a separate Bitcoin-like fictional profile,
+not a CME contract, an exchange feed or a record of Bitcoin prices.
+No exchange logos or endorsement are implied. Third-party market data
+has its own terms; the source-code license does not relicense that data.
+
 Live market data
 ----------------
 

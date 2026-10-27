@@ -1,6 +1,13 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
-import { SUPPORTED_LANGS, THEMES, catalogValue, type MessageKey, type Theme } from "./i18n.ts";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  SUPPORTED_LANGS,
+  THEMES,
+  catalogValue,
+  readStoredTheme,
+  type MessageKey,
+  type Theme,
+} from "./i18n.ts";
 
 const css = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
 const desk = readFileSync(new URL("./desk.ts", import.meta.url), "utf8");
@@ -130,6 +137,39 @@ function expectContrast(
     throw new Error(`${label} contrast ${ratio.toFixed(2)} is below ${minimum}`);
   }
 }
+
+describe("theme preference", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each([null, "unknown"])("defaults to Slate for stored value %s", (stored) => {
+    vi.stubGlobal("localStorage", { getItem: () => stored });
+    expect(readStoredTheme()).toBe("slate");
+  });
+
+  it("defaults to Slate when preference storage is unavailable", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("storage unavailable");
+      },
+    });
+    expect(readStoredTheme()).toBe("slate");
+  });
+
+  it.each(THEMES)("preserves an existing %s preference", (theme) => {
+    vi.stubGlobal("localStorage", { getItem: () => theme });
+    expect(readStoredTheme()).toBe(theme);
+  });
+
+  it("paints Slate before JavaScript starts and labels it as the default", () => {
+    const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+    expect(html).toContain('<html lang="en" data-theme="slate">');
+    expect(html).toContain('<meta name="theme-color" content="#171c22"');
+    for (const lang of SUPPORTED_LANGS) {
+      expect(catalogValue(lang, "theme.teal")).not.toMatch(/default|預設|默认|既定|기본/);
+      expect(catalogValue(lang, "theme.slate")).toMatch(/default|預設|默认|既定|기본/);
+    }
+  });
+});
 
 describe("desk themes", () => {
   const blocks = parseBlocks(css);

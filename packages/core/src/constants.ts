@@ -17,7 +17,7 @@ export const MAX_REALIZED_IMPACT_BPS = 1_000;
 export const MAINTENANCE_OF_INITIAL = 0.5;
 
 /** Practice ids shown in the desk. Not exchange tickers. */
-export const SAMPLE_MARKETS = ["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES"] as const;
+export const SAMPLE_MARKETS = ["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES", "SYNTH-BTC"] as const;
 
 export type MarketId = (typeof SAMPLE_MARKETS)[number];
 

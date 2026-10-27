@@ -61,7 +61,7 @@ describe("perpdrill core identity", () => {
   });
 
   it("names sample markets SYNTH-* and refuses bare exchange symbols", () => {
-    expect(SAMPLE_MARKETS).toEqual(["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES"]);
+    expect(SAMPLE_MARKETS).toEqual(["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES", "SYNTH-BTC"]);
     for (const market of SAMPLE_MARKETS) {
       expect(market.startsWith("SYNTH-")).toBe(true);
       expect(isMarketId(market)).toBe(true);
