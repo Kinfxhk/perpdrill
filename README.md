@@ -2,7 +2,7 @@
 
 本機優先的教育用模擬／回放練習台骨架，用來對照加密永續合約、類 prop 規則做練習。這不是交易所客戶端，也不會下真單。
 
-**狀態：1.2.0 練習台。** 生成合成數據或載入真實行情（CSV／Binance 公開資料），設定規則（自訂／社群預設／無），逐根播放、下市價／限價／觸價單、加減倉、資金費結算、mark price 強平，圖表有十字游標、O/H/L/C 讀數同可拖拉縮放嘅價格軸，檢討有完整指標與蒙特卡羅穩健性參考。強平仍是隔離教學近似，不是交易所公式，也不是官方評測結果。
+**狀態：1.3.0 練習台。** 生成合成數據或載入真實行情（CSV／Binance 公開資料），設定規則（自訂／社群預設／無），逐根播放、下市價／限價／觸價單、加減倉、資金費結算、mark price 強平，圖表有十字游標、O/H/L/C 讀數同可拖拉縮放嘅價格軸，檢討有完整指標與蒙特卡羅穩健性參考。強平仍是隔離教學近似，不是交易所公式，也不是官方評測結果。
 
 儲存庫：<https://github.com/Kinfxhk/perpdrill>
 
@@ -124,7 +124,7 @@ npm start
 
 Local-first educational simulator and replay desk for crypto perpetuals and prop-style rules. It is not an exchange client and it does not send live orders.
 
-**Status: 1.2.0 practice desk.** Generate synthetic data or load real quotes (CSV / Binance public data), set rules (custom, community preset, or none), then play bar by bar with market, limit and stop orders, stack and reduce positions, settle funding, liquidate on mark price, read the chart with a crosshair, an O/H/L/C readout, and a draggable price axis, and read the review with full metrics and a Monte Carlo stability gauge. Liquidation is an isolated teaching approximation, not an exchange formula and not an official evaluation result.
+**Status: 1.3.0 practice desk.** Generate synthetic data or load real quotes (CSV / Binance public data), set rules (custom, community preset, or none), then play bar by bar with market, limit and stop orders, stack and reduce positions, settle funding, liquidate on mark price, read the chart with a crosshair, an O/H/L/C readout, and a draggable price axis, and read the review with full metrics and a Monte Carlo stability gauge. Liquidation is an isolated teaching approximation, not an exchange formula and not an official evaluation result.
 
 Repository: <https://github.com/Kinfxhk/perpdrill>
 

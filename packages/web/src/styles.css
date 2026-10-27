@@ -1074,6 +1074,34 @@ td.empty {
   font-size: 10px;
 }
 
+/* Live price of the last bar: a dashed hairline and a filled tag on the axis. */
+.last-price {
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.last-price.is-up {
+  stroke: var(--long);
+}
+
+.last-price.is-down {
+  stroke: var(--short);
+}
+
+.last-price-tag.is-up {
+  fill: var(--long);
+}
+
+.last-price-tag.is-down {
+  fill: var(--short);
+}
+
+.last-price-text {
+  fill: var(--bg);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
 .speed-select {
   min-width: 60px;
 }
