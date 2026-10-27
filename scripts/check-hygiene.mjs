@@ -75,7 +75,7 @@ for (const phrase of ["Trading Power", "Liq. Price (Mark)", "Account Health", "L
     failures.push(`packages/core/src/types.ts is missing label ${phrase}`);
   }
 }
-for (const phrase of ["BUYING_POWER_PCTS", "disabled: true", "legend-liq", "AGPL"]) {
+for (const phrase of ["BUYING_POWER_PCTS", 'className: "orders"', "legend-liq", "AGPL"]) {
   if (!desk.includes(phrase)) {
     failures.push(`packages/web/src/desk.ts is missing ${phrase}`);
   }

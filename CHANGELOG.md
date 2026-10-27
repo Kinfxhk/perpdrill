@@ -25,6 +25,12 @@
   bars, clock-aligned, including a still-forming last bar. A finer chart, or
   one the bar size does not divide, stays disabled instead of relabeling the
   same candles. Split opens a second pane on that same sample.
+- The ticket places limit and stop orders beside market. A limit fills
+  intrabar at its own price once a bar touches it; a stop triggers on the
+  high or low and fills with the same impact as a market entry, gapped
+  triggers filling at the open. Working orders list in the ticket with
+  cancel, and a market entry cancels them. A single-position desk: orders
+  are only accepted while flat.
 - The desk is responsive across phone, tablet, and desktop. Under 900px the
   order ticket and blotter fold into an off-canvas drawer opened from the
   header, and the replay row becomes a fixed bottom trade bar with side,

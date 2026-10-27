@@ -162,6 +162,8 @@ type DeskState = {
   side: Side;
   leverage: number;
   powerPct: BuyingPowerPct;
+  orderType: "market" | "limit" | "stop";
+  orderPriceText: string;
   slipToleranceBps: number;
   realizedImpactBps: number;
   cursor: number;
@@ -275,6 +277,8 @@ function rejectKey(reason: RejectReason): MessageKey {
       return "reject.market";
     case "invalid-bracket":
       return "reject.bracket";
+    case "invalid-price":
+      return "reject.price";
     default: {
       const unexpected: never = reason;
       throw new Error(`unexpected reject ${String(unexpected)}`);
@@ -315,6 +319,10 @@ function fillKey(kind: FillKind): MessageKey {
       return "history.breach";
     case "liquidation":
       return "history.liquidation";
+    case "limit":
+      return "history.limit";
+    case "stop-entry":
+      return "history.stopEntry";
     default: {
       const unexpected: never = kind;
       throw new Error(`unexpected fill ${String(unexpected)}`);
@@ -365,6 +373,8 @@ export function mountDesk(root: HTMLElement): void {
     side: "long",
     leverage: 10,
     powerPct: 25,
+    orderType: "market",
+    orderPriceText: "",
     slipToleranceBps: DEFAULT_SLIP_TOLERANCE_BPS,
     realizedImpactBps: DEFAULT_REALIZED_IMPACT_BPS,
     cursor: 0,
@@ -720,19 +730,6 @@ export function mountDesk(root: HTMLElement): void {
     const value = Number(text.trim().replace(/,/g, ""));
     return text.trim().length === 0 || !Number.isFinite(value) || value <= 0 ? null : value;
   };
-
-  function disabledButton(text: string, className: string, current = false): HTMLButtonElement {
-    const node = el("button", {
-      className,
-      text,
-      disabled: true,
-      attrs: { type: "button", title: t("disabled.control") },
-    });
-    if (current) {
-      node.setAttribute("aria-current", "page");
-    }
-    return node;
-  }
 
   function actionButton(text: string, className: string, onClick: () => void): HTMLButtonElement {
     const node = el("button", { className, text, attrs: { type: "button" } });
@@ -1850,9 +1847,10 @@ export function mountDesk(root: HTMLElement): void {
           "aria-label": label,
         },
       });
+      // No render here: rebuilding mid-click swallows the submit that follows.
+      // State persists and the next render (from the click) shows the value.
       input.addEventListener("change", () => {
         set(input.value);
-        render();
       });
       return el("label", { className: "field" }, [el("span", { text: label }), input]);
     };
@@ -1995,10 +1993,34 @@ export function mountDesk(root: HTMLElement): void {
       el("div", { className: "ticket-scroll" }, [
         el("p", { className: "ticket-note", text: t("ticket.note") }),
         el("div", { className: "side-row" }, [pressSide("long"), pressSide("short")]),
-        el("div", { className: "type-row" }, [
-          el("span", { className: "chip is-current", text: t("type.market") }),
-          disabledButton(t("type.limit"), "chip"),
-        ]),
+        ...(view.frame.position === null
+          ? [
+              el(
+                "div",
+                { className: "type-row" },
+                (["market", "limit", "stop"] as const).map((kind) =>
+                  actionButton(
+                    t(`type.${kind}`),
+                    kind === state.orderType ? "chip is-current" : "chip",
+                    () => {
+                      state.orderType = kind;
+                      if (kind !== "market" && state.orderPriceText === "") {
+                        state.orderPriceText = view.money(view.frame.mark);
+                      }
+                      render();
+                    },
+                  ),
+                ),
+              ),
+              ...(state.orderType === "market"
+                ? []
+                : [
+                    priceInput("order-price", t("field.price"), state.orderPriceText, (value) => {
+                      state.orderPriceText = value;
+                    }),
+                  ]),
+            ]
+          : []),
         el("label", { className: "field" }, [el("span", { text: t("field.leverage") }), leverage]),
         el("p", {
           className: "hint",
@@ -2022,6 +2044,28 @@ export function mountDesk(root: HTMLElement): void {
         percents,
         bracketRow,
         ...(updateBracket === null ? [] : [updateBracket]),
+        ...(view.frame.pendingOrders.length === 0
+          ? []
+          : [
+              el("section", { className: "orders", attrs: { "aria-label": t("orders.title") } }, [
+                el("h2", { text: t("orders.title") }),
+                ...view.frame.pendingOrders.map((order) =>
+                  el("div", { className: "order-row" }, [
+                    el("span", {
+                      className: "mono",
+                      text: `${t(`type.${order.kind}`)} ${order.side === "long" ? t("side.long") : t("side.short")} @ ${view.money(order.price)}`,
+                    }),
+                    actionButton(t("orders.cancel"), "ghost", () => {
+                      state.actions = state.actions.filter(
+                        (item) =>
+                          !(item.kind === order.kind && item.barIndex === order.placedAtBar),
+                      );
+                      render();
+                    }),
+                  ]),
+                ),
+              ]),
+            ]),
         quoteRow(t("power.label"), view.money(view.tradingPower)),
         quoteRow(t("est.fee"), view.previewFee),
         quoteRow(
@@ -2099,6 +2143,21 @@ export function mountDesk(root: HTMLElement): void {
 
   function commitOpenOrClose(): void {
     if (currentFrame().position === null) {
+      if (state.orderType !== "market") {
+        commit({
+          kind: state.orderType,
+          barIndex: state.cursor,
+          side: state.side,
+          leverage: state.leverage,
+          powerPct: state.powerPct,
+          price: parsePrice(state.orderPriceText) ?? Number.NaN,
+          slipToleranceBps: state.slipToleranceBps,
+          realizedImpactBps: state.realizedImpactBps,
+          stopLoss: parsePrice(state.stopLossText),
+          takeProfit: parsePrice(state.takeProfitText),
+        });
+        return;
+      }
       commit({
         kind: "open",
         barIndex: state.cursor,
@@ -2124,9 +2183,11 @@ export function mountDesk(root: HTMLElement): void {
     const label =
       frame.position !== null
         ? t("submit.close")
-        : state.side === "long"
-          ? t("submit.long")
-          : t("submit.short");
+        : state.orderType !== "market"
+          ? t("submit.place")
+          : state.side === "long"
+            ? t("submit.long")
+            : t("submit.short");
     const className =
       frame.position !== null
         ? "submit"
