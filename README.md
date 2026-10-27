@@ -8,6 +8,34 @@
 
 線上版面（GitHub Pages，與本機同一版本；手機、平板、桌面三種版面）：<https://kinfxhk.github.io/perpdrill/>。由 `main` 的 Pages workflow 部署。
 
+## 快速上手（圖解）
+
+<sub>所有截圖使用生成的合成示範資料，並非真實市價。</sub>
+
+1. **設定 → 開始回測**：揀市場、時框、K 線數量同規則（自訂／社群預設／無規則）。資料源可揀合成、CSV 檔案或 Binance 實時行情。撳 **Start backtest**。
+
+   ![設定畫面](docs/shot-setup.png)
+
+2. **3-2-1 倒數**：每組資料第一次開始前倒數 3 秒，可以 **Skip**（立即開始）或 **Cancel**（返回設定）。
+
+   ![倒數](docs/shot-countdown.png)
+
+3. **練習台**：左邊圖表（滾輪縮放、拖曳平移、Split 分割雙圖、切時框），右邊落單票（市價／限價／觸價、槓桿、滑點上限、TP/SL），下方持倉／成交／規則／檢討分頁。
+
+   ![練習台](docs/shot-desk.png)
+
+4. **落單**：揀方向（Long/Short）、數量（交易力 25–100%）、單型。限價／觸價單會掛喺 **Working orders**，隨時可取消。持倉之後：同向落單＝**加倉**（平均成本），反向＝**反手**，收市用 **25/50/75/100%** 分檔平倉。
+
+   ![落單票與掛單](docs/shot-orders.png)
+
+5. **檢討**：權益曲線、勝率、盈虧比、Sharpe／Sortino／Calmar、手續費／持倉成本／資金費分列，同蒙特卡羅穩健性參考。
+
+   ![檢討](docs/shot-review.png)
+
+6. **手機都玩到**：窄屏圖表優先、落單票同持倉收喺側邊抽屜（**Panel** 掣）、底部固定交易列。
+
+   ![手機版面](docs/shot-phone.png)
+
 ## 這是什麼
 
 perpdrill 想成為一個開源、在瀏覽器裡就能用的永續合約練習台：歷史 K 線逐根前進、用保證金／槓桿／資金費或廠商 swap／強平來記帳，並套上可匯出的規則集。概念上承接 [CandleDrill](https://github.com/Kinfxhk/candledrill)（AGPL-3.0-or-later）的回放、OHLC 成交與規則評估想法。介面、色盤與期貨合約模型不沿用 CandleDrill。歸屬寫在 `NOTICE`。
@@ -93,6 +121,34 @@ Local-first educational simulator and replay desk for crypto perpetuals and prop
 Repository: <https://github.com/Kinfxhk/perpdrill>
 
 Online desk (GitHub Pages, the same build; phone, tablet and desktop layouts): <https://kinfxhk.github.io/perpdrill/>. The Pages workflow on `main` deploys it.
+
+## Quick start (pictured)
+
+<sub>All screenshots use generated synthetic sample data, not real prices.</sub>
+
+1. **Set up, then Start backtest**: pick the market, timeframe, bar count and rules (custom / community preset / none). The data source can be synthetic, a CSV file, or live Binance quotes.
+
+   ![Setup screen](docs/shot-setup.png)
+
+2. **3-2-1 countdown**: the first run of each data set counts down three seconds. **Skip** starts at once; **Cancel** returns to setup.
+
+   ![Countdown](docs/shot-countdown.png)
+
+3. **The desk**: chart on the left (wheel zoom, drag pan, Split dual pane, timeframe chips), order ticket on the right (market / limit / stop, leverage, max slip, TP/SL), and the positions / fills / rules / review tabs below.
+
+   ![Practice desk](docs/shot-desk.png)
+
+4. **Orders**: pick a side (Long/Short), size (25–100% of trading power) and order type. Limit and stop orders sit in **Working orders** until filled or cancelled. While holding: same side adds (averaged entry), opposite side reverses, and the close row flattens 25/50/75/100% at a time.
+
+   ![Ticket and working orders](docs/shot-orders.png)
+
+5. **Review**: equity curve, win rate, profit factor, Sharpe/Sortino/Calmar, the fees/carry/funding split, and a Monte Carlo stability gauge.
+
+   ![Review](docs/shot-review.png)
+
+6. **Phone included**: narrow screens put the chart first, fold ticket and blotter into a side drawer (**Panel**), and pin the trade bar to the bottom.
+
+   ![Phone layout](docs/shot-phone.png)
 
 ## What it is
 
