@@ -767,6 +767,14 @@ output {
   border-top: 1px solid var(--line);
 }
 
+.close-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 6px 0;
+}
+
 .orders {
   margin-top: 4px;
   padding-top: 8px;
