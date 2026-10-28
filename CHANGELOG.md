@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- A daily challenge freezes one round per UTC day: everyone gets the same
+  seeded bars and the same rule set, so two runs can be compared. The browser
+  keeps one ranked attempt per day plus a day streak, and `?c=YYYY-MM-DD`
+  opens that exact round for someone else. The result copies as one line with
+  the drawdown and the bars used. Nothing leaves the browser: this is a local
+  record, not a verified ranking.
+
 ## 1.3.0 — 2026-10-27
 
 - The forming candle now prints four shapes instead of three: the open, the

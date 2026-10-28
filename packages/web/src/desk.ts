@@ -112,6 +112,20 @@ import {
   type Theme,
 } from "./i18n.ts";
 import { LIVE_PAIRS, fetchLiveKlines, isLivePair, type LivePair } from "./live-data.ts";
+import {
+  challengeFor,
+  challengeFromSearch,
+  challengeHref,
+  challengeSetup,
+  dailyStreak,
+  matchesChallenge,
+  readDailyResults,
+  writeDailyResult,
+  type Challenge,
+  type ChallengeOutcome,
+  type ChallengeResult,
+  type DailyResults,
+} from "./challenge.ts";
 import { loadCommunityPresets } from "./preset-loader.ts";
 import {
   MAX_RULE_DRAWDOWN_PCT,
@@ -172,6 +186,9 @@ type DeskState = {
   theme: Theme;
   screen: "setup" | "play";
   setup: SessionSetup;
+  /** Frozen daily round this run belongs to, or null for free practice. */
+  challenge: Challenge | null;
+  dailyResults: DailyResults;
   series: readonly Bar[];
   importedBars: readonly Bar[];
   /** Shown in the market bar instead of the sample name when imported. */
@@ -410,11 +427,16 @@ function healthRatio(frame: Frame): number {
 
 export function mountDesk(root: HTMLElement): void {
   const stored = readStoredSetup();
+  // A shared challenge link lands on that frozen round, not on the stored setup.
+  const linked = challengeFromSearch(window.location.search);
+  const opening = linked === null ? stored : challengeSetup(linked, stored);
   const state: DeskState = {
     lang: readStoredLang(),
     theme: readStoredTheme(),
     screen: "setup",
-    setup: stored,
+    setup: opening,
+    challenge: linked,
+    dailyResults: readDailyResults(window.localStorage),
     series: [],
     importedBars: [],
     dataLabel: null,
@@ -426,7 +448,7 @@ export function mountDesk(root: HTMLElement): void {
     stopLossText: "",
     takeProfitText: "",
     endedAt: null,
-    market: stored.market,
+    market: opening.market,
     side: "long",
     leverage: 10,
     powerPct: 25,
@@ -450,8 +472,8 @@ export function mountDesk(root: HTMLElement): void {
     donchianVisible: false,
     splitChart: false,
     drawerOpen: false,
-    primaryTf: stored.timeframeMin,
-    secondaryTf: stored.timeframeMin,
+    primaryTf: opening.timeframeMin,
+    secondaryTf: opening.timeframeMin,
   };
   let indicatorsOpen = false;
   let noticesOpen = false;
@@ -478,6 +500,32 @@ export function mountDesk(root: HTMLElement): void {
 
   const t = (key: MessageKey): string => translate(state.lang, key);
   const locale = (): string => numberLocale(state.lang);
+  // Clipboard needs a secure context; a blocked copy still shows the text to select.
+  const copyText = (text: string): void => {
+    void navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        toast(t("challenge.copied"), "info");
+      })
+      .catch(() => {
+        toast(text, "info");
+      });
+  };
+  const outcomeLabel = (outcome: ChallengeOutcome): string =>
+    outcome === "pass"
+      ? t("review.passed")
+      : outcome === "fail"
+        ? t("review.failed")
+        : t("challenge.unfinished");
+  /** One line a player can paste into a chat, plus the link that rebuilds the round. */
+  const challengeLine = (challenge: Challenge, result: ChallengeResult): string =>
+    [
+      `${t("challenge.title")} ${challenge.day}`,
+      `${challenge.market} ${formatTimeframe(challenge.timeframeMin)}`,
+      `${outcomeLabel(result.outcome)} · ${t("review.maxDd")} ${formatPct(result.maxDrawdownPct, locale())} · ${result.bars} ${t("setup.bars")}`,
+      challengeHref(challenge, window.location.href),
+    ].join("\n");
+
   const presetFor = (setup: SessionSetup): PracticePreset | null => {
     switch (setup.rulesMode) {
       case "none":
@@ -655,6 +703,29 @@ export function mountDesk(root: HTMLElement): void {
     render();
   };
 
+  /** Keep the first settled attempt of the day; later replays stay practice. */
+  const recordChallenge = (frame: Frame): void => {
+    const challenge = state.challenge;
+    if (challenge === null || !matchesChallenge(state.setup, challenge)) {
+      return;
+    }
+    if (state.dailyResults[challenge.day] !== undefined) {
+      return;
+    }
+    const outcome: ChallengeOutcome =
+      frame.phase === "target" ? "pass" : frame.phase === "practice" ? "unfinished" : "fail";
+    const metrics = reviewMetrics({
+      fills: frame.fills,
+      equityCurve: frame.equityCurve,
+      startingBalance: startingBalance(),
+    });
+    state.dailyResults = writeDailyResult(window.localStorage, challenge.day, {
+      outcome,
+      maxDrawdownPct: metrics.maxDrawdownPct,
+      bars: Math.max(0, state.cursor - firstCursor()),
+    });
+  };
+
   /** Freeze the session when the account fails, passes or the data runs out. */
   const settleEnd = (): void => {
     if (state.endedAt !== null) {
@@ -666,6 +737,7 @@ export function mountDesk(root: HTMLElement): void {
       pausePlayback();
       state.tab = "review";
       state.drawerOpen = true;
+      recordChallenge(frame);
     }
   };
 
@@ -1549,6 +1621,41 @@ export function mountDesk(root: HTMLElement): void {
       ],
     );
 
+    const today = challengeFor();
+    // A shared link keeps its own round; otherwise the card is today's round.
+    const shown = state.challenge ?? today;
+    const shownResult = state.dailyResults[shown.day];
+    const streak = dailyStreak(state.dailyResults, today.day);
+    const challengeCard = el(
+      "section",
+      { className: "setup-card", attrs: { "aria-label": t("challenge.title") } },
+      [
+        el("h2", { text: t("challenge.title") }),
+        el("p", { className: "hint", text: t("challenge.note") }),
+        quoteRow(t("setup.market"), sampleMarketLabel(state.lang, shown.market)),
+        quoteRow(t("setup.timeframe"), formatTimeframe(shown.timeframeMin)),
+        quoteRow(
+          t("challenge.result"),
+          shownResult === undefined
+            ? `${shown.day} · ${t("challenge.fresh")}`
+            : `${shown.day} · ${outcomeLabel(shownResult.outcome)} · ${t("review.maxDd")} ${formatPct(shownResult.maxDrawdownPct, locale())}`,
+        ),
+        ...(streak > 1 ? [quoteRow(t("challenge.streak"), String(streak))] : []),
+        el("div", { className: "review-actions" }, [
+          actionButton(t("challenge.start"), "submit submit-long", () => {
+            state.challenge = shown;
+            beginSession(challengeSetup(shown, state.setup));
+          }),
+          actionButton(t("challenge.link"), "ghost", () => {
+            copyText(
+              shownResult === undefined
+                ? challengeHref(shown, window.location.href)
+                : challengeLine(shown, shownResult),
+            );
+          }),
+        ]),
+      ],
+    );
     const presetBlocked =
       setup.rulesMode === "preset" &&
       state.presets.find((item) => item.id === (setup.presetId ?? state.presets[0]?.id)) ===
@@ -1564,7 +1671,7 @@ export function mountDesk(root: HTMLElement): void {
       start.disabled = true;
     }
     return el("main", { className: "setup" }, [
-      el("div", { className: "setup-grid" }, [data, rulesCard]),
+      el("div", { className: "setup-grid" }, [challengeCard, data, rulesCard]),
       el("p", { className: "hint", text: t("setup.countdownHint") }),
       start,
     ]);
@@ -2978,6 +3085,28 @@ export function mountDesk(root: HTMLElement): void {
               ],
         ),
       ]),
+      ...(() => {
+        const challenge = state.challenge;
+        const result = challenge === null ? undefined : state.dailyResults[challenge.day];
+        if (challenge === null || result === undefined) {
+          return [];
+        }
+        return [
+          el("div", { className: "monte-carlo", attrs: { "aria-label": t("challenge.result") } }, [
+            el("h3", { text: `${t("challenge.result")} · ${challenge.day}` }),
+            el("div", { className: "review-grid" }, [
+              stat(t("challenge.outcome"), outcomeLabel(result.outcome)),
+              stat(t("review.maxDd"), formatPct(result.maxDrawdownPct, locale())),
+              stat(t("setup.bars"), String(result.bars)),
+            ]),
+            el("div", { className: "review-actions" }, [
+              actionButton(t("challenge.link"), "ghost", () => {
+                copyText(challengeLine(challenge, result));
+              }),
+            ]),
+          ]),
+        ];
+      })(),
       el("div", { className: "review-actions" }, [
         actionButton(t("review.replaySame"), "ghost", () => {
           beginSession(state.setup);
