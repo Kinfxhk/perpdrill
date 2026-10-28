@@ -50,6 +50,8 @@ perpdrill 想成為一個開源、在瀏覽器裡就能用的永續合約練習�
 
 練習台可以逐步播放合成 K 線（1 分、3 分、5 分、15 分、1 小時、4 小時）、用 Trading Power 的 25%／50%／75%／100% 下市價單、看持倉與損益、預估強平價（標記）與 Liq Risk，並在圖上畫進場線與強平線。圖表可以把同一組 K 線往上合併，或上下分割成兩張；比樣本更細的週期不會假造。滑點上限預設 75 bps（可調 50–100），模擬衝擊預設 25 bps，超過上限就拒絕。維持保證金是初始保證金的一半。Fail／回撤線不跟強平線共用。
 
+設定頁開頭有一局每日挑戰：同一個 UTC 日所有人拿到同一段 K 線、同一套規則，每日只記一次成績，並可以把同一局的連結（`?c=YYYY-MM-DD`）貼給朋友，對方一開就站在同一段數據上。成績留在瀏覽器本機，未經伺服器驗證。
+
 ## 本地檢查
 
 需要 Node.js 22 或更新（見 `.nvmrc`）。
@@ -171,6 +173,8 @@ Generate data offers **four samples: SYNTH-NQ, SYNTH-GC, SYNTH-ES and SYNTH-BTC*
 perpdrill aims to be an open-source browser desk: step historical bars, account with margin, leverage, funding or a firm swap, and liquidation, then evaluate an exportable rule set. Replay, OHLC-style fills, and rule evaluation are conceptual lineage from [CandleDrill](https://github.com/Kinfxhk/candledrill) (AGPL-3.0-or-later). The interface, palette, and futures contract model are not taken from CandleDrill. See `NOTICE`.
 
 The desk steps seeded synthetic bars at 1m, 3m, 5m, 15m, 1h, or 4h, sizes market orders at 25% / 50% / 75% / 100% of Trading Power, and shows the position, PnL, Est. Liq. Price (Mark), and Liq Risk. The chart can resample those bars to a coarser timeframe or split into two panes. It does not invent a finer timeframe than the sample. The chart draws Entry and Liquidation; Fail / drawdown stays on its own line. Max slip defaults to 75 bps (adjustable 50–100). Realized impact defaults to 25 bps and a larger impact is rejected. Maintenance is half of initial margin.
+
+The setup screen opens with one daily challenge: everyone on the same UTC day gets the same seeded bars and the same rules, one attempt is recorded per day, and a `?c=YYYY-MM-DD` link drops someone onto that exact round. The record stays in the browser and is not server-verified.
 
 ## Check locally
 
