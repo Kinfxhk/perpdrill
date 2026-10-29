@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.3.3 — 2026-10-29
+
+- The daily round rotates 1m, 5m and 15m only. An hourly round made a one-day
+  challenge feel like watching paint dry.
+
 ## 1.3.2 — 2026-10-29
 
 - The daily challenge now runs the campaign exam rules (50,000 account, +3,000

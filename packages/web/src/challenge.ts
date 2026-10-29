@@ -19,7 +19,8 @@ export const CHALLENGE_PARAM = "c";
 
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 /** Rotation keeps the desk from being the same market every day. */
-const TIMEFRAMES: readonly SyntheticTimeframe[] = [15, 5, 60];
+// Fast timeframes only: an hour bar makes a one-day round feel like waiting.
+const TIMEFRAMES: readonly SyntheticTimeframe[] = [1, 5, 15];
 
 /** FNV-1a. Stable across runs and browsers; the day string is the whole input. */
 function fnv1a(text: string): number {
