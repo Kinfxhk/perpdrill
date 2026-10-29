@@ -10,6 +10,6 @@
     "listen": "node --experimental-strip-types src/index.ts listen"
   },
   "dependencies": {
-    "@perpdrill/core": "1.3.0"
+    "@perpdrill/core": "1.3.1"
   }
 }
