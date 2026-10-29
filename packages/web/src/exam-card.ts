@@ -43,13 +43,7 @@ export function showExamCard(options: Options): () => void {
   const cert = el("div", "exam-cert");
   cert.append(
     el("p", "exam-kicker", `Exam 50K · ${EXAM_VERSION}`),
-    el(
-      "h2",
-      "exam-heading",
-      options.result.tier === "distinction"
-        ? `${t("exam.cert")} · ${t("exam.distinction")}`
-        : t("exam.cert"),
-    ),
+    el("h2", "exam-heading", t("exam.cert")),
     el("p", "exam-code", options.result.code),
   );
 

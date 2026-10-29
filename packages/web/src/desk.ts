@@ -721,7 +721,7 @@ export function mountDesk(root: HTMLElement): void {
     render();
   };
 
-  /** Keep the first settled attempt of the day; later replays stay practice. */
+  /** Only reaching the target consumes the day; a breach or a manual end stays practice. */
   const recordChallenge = (frame: Frame): void => {
     const challenge = state.challenge;
     if (challenge === null || !matchesChallenge(state.setup, challenge)) {
@@ -730,8 +730,10 @@ export function mountDesk(root: HTMLElement): void {
     if (state.dailyResults[challenge.day] !== undefined) {
       return;
     }
-    const outcome: ChallengeOutcome =
-      frame.phase === "target" ? "pass" : frame.phase === "practice" ? "unfinished" : "fail";
+    if (frame.phase !== "target") {
+      return;
+    }
+    const outcome: ChallengeOutcome = "pass";
     const metrics = reviewMetrics({
       fills: frame.fills,
       equityCurve: frame.equityCurve,
