@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.3.5 — 2026-10-29
+
+- The submitted score is now one checksummed code (`KFX1|…`) instead of a set of
+  editable number fields: the form only takes email, that code and consent.
+  Editing any value invalidates the checksum.
+
 ## 1.3.4 — 2026-10-29
 
 - The certificate submission now also sends max leverage, win rate and

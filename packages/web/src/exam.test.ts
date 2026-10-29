@@ -7,6 +7,7 @@ import {
   examResult,
   examSubmitUrl,
   examTier,
+  examTokenValid,
   maxLeverage,
   rewardRisk,
 } from "./exam.ts";
@@ -52,7 +53,7 @@ describe("exam result", () => {
     expect(a.code).toMatch(/^EXAM-v1-[0-9A-F]{8}$/);
   });
 
-  it("prefills every score field and leaves only the email to the respondent", () => {
+  it("sends one checksummed code instead of editable numbers", () => {
     const result = examResult({
       net: 3_050,
       maxDrawdownUsd: 900,
@@ -61,19 +62,28 @@ describe("exam result", () => {
       rrr: 1.8,
       lots: "2.4×",
     });
-    const url = new URL(examSubmitUrl(result, "PerpDrill"));
+    const url = new URL(examSubmitUrl(result));
     expect(url.origin + url.pathname).toBe(EXAM_FORM_URL);
-    const values = [...url.searchParams.values()];
-    expect(values).toContain("PerpDrill");
-    expect(values).toContain("Distinction 優異（回撤 ≤ 1,000 且 ≥ 10 筆交易）");
-    expect(values).toContain("3050");
-    expect(values).toContain("900");
-    expect(values).toContain("12");
-    expect(values).toContain("58.3");
-    expect(values).toContain("1.8");
-    expect(values).toContain("2.4×");
-    expect(values).toContain(result.code);
-    expect(url.searchParams.has("entry.867628570")).toBe(false); // email stays manual
+    expect([...url.searchParams.keys()]).toEqual(["usp", "entry.1153110697"]);
+    const token = url.searchParams.get("entry.1153110697") ?? "";
+    expect(token.split("|").slice(0, 10)).toEqual([
+      "KFX1",
+      "PD",
+      "DIST",
+      "3050",
+      "900",
+      "12",
+      "58.3",
+      "1.8",
+      "2.4",
+      result.code,
+    ]);
+    expect(examTokenValid(token)).toBe(true);
+
+    const fields = token.split("|");
+    const tampered = [...fields.slice(0, 3), "99999", ...fields.slice(4)].join("|");
+    expect(examTokenValid(tampered)).toBe(false);
+    expect(examTokenValid("")).toBe(false);
   });
 });
 
