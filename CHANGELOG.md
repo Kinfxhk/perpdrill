@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.3.11 — 2026-10-29
+
+- The daily card says when the round turns over (08:00 HKT, UTC midnight), so a
+  player does not discover the reset by losing an attempt.
+
 ## 1.3.10 — 2026-10-29
 
 - The account is marked at the bar close, the same price the chart prints: the

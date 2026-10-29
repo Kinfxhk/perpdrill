@@ -1718,6 +1718,7 @@ export function mountDesk(root: HTMLElement): void {
             : `${shown.day} · ${outcomeLabel(shownResult.outcome)} · ${t("review.maxDd")} ${formatPct(shownResult.maxDrawdownPct, locale())}`,
         ),
         ...(streak > 1 ? [quoteRow(t("challenge.streak"), String(streak))] : []),
+        el("p", { className: "hint", text: t("challenge.resetHint") }),
         el("div", { className: "review-actions" }, [
           actionButton(t("challenge.start"), "submit submit-long", () => {
             state.challenge = shown;
