@@ -217,6 +217,7 @@ const en = {
   "review.trades": "Trades",
   "review.winRate": "Win rate",
   "exam.title": "Exam · 50K",
+  "challenge.resetHint": "A new round opens at 08:00 HKT (UTC midnight).",
   "exam.note":
     "50,000 account · +3,000 target · 2,000 static drawdown · 5× cap. Everyone gets the same frozen data.",
   "exam.start": "Start the exam",
@@ -521,6 +522,7 @@ const zhHant = catalog({
   "review.trades": "交易數",
   "review.winRate": "勝率",
   "exam.title": "考試 · 50K",
+  "challenge.resetHint": "每日 08:00（香港時間）換新一局（UTC 00:00）。",
   "exam.note": "賬戶 50,000 · 目標 +3,000 · 靜態回撤 2,000 · 槓桿上限 5×。所有人同一條凍結數據。",
   "exam.start": "開始考試",
   "exam.cert": "模擬考試合格",
@@ -815,6 +817,7 @@ const zhHans = catalog({
   "review.trades": "交易数",
   "review.winRate": "胜率",
   "exam.title": "考试 · 50K",
+  "challenge.resetHint": "每日 08:00（香港时间）换新一局（UTC 00:00）。",
   "exam.note": "账户 50,000 · 目标 +3,000 · 静态回撤 2,000 · 杠杆上限 5×。所有人同一条冻结数据。",
   "exam.start": "开始考试",
   "exam.cert": "模拟考试合格",
@@ -1111,6 +1114,7 @@ const ja = catalog({
   "review.trades": "取引数",
   "review.winRate": "勝率",
   "exam.title": "試験 · 50K",
+  "challenge.resetHint": "毎日 08:00（香港時間／UTC 00:00）に新しいラウンド。",
   "exam.note":
     "口座 50,000 · 目標 +3,000 · 静的ドローダウン 2,000 · レバレッジ上限 5×。全員が同じ固定データ。",
   "exam.start": "試験を開始",
@@ -1411,6 +1415,7 @@ const ko = catalog({
   "review.trades": "거래 수",
   "review.winRate": "승률",
   "exam.title": "시험 · 50K",
+  "challenge.resetHint": "매일 08:00(HKT, UTC 00:00)에 새 라운드가 열립니다.",
   "exam.note":
     "계좌 50,000 · 목표 +3,000 · 정적 드로다운 2,000 · 레버리지 상한 5×. 모두 같은 고정 데이터.",
   "exam.start": "시험 시작",
