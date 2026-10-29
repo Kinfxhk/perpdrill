@@ -88,7 +88,8 @@ describe("daily challenge", () => {
     expect(setup.seed).toBe(challenge.seed);
     expect(setup.market).toBe(challenge.market);
     expect(setup.dataSource).toBe("synthetic");
-    expect(setup.custom).toEqual(DEFAULT_CUSTOM_RULES);
+    expect(setup.rulesMode).toBe("preset");
+    expect(setup.presetId).toBe("exam-50k");
     expect(matchesChallenge(setup, challenge)).toBe(true);
     expect(matchesChallenge({ ...setup, seed: setup.seed + 1 }, challenge)).toBe(false);
     expect(matchesChallenge({ ...setup, dataSource: "imported" }, challenge)).toBe(false);

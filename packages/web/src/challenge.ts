@@ -1,5 +1,6 @@
 import { DEFAULT_SYNTHETIC_BARS, SAMPLE_MARKETS, type SyntheticTimeframe } from "@perpdrill/core";
-import { DEFAULT_CUSTOM_RULES, type SessionSetup } from "./setup.ts";
+import { EXAM_ID } from "./exam.ts";
+import { type SessionSetup } from "./setup.ts";
 
 /**
  * One frozen drill per UTC day. Everyone who opens that day gets the same bars,
@@ -76,9 +77,11 @@ export function challengeSetup(challenge: Challenge, base: SessionSetup): Sessio
     seed: challenge.seed,
     stress: false,
     dataSource: "synthetic",
-    rulesMode: "custom",
-    presetId: null,
-    custom: { ...DEFAULT_CUSTOM_RULES },
+    // This period's special event: the daily round runs the campaign exam rules.
+    rulesMode: "preset",
+    presetId: EXAM_ID,
+    presetTargetPct: null,
+    presetDailyPct: null,
   };
 }
 

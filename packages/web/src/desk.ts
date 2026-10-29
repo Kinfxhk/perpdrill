@@ -129,12 +129,9 @@ import {
 import { loadCommunityPresets } from "./preset-loader.ts";
 import { showExamCard } from "./exam-card.ts";
 import {
-  EXAM,
   examOpen,
   examPreset,
   examResult,
-  examSetup,
-  isExamSetup,
   markSubmitted,
   readBest,
   readSubmitted,
@@ -754,7 +751,12 @@ export function mountDesk(root: HTMLElement): void {
       state.tab = "review";
       state.drawerOpen = true;
       recordChallenge(frame);
-      if (isExamSetup(state.setup) && frame.phase === "target") {
+      const challenge = state.challenge;
+      if (
+        frame.phase === "target" &&
+        challenge !== null &&
+        matchesChallenge(state.setup, challenge)
+      ) {
         const metrics = reviewMetrics({
           fills: frame.fills,
           equityCurve: frame.equityCurve,
@@ -1674,7 +1676,7 @@ export function mountDesk(root: HTMLElement): void {
       { className: "setup-card", attrs: { "aria-label": t("challenge.title") } },
       [
         el("h2", { text: t("challenge.title") }),
-        el("p", { className: "hint", text: t("challenge.note") }),
+        el("p", { className: "hint", text: t("exam.note") }),
         quoteRow(t("setup.market"), sampleMarketLabel(state.lang, shown.market)),
         quoteRow(t("setup.timeframe"), formatTimeframe(shown.timeframeMin)),
         quoteRow(
@@ -1713,24 +1715,8 @@ export function mountDesk(root: HTMLElement): void {
     if (presetBlocked) {
       start.disabled = true;
     }
-    // Campaign exam: frozen rules and data, gone when the campaign ends.
-    const examCard = examOpen()
-      ? el("section", { className: "setup-card", attrs: { "aria-label": t("exam.title") } }, [
-          el("h2", { text: t("exam.title") }),
-          el("p", { className: "hint", text: t("exam.note") }),
-          quoteRow(t("setup.market"), sampleMarketLabel(state.lang, EXAM.market)),
-          quoteRow(t("setup.timeframe"), formatTimeframe(EXAM.timeframeMin)),
-          quoteRow(t("setup.bars"), String(EXAM.bars)),
-          el("div", { className: "review-actions" }, [
-            actionButton(t("exam.start"), "submit submit-long", () => {
-              beginSession(examSetup(state.setup));
-            }),
-          ]),
-        ])
-      : null;
     return el("main", { className: "setup" }, [
       el("div", { className: "setup-grid" }, [challengeCard, data, rulesCard]),
-      ...(examCard === null ? [] : [examCard]),
       el("p", { className: "hint", text: t("setup.countdownHint") }),
       start,
     ]);
