@@ -2211,3 +2211,100 @@ summary:focus-visible {
     transition: none;
   }
 }
+
+/* Campaign exam: victory card. Temporary — removed with the exam module. */
+.exam-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  padding: 20px;
+  overflow-y: auto;
+  background: rgb(var(--bg-rgb) / 82%);
+}
+.exam-cert {
+  max-width: 460px;
+  padding: 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  box-shadow: var(--shadow);
+}
+.exam-kicker {
+  margin: 0;
+  color: var(--text-faint);
+  font: 12px/1.4 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.exam-heading {
+  margin: 6px 0 2px;
+  color: var(--accent);
+  font-size: 22px;
+}
+.exam-code {
+  margin: 0 0 14px;
+  color: var(--text-dim);
+  font: 12px var(--mono);
+}
+.exam-rows {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.exam-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--line);
+}
+.exam-row dt {
+  color: var(--text-dim);
+}
+.exam-row dd {
+  margin: 0;
+  font: 600 15px var(--mono);
+}
+.exam-legal {
+  margin: 14px 0 0;
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.exam-note,
+.exam-best,
+.exam-privacy {
+  max-width: 460px;
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+.exam-best {
+  color: var(--accent);
+}
+.exam-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.exam-ready {
+  animation: exam-glow 900ms ease-out 1;
+}
+@keyframes exam-glow {
+  from {
+    box-shadow: 0 0 0 0 rgb(var(--accent-rgb) / 55%);
+  }
+  to {
+    box-shadow: 0 0 0 10px rgb(var(--accent-rgb) / 0%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .exam-ready {
+    animation: none;
+  }
+}

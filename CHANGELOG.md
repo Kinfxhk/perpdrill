@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.3.1 — 2026-10-29
+
+- A one-week campaign exam: one frozen round (SYNTH-NQ, 15m, 600 bars, fixed
+  seed) with a 50,000 account, +3,000 target, 2,000 static max drawdown and a
+  5x leverage cap. Reaching the target shows a simulated certificate; a
+  Distinction needs half the drawdown budget left and at least 10 closed
+  trades. One submission per person, prefilled into the campaign form, and the
+  card counts down without ever navigating away. The entry disappears after
+  2026-11-05, and the module is deleted with it.
+
 - A daily challenge freezes one round per UTC day: everyone gets the same
   seeded bars and the same rule set, so two runs can be compared. The browser
   keeps one ranked attempt per day plus a day streak, and `?c=YYYY-MM-DD`
