@@ -65,13 +65,14 @@ export function showExamCard(options: Options): () => void {
   cert.append(rows, el("p", "exam-legal", t("exam.legal")));
 
   const note = el("p", "exam-note", t("exam.once"));
+  const best = options.best;
   const bestLine =
-    options.best === null
+    best === null
       ? null
       : el(
           "p",
           "exam-best",
-          `${t("exam.best")}: ${EXAM_TIER_LABEL[options.best.tier]} · ${money(options.best.net)}`,
+          `${t("exam.best")}: ${best.tier === null ? "—" : EXAM_TIER_LABEL[best.tier]} · ${money(best.net)}`,
         );
 
   const actions = el("div", "exam-actions");

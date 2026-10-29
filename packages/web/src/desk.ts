@@ -773,21 +773,24 @@ export function mountDesk(root: HTMLElement): void {
           rrr: rewardRisk(metrics.avgWin, metrics.avgLoss),
           lots: leverage === null ? "—" : `${leverage}×`,
         });
-        recordBest(result);
-        showExamCard({
-          result,
-          best: readBest(),
-          submitted: readSubmitted(),
-          open: examOpen(),
-          lang: state.lang,
-          t,
-          onSubmit: () => {
-            markSubmitted(result);
-          },
-          onClose: () => {
-            render();
-          },
-        });
+        // A certificate needs the target, not just the engine's phase.
+        if (result.tier !== null) {
+          recordBest(result);
+          showExamCard({
+            result,
+            best: readBest(),
+            submitted: readSubmitted(),
+            open: examOpen(),
+            lang: state.lang,
+            t,
+            onSubmit: () => {
+              markSubmitted(result);
+            },
+            onClose: () => {
+              render();
+            },
+          });
+        }
       }
     }
   };

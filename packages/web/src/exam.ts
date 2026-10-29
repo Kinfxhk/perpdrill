@@ -61,8 +61,12 @@ export function examPreset(): PracticePreset {
   };
 }
 
-/** Distinction needs half the drawdown budget left over and a real sample of trades. */
-export function examTier(maxDrawdownUsd: number, trades: number): ExamTier {
+/**
+ * A run only counts when it actually made the target; Distinction then needs half the
+ * drawdown budget left over and a real sample of trades.
+ */
+export function examTier(net: number, maxDrawdownUsd: number, trades: number): ExamTier | null {
+  if (!(net >= 3_000)) return null;
   return maxDrawdownUsd <= 1_000 && trades >= 10 ? "distinction" : "pass";
 }
 
@@ -76,7 +80,7 @@ function fnv1a(text: string): number {
 }
 
 export type ExamResult = {
-  readonly tier: ExamTier;
+  readonly tier: ExamTier | null;
   readonly net: number;
   readonly maxDrawdownUsd: number;
   readonly trades: number;
@@ -116,9 +120,9 @@ export function examResult(input: {
   readonly rrr?: number | null;
   readonly lots?: string;
 }): ExamResult {
-  const tier = examTier(input.maxDrawdownUsd, input.trades);
   const net = Math.round(input.net * 100) / 100;
   const maxDrawdownUsd = Math.round(input.maxDrawdownUsd * 100) / 100;
+  const tier = examTier(net, maxDrawdownUsd, input.trades);
   const winRatePct = input.winRatePct ?? null;
   const rrr = input.rrr ?? null;
   const lots = input.lots ?? "—";
@@ -164,6 +168,7 @@ export function examTokenValid(token: string): boolean {
 
 /** One prefilled link: the score travels as a checksummed code, the player types email only. */
 export function examSubmitUrl(result: ExamResult): string {
+  if (result.tier === null) throw new Error("not a passing run");
   const params = new URLSearchParams({
     usp: "pp_url",
     [ENTRY.token]: examToken(result),
@@ -190,7 +195,7 @@ export function readSubmitted(): Submitted | null {
 }
 
 export function markSubmitted(result: ExamResult): Submitted {
-  const submitted: Submitted = { at: Date.now(), tier: result.tier, code: result.code };
+  const submitted: Submitted = { at: Date.now(), tier: result.tier ?? "pass", code: result.code };
   try {
     localStorage.setItem(SUBMITTED_KEY, JSON.stringify(submitted));
   } catch {

@@ -64,6 +64,22 @@ function open(
 }
 
 describe("replay", () => {
+  it("fills a market order at the mark, so a fresh position starts at zero", () => {
+    const series = [bar(0, 10_000), bar(3_600_000, 10_100)];
+    // The desk marks the account on a smoothed index, which lags the close.
+    const marks = [10_400, 10_400];
+    const frame = replaySession({
+      market: "SYNTH-NQ",
+      series,
+      marks,
+      preset: preset({ maxDrawdownPct: 90, profitTargetPct: 50 }),
+      actions: [open(0, 50)],
+      cursor: 0,
+    });
+    expect(frame.fills[0]?.price).toBeCloseTo(10_400, 6);
+    expect(frame.unrealizedPnl).toBeCloseTo(0, 6);
+  });
+
   it("keeps the prop fail price off the liquidation line", () => {
     const series = [bar(0, 10_000), bar(3_600_000, 9_950)];
     const opened = replaySession({
