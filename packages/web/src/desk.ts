@@ -863,11 +863,13 @@ export function mountDesk(root: HTMLElement): void {
           })
         : [];
     {
-      const { index, mark } = syntheticMarks({
+      const { index } = syntheticMarks({
         seed: setup.seed,
         closes: state.series.map((bar) => bar.close),
       });
-      state.marks = mark;
+      // The account, the fills and the chart must read the same price. A smoothed
+      // index used as the mark drifted 1,600+ points from the candles a player sees.
+      state.marks = state.series.map((bar) => bar.close);
       state.indexSeries = index;
     }
     const sourceMin = setup.timeframeMin;
@@ -876,6 +878,9 @@ export function mountDesk(root: HTMLElement): void {
       ? state.secondaryTf
       : sourceMin;
     state.screen = "play";
+    // A scored round pays taker fees, not a 25 bp impact on every fill: twenty
+    // round trips would cost more than the whole drawdown allowance.
+    state.realizedImpactBps = setup.presetId === examPreset().id ? 0 : state.realizedImpactBps;
     resetSession();
     const key = dataKey({ ...setup, market: state.market });
     if (countdownPending(key)) {

@@ -20,7 +20,7 @@ const ENTRY = { token: "entry.1153110697" } as const;
 /** Must equal the option text in the campaign form, or the prefill is dropped. */
 export const EXAM_TIER_LABEL = {
   pass: "Pass 合格",
-  distinction: "Distinction 優異（回撤 ≤ 1,000 且 ≥ 10 筆交易）",
+  distinction: "Distinction 優異（≥ 10 筆交易）",
 } as const;
 
 export type ExamTier = keyof typeof EXAM_TIER_LABEL;
@@ -62,12 +62,12 @@ export function examPreset(): PracticePreset {
 }
 
 /**
- * A run only counts when it actually made the target; Distinction then needs half the
- * drawdown budget left over and a real sample of trades.
+ * A run only counts when it actually made the target; Distinction then needs a real
+ * sample of trades. Drawdown is a ranking input, not a gate.
  */
-export function examTier(net: number, maxDrawdownUsd: number, trades: number): ExamTier | null {
+export function examTier(net: number, trades: number): ExamTier | null {
   if (!(net >= 3_000)) return null;
-  return maxDrawdownUsd <= 1_000 && trades >= 10 ? "distinction" : "pass";
+  return trades >= 10 ? "distinction" : "pass";
 }
 
 function fnv1a(text: string): number {
@@ -122,7 +122,7 @@ export function examResult(input: {
 }): ExamResult {
   const net = Math.round(input.net * 100) / 100;
   const maxDrawdownUsd = Math.round(input.maxDrawdownUsd * 100) / 100;
-  const tier = examTier(net, maxDrawdownUsd, input.trades);
+  const tier = examTier(net, input.trades);
   const winRatePct = input.winRatePct ?? null;
   const rrr = input.rrr ?? null;
   const lots = input.lots ?? "—";

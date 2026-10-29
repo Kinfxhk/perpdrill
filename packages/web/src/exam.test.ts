@@ -36,12 +36,11 @@ describe("exam preset", () => {
 });
 
 describe("exam tier", () => {
-  it("requires the target, then a small drawdown and a real sample of trades", () => {
-    expect(examTier(3_000, 1_000, 10)).toBe("distinction");
-    expect(examTier(3_000, 0, 25)).toBe("distinction");
-    expect(examTier(3_000, 1_001, 25)).toBe("pass");
-    expect(examTier(3_000, 200, 9)).toBe("pass");
-    expect(examTier(2_999, 100, 20)).toBeNull();
+  it("requires the target, then a real sample of trades", () => {
+    expect(examTier(3_000, 10)).toBe("distinction");
+    expect(examTier(5_000, 25)).toBe("distinction");
+    expect(examTier(3_000, 9)).toBe("pass");
+    expect(examTier(2_999, 20)).toBeNull();
   });
 });
 
