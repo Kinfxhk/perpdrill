@@ -80,6 +80,22 @@ describe("replay", () => {
     expect(frame.unrealizedPnl).toBeCloseTo(0, 6);
   });
 
+  it("does not breach on the bar a position opens when the mark lags the close", () => {
+    const series = [bar(0, 10_000), bar(3_600_000, 10_000)];
+    // The mark sits under the 9,500 floor; a close-priced fill would breach instantly.
+    const marks = [9_400, 9_400];
+    const frame = replaySession({
+      market: "SYNTH-NQ",
+      series,
+      marks,
+      preset: preset(),
+      actions: [open(0, 100)],
+      cursor: 0,
+    });
+    expect(frame.phase).toBe("practice");
+    expect(frame.equity).toBeCloseTo(10_000, 6);
+  });
+
   it("keeps the prop fail price off the liquidation line", () => {
     const series = [bar(0, 10_000), bar(3_600_000, 9_950)];
     const opened = replaySession({
