@@ -127,6 +127,19 @@ import {
   type DailyResults,
 } from "./challenge.ts";
 import { loadCommunityPresets } from "./preset-loader.ts";
+import { showExamCard } from "./exam-card.ts";
+import {
+  EXAM,
+  examOpen,
+  examPreset,
+  examResult,
+  examSetup,
+  isExamSetup,
+  markSubmitted,
+  readBest,
+  readSubmitted,
+  recordBest,
+} from "./exam.ts";
 import {
   MAX_RULE_DRAWDOWN_PCT,
   applyPresetChoices,
@@ -533,6 +546,9 @@ export function mountDesk(root: HTMLElement): void {
       case "custom":
         return customPreset(setup.custom);
       case "preset": {
+        if (setup.presetId === examPreset().id) {
+          return examPreset();
+        }
         const found = state.presets.find((item) => item.id === setup.presetId);
         return found === undefined ? null : applyPresetChoices(found, setup);
       }
@@ -738,6 +754,33 @@ export function mountDesk(root: HTMLElement): void {
       state.tab = "review";
       state.drawerOpen = true;
       recordChallenge(frame);
+      if (isExamSetup(state.setup) && frame.phase === "target") {
+        const metrics = reviewMetrics({
+          fills: frame.fills,
+          equityCurve: frame.equityCurve,
+          startingBalance: startingBalance(),
+        });
+        const result = examResult({
+          net: metrics.netPnl,
+          maxDrawdownUsd: (metrics.maxDrawdownPct / 100) * startingBalance(),
+          trades: metrics.trades,
+        });
+        recordBest(result);
+        showExamCard({
+          result,
+          best: readBest(),
+          submitted: readSubmitted(),
+          open: examOpen(),
+          lang: state.lang,
+          t,
+          onSubmit: () => {
+            markSubmitted(result);
+          },
+          onClose: () => {
+            render();
+          },
+        });
+      }
     }
   };
 
@@ -1670,8 +1713,24 @@ export function mountDesk(root: HTMLElement): void {
     if (presetBlocked) {
       start.disabled = true;
     }
+    // Campaign exam: frozen rules and data, gone when the campaign ends.
+    const examCard = examOpen()
+      ? el("section", { className: "setup-card", attrs: { "aria-label": t("exam.title") } }, [
+          el("h2", { text: t("exam.title") }),
+          el("p", { className: "hint", text: t("exam.note") }),
+          quoteRow(t("setup.market"), sampleMarketLabel(state.lang, EXAM.market)),
+          quoteRow(t("setup.timeframe"), formatTimeframe(EXAM.timeframeMin)),
+          quoteRow(t("setup.bars"), String(EXAM.bars)),
+          el("div", { className: "review-actions" }, [
+            actionButton(t("exam.start"), "submit submit-long", () => {
+              beginSession(examSetup(state.setup));
+            }),
+          ]),
+        ])
+      : null;
     return el("main", { className: "setup" }, [
       el("div", { className: "setup-grid" }, [challengeCard, data, rulesCard]),
+      ...(examCard === null ? [] : [examCard]),
       el("p", { className: "hint", text: t("setup.countdownHint") }),
       start,
     ]);
