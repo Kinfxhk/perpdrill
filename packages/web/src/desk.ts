@@ -133,6 +133,8 @@ import {
   examPreset,
   examResult,
   markSubmitted,
+  maxLeverage,
+  rewardRisk,
   readBest,
   readSubmitted,
   recordBest,
@@ -762,10 +764,14 @@ export function mountDesk(root: HTMLElement): void {
           equityCurve: frame.equityCurve,
           startingBalance: startingBalance(),
         });
+        const leverage = maxLeverage(frame.fills, startingBalance());
         const result = examResult({
           net: metrics.netPnl,
           maxDrawdownUsd: (metrics.maxDrawdownPct / 100) * startingBalance(),
           trades: metrics.trades,
+          winRatePct: metrics.winRate === null ? null : Math.round(metrics.winRate * 10) / 10,
+          rrr: rewardRisk(metrics.avgWin, metrics.avgLoss),
+          lots: leverage === null ? "—" : `${leverage}×`,
         });
         recordBest(result);
         showExamCard({

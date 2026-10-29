@@ -7,6 +7,8 @@ import {
   examResult,
   examSubmitUrl,
   examTier,
+  maxLeverage,
+  rewardRisk,
 } from "./exam.ts";
 import { challengeFor, challengeSetup } from "./challenge.ts";
 import { defaultSetup } from "./setup.ts";
@@ -51,7 +53,14 @@ describe("exam result", () => {
   });
 
   it("prefills every score field and leaves only the email to the respondent", () => {
-    const result = examResult({ net: 3_050, maxDrawdownUsd: 900, trades: 12 });
+    const result = examResult({
+      net: 3_050,
+      maxDrawdownUsd: 900,
+      trades: 12,
+      winRatePct: 58.3,
+      rrr: 1.8,
+      lots: "2.4×",
+    });
     const url = new URL(examSubmitUrl(result, "PerpDrill"));
     expect(url.origin + url.pathname).toBe(EXAM_FORM_URL);
     const values = [...url.searchParams.values()];
@@ -60,8 +69,29 @@ describe("exam result", () => {
     expect(values).toContain("3050");
     expect(values).toContain("900");
     expect(values).toContain("12");
+    expect(values).toContain("58.3");
+    expect(values).toContain("1.8");
+    expect(values).toContain("2.4×");
     expect(values).toContain(result.code);
     expect(url.searchParams.has("entry.867628570")).toBe(false); // email stays manual
+  });
+});
+
+describe("exposure and reward-to-risk", () => {
+  it("takes the peak open notional as a multiple of the account", () => {
+    const fills = [
+      { qty: 1, price: 50_000, kind: "open" },
+      { qty: 1, price: 50_000, kind: "open" },
+      { qty: 2, price: 50_000, kind: "close" },
+    ];
+    expect(maxLeverage(fills, 50_000)).toBe(2);
+    expect(maxLeverage([], 50_000)).toBeNull();
+  });
+
+  it("reports average win over average loss", () => {
+    expect(rewardRisk(300, 150)).toBe(2);
+    expect(rewardRisk(300, null)).toBeNull();
+    expect(rewardRisk(0, 150)).toBeNull();
   });
 });
 

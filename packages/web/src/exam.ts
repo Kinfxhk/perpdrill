@@ -12,16 +12,19 @@ export const EXAM_ID = "exam-50k";
 export const EXAM_VERSION = "exam-v1";
 export const EXAM_ENDS_AT = Date.parse("2026-11-05T23:59:59+08:00");
 export const EXAM_FORM_URL =
-  "https://docs.google.com/forms/d/e/1FAIpQLSd5lt961M8uiH8CviqyIksoaWcx_wEGbMBxLRxQrLtICIYXQw/viewform";
+  "https://docs.google.com/forms/d/e/1FAIpQLSdM3UNvQ1_4iEuUCvARbI5aKzycAU1r3MFD58pVvuA_BeDeoQ/viewform";
 
 /** Prefilled answer ids from that form. Change the form, change these. */
 const ENTRY = {
-  tool: "entry.561917348",
-  tier: "entry.1707438033",
-  net: "entry.337949414",
-  maxDd: "entry.412360479",
-  trades: "entry.459475028",
-  code: "entry.723542441",
+  tool: "entry.1388880711",
+  tier: "entry.281015303",
+  net: "entry.92678115",
+  maxDd: "entry.3454493",
+  trades: "entry.816234682",
+  winRate: "entry.542397379",
+  rrr: "entry.85917777",
+  lots: "entry.652454272",
+  code: "entry.973341008",
 } as const;
 
 /** Must equal the option text in the campaign form, or the prefill is dropped. */
@@ -87,23 +90,54 @@ export type ExamResult = {
   readonly net: number;
   readonly maxDrawdownUsd: number;
   readonly trades: number;
+  readonly winRatePct: number | null;
+  readonly rrr: number | null;
+  readonly lots: string;
   readonly code: string;
 };
+
+/** Share of the account one position ever reached, so a heavy run is visible. */
+export function maxLeverage(
+  fills: readonly { qty: number; price: number; kind: string }[],
+  startingBalance: number,
+): number | null {
+  if (startingBalance <= 0) return null;
+  let open = 0;
+  let peak = 0;
+  for (const fill of fills) {
+    if (fill.kind === "open") open += fill.qty;
+    else open = Math.max(0, open - fill.qty);
+    peak = Math.max(peak, open * fill.price);
+  }
+  return peak > 0 ? Math.round((peak / startingBalance) * 100) / 100 : null;
+}
+
+/** Reward-to-risk shown as average win over average loss; null when either side is missing. */
+export function rewardRisk(avgWin: number | null, avgLoss: number | null): number | null {
+  if (avgWin === null || avgLoss === null || avgWin <= 0 || avgLoss <= 0) return null;
+  return Math.round((avgWin / avgLoss) * 100) / 100;
+}
 
 export function examResult(input: {
   readonly net: number;
   readonly maxDrawdownUsd: number;
   readonly trades: number;
+  readonly winRatePct?: number | null;
+  readonly rrr?: number | null;
+  readonly lots?: string;
 }): ExamResult {
   const tier = examTier(input.maxDrawdownUsd, input.trades);
   const net = Math.round(input.net * 100) / 100;
   const maxDrawdownUsd = Math.round(input.maxDrawdownUsd * 100) / 100;
+  const winRatePct = input.winRatePct ?? null;
+  const rrr = input.rrr ?? null;
+  const lots = input.lots ?? "—";
   const code = `EXAM-v1-${fnv1a(`${EXAM_ID}:${net}:${maxDrawdownUsd}:${input.trades}`)
     .toString(16)
     .padStart(8, "0")
     .slice(0, 8)
     .toUpperCase()}`;
-  return { tier, net, maxDrawdownUsd, trades: input.trades, code };
+  return { tier, net, maxDrawdownUsd, trades: input.trades, winRatePct, rrr, lots, code };
 }
 
 /** One prefilled link; the respondent only types their email. */
@@ -115,6 +149,9 @@ export function examSubmitUrl(result: ExamResult, tool: string): string {
     [ENTRY.net]: String(result.net),
     [ENTRY.maxDd]: String(result.maxDrawdownUsd),
     [ENTRY.trades]: String(result.trades),
+    [ENTRY.winRate]: result.winRatePct === null ? "—" : String(result.winRatePct),
+    [ENTRY.rrr]: result.rrr === null ? "—" : String(result.rrr),
+    [ENTRY.lots]: result.lots,
     [ENTRY.code]: result.code,
   });
   return `${EXAM_FORM_URL}?${params.toString()}`;

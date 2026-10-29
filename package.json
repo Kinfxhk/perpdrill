@@ -1,6 +1,6 @@
 {
   "name": "perpdrill",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "private": true,
   "description": "Local-first educational replay desk for crypto perps prop-style rules. Teaching liquidation, slippage gate, and a practice desk.",
   "license": "AGPL-3.0-or-later",

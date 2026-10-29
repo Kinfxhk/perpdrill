@@ -24,7 +24,7 @@ import {
 describe("perpdrill core identity", () => {
   it("names the teaching desk and keeps the ticket labels", () => {
     expect(PRODUCT_NAME).toBe("perpdrill");
-    expect(PRODUCT_VERSION).toBe("1.3.3");
+    expect(PRODUCT_VERSION).toBe("1.3.4");
     expect(ENGINE_STATUS).toBe("teaching");
     expect(LIQUIDATION_MODEL).toBe("isolated-teaching");
     expect(TRADING_POWER_LABEL).toBe("Trading Power");
