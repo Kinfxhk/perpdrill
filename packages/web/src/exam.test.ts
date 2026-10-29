@@ -1,16 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-  EXAM,
   EXAM_ENDS_AT,
   EXAM_FORM_URL,
   examOpen,
   examPreset,
   examResult,
-  examSetup,
   examSubmitUrl,
   examTier,
-  isExamSetup,
 } from "./exam.ts";
+import { challengeFor, challengeSetup } from "./challenge.ts";
 import { defaultSetup } from "./setup.ts";
 
 describe("exam preset", () => {
@@ -22,22 +20,15 @@ describe("exam preset", () => {
     expect(preset.drawdownMode).toBe("static");
     expect(preset.dailyLossLimitPct).toBeNull();
     expect(preset.maxLeverage).toBe(5);
-    expect(preset.markets).toEqual([EXAM.market]);
+    expect(preset.markets).toEqual(["SYNTH-NQ"]);
   });
 
-  it("pins market, timeframe, bars and seed so every entrant gets the same bars", () => {
-    const setup = examSetup(defaultSetup());
-    expect(setup).toMatchObject({
-      market: EXAM.market,
-      timeframeMin: EXAM.timeframeMin,
-      bars: EXAM.bars,
-      seed: EXAM.seed,
-      dataSource: "synthetic",
-      rulesMode: "preset",
-      presetId: "exam-50k",
-    });
-    expect(isExamSetup(setup)).toBe(true);
-    expect(isExamSetup(defaultSetup())).toBe(false);
+  it("is the rule set the daily round runs", () => {
+    const setup = challengeSetup(challengeFor(new Date("2026-10-29T00:00:00Z")), defaultSetup());
+    expect(setup.rulesMode).toBe("preset");
+    expect(setup.presetId).toBe("exam-50k");
+    expect(setup.presetTargetPct).toBeNull();
+    expect(setup.presetDailyPct).toBeNull();
   });
 });
 
@@ -65,7 +56,7 @@ describe("exam result", () => {
     expect(url.origin + url.pathname).toBe(EXAM_FORM_URL);
     const values = [...url.searchParams.values()];
     expect(values).toContain("PerpDrill");
-    expect(values).toContain("Distinction 優異");
+    expect(values).toContain("Distinction 優異（回撤 ≤ 1,000 且 ≥ 10 筆交易）");
     expect(values).toContain("3050");
     expect(values).toContain("900");
     expect(values).toContain("12");

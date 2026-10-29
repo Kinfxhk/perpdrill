@@ -3,7 +3,6 @@ import {
   PROP_RULE_PRESET_SCHEMA_VERSION,
   type PracticePreset,
 } from "@perpdrill/core";
-import type { SessionSetup } from "./setup.ts";
 
 /**
  * The one-week campaign exam. Rules are frozen here, not in a preset file, so the
@@ -25,17 +24,10 @@ const ENTRY = {
   code: "entry.723542441",
 } as const;
 
-/** Frozen data identity: same market, timeframe, bars and seed for every entrant. */
-export const EXAM = {
-  market: "SYNTH-NQ",
-  timeframeMin: 15,
-  bars: 600,
-  seed: 20261105,
-} as const;
-
+/** Must equal the option text in the campaign form, or the prefill is dropped. */
 export const EXAM_TIER_LABEL = {
   pass: "Pass 合格",
-  distinction: "Distinction 優異",
+  distinction: "Distinction 優異（回撤 ≤ 1,000 且 ≥ 10 筆交易）",
 } as const;
 
 export type ExamTier = keyof typeof EXAM_TIER_LABEL;
@@ -68,32 +60,12 @@ export function examPreset(): PracticePreset {
     fundingIntervalHours: null,
     venueFundingChangesBalance: false,
     startingBalanceUsd: 50_000,
-    markets: [EXAM.market],
+    markets: ["SYNTH-NQ"],
     note: "50,000 account. +3,000 target, 2,000 static max drawdown, 5x leverage cap, no daily limit.",
     dailyBase: "equity",
     group: "Exam",
     choices: { profitTargetPct: null, dailyLossLimitPct: null },
   };
-}
-
-export function examSetup(base: SessionSetup): SessionSetup {
-  return {
-    ...base,
-    market: EXAM.market,
-    timeframeMin: EXAM.timeframeMin,
-    bars: EXAM.bars,
-    seed: EXAM.seed,
-    stress: false,
-    dataSource: "synthetic",
-    rulesMode: "preset",
-    presetId: EXAM_ID,
-    presetTargetPct: null,
-    presetDailyPct: null,
-  };
-}
-
-export function isExamSetup(setup: SessionSetup): boolean {
-  return setup.presetId === EXAM_ID;
 }
 
 /** Distinction needs half the drawdown budget left over and a real sample of trades. */
@@ -126,7 +98,7 @@ export function examResult(input: {
   const tier = examTier(input.maxDrawdownUsd, input.trades);
   const net = Math.round(input.net * 100) / 100;
   const maxDrawdownUsd = Math.round(input.maxDrawdownUsd * 100) / 100;
-  const code = `EXAM-v1-${fnv1a(`${EXAM.seed}:${net}:${maxDrawdownUsd}:${input.trades}`)
+  const code = `EXAM-v1-${fnv1a(`${EXAM_ID}:${net}:${maxDrawdownUsd}:${input.trades}`)
     .toString(16)
     .padStart(8, "0")
     .slice(0, 8)

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.3.2 — 2026-10-29
+
+- The daily challenge now runs the campaign exam rules (50,000 account, +3,000
+  target, 2,000 static max drawdown, 5x cap) as this period's special event,
+  instead of a separate exam entry on the setup screen. The certificate still
+  appears when the frozen daily round reaches the target.
+
 ## 1.3.1 — 2026-10-29
 
 - A one-week campaign exam: one frozen round (SYNTH-NQ, 15m, 600 bars, fixed
