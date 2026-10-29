@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.3.10 — 2026-10-29
+
+- The account is marked at the bar close, the same price the chart prints: the
+  smoothed index used as a mark could sit 1,600+ points away from the candles, so
+  entries, P&L and breaches happened at a price nobody could see.
+- A scored round trades at zero realised impact. At 25 bps a 25% position paid
+  ~$156 per fill, so twenty fills cost more than the Distinction drawdown budget.
+- Distinction now only needs the target and ten closed trades; drawdown is a
+  ranking input, not a gate.
+
 ## 1.3.9 — 2026-10-29
 
 - The frozen-round check now also requires the exam preset, so changing the rules
