@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.3.9 — 2026-10-29
+
+- The frozen-round check now also requires the exam preset, so changing the rules
+  mid-round no longer records a daily result or produces a certificate.
+
 ## 1.3.8 — 2026-10-29
 
 - Ending a daily round early now asks first and stays practice: it no longer

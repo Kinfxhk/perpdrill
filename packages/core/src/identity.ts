@@ -1,6 +1,6 @@
 export const PRODUCT_NAME = "perpdrill" as const;
 
-export const PRODUCT_VERSION = "1.3.8" as const;
+export const PRODUCT_VERSION = "1.3.9" as const;
 
 /** Teaching isolated engine. Fills are simulated and are not live orders. */
 export const ENGINE_STATUS = "teaching" as const;
