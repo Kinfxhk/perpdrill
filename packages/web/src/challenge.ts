@@ -104,7 +104,10 @@ export function matchesChallenge(setup: SessionSetup, challenge: Challenge): boo
     setup.market === challenge.market &&
     setup.timeframeMin === challenge.timeframeMin &&
     setup.bars === challenge.bars &&
-    setup.seed === challenge.seed
+    setup.seed === challenge.seed &&
+    // Changing the rules mid-round must not count as the frozen round.
+    setup.rulesMode === "preset" &&
+    setup.presetId === EXAM_ID
   );
 }
 
