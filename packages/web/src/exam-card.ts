@@ -116,7 +116,7 @@ export function showExamCard(options: Options): () => void {
     submit.disabled = true;
     submit.textContent = t("exam.submitted");
     options.onSubmit();
-    window.open(examSubmitUrl(options.result, "PerpDrill"), "_blank", "noopener");
+    window.open(examSubmitUrl(options.result), "_blank", "noopener");
   });
 
   const close = () => {
