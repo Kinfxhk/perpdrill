@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 1.3.7 — 2026-10-29
+
+- Market entries and closes fill at the bar's mark, not at its close. The account
+  is marked on a smoothed index that can sit well behind the close, so opening a
+  position used to book a 2–3% gain or loss instantly — enough to pass or breach a
+  campaign account without trading.
+- The certificate now also requires `net >= 3,000`; a run that only reached the
+  target phase cannot be labelled Pass anymore.
+
 ## 1.3.6 — 2026-10-29
 
 - A daily round now carries about ten days of bars instead of 600: 5,000 at 1m,
