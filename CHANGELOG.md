@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.3.6 — 2026-10-29
+
+- A daily round now carries about ten days of bars instead of 600: 5,000 at 1m,
+  2,880 at 5m, 960 at 15m. Players reported the round ending before someone who
+  was behind could trade back to the target.
+
 ## 1.3.5 — 2026-10-29
 
 - The submitted score is now one checksummed code (`KFX1|…`) instead of a set of

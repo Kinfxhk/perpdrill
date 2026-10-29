@@ -13,6 +13,29 @@ import {
 } from "./challenge.ts";
 import { DEFAULT_CUSTOM_RULES, type SessionSetup } from "./setup.ts";
 
+describe("round length", () => {
+  it("gives every timeframe enough bars to trade back from a drawdown", () => {
+    const days = [
+      "2026-10-26",
+      "2026-10-27",
+      "2026-10-28",
+      "2026-10-29",
+      "2026-10-30",
+      "2026-11-01",
+    ];
+    for (const day of days) {
+      const challenge = challengeForDay(day);
+      if (challenge === null) throw new Error("unreachable day " + day);
+      const expected = new Map<number, number>([
+        [1, 5_000],
+        [5, 2_880],
+        [15, 960],
+      ]).get(challenge.timeframeMin);
+      if (expected !== undefined) expect(challenge.bars).toBe(expected);
+    }
+  });
+});
+
 function fakeStorage(): Storage {
   const items = new Map<string, string>();
   return {
