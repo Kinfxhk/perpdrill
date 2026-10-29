@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.3.8 — 2026-10-29
+
+- Ending a daily round early now asks first and stays practice: it no longer
+  counts as today's scored attempt, and the review says so instead of claiming
+  the data ran out.
+- A certificate closes any open position at the mark before scoring, so net P&L
+  and trade count describe a finished run.
+- The certificate keeps a “form did not open?” link, so a blocked popup can be
+  retried without losing the submission.
+
 ## 1.3.7 — 2026-10-29
 
 - Market entries and closes fill at the bar's mark, not at its close. The account

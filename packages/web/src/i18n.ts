@@ -13,6 +13,10 @@ export const LANG_CHOICES: readonly { readonly lang: Lang; readonly label: strin
 ];
 
 const en = {
+  "replay.endConfirm":
+    "Ending before the target keeps this run out of the daily result. End anyway?",
+  "review.endedByUser": "You ended this run yourself, so it is not counted as today’s result.",
+  "exam.reopen": "Form did not open? Open it again",
   kicker: "Local practice desk",
   "nav.practice": "Practice",
   "nav.markets": "Markets",
@@ -317,6 +321,9 @@ function catalog(messages: Catalog): Catalog {
 }
 
 const zhHant = catalog({
+  "replay.endConfirm": "未達標就結束，這一局不會計入每日成績。仍然結束？",
+  "review.endedByUser": "你手動結束了這一局，所以不計入今日成績。",
+  "exam.reopen": "表單沒開？再開一次",
   kicker: "本機練習台",
   "nav.practice": "練習",
   "nav.markets": "市場",
@@ -608,6 +615,9 @@ const zhHant = catalog({
 });
 
 const zhHans = catalog({
+  "replay.endConfirm": "未达标就结束，这一局不会计入每日成绩。仍然结束？",
+  "review.endedByUser": "你手动结束了这一局，所以不计入今日成绩。",
+  "exam.reopen": "表单没开？再开一次",
   kicker: "本机练习台",
   "nav.practice": "练习",
   "nav.markets": "市场",
@@ -899,6 +909,9 @@ const zhHans = catalog({
 });
 
 const ja = catalog({
+  "replay.endConfirm": "目標未達で終了すると本日の成績に残りません。終了しますか？",
+  "review.endedByUser": "手動で終了したため、本日の成績には入りません。",
+  "exam.reopen": "フォームが開かない？もう一度開く",
   kicker: "ローカル練習デスク",
   "nav.practice": "練習",
   "nav.markets": "市場",
@@ -1195,6 +1208,9 @@ const ja = catalog({
 });
 
 const ko = catalog({
+  "replay.endConfirm": "목표 전에 끝내면 오늘 성적에 포함되지 않습니다. 끝낼까요?",
+  "review.endedByUser": "직접 종료했으므로 오늘 성적에 포함되지 않습니다.",
+  "exam.reopen": "양식이 안 열렸나요? 다시 열기",
   kicker: "로컬 연습 데스크",
   "nav.practice": "연습",
   "nav.markets": "마켓",
