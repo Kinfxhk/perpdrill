@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.3.4 — 2026-10-29
+
+- The certificate submission now also sends max leverage, win rate and
+  reward-to-risk (average win over average loss), so a run that only passed by
+  sizing up is visible in the collected scores.
+
 ## 1.3.3 — 2026-10-29
 
 - The daily round rotates 1m, 5m and 15m only. An hourly round made a one-day
