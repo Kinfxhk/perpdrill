@@ -22,6 +22,16 @@ const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 // Fast timeframes only: an hour bar makes a one-day round feel like waiting.
 const TIMEFRAMES: readonly SyntheticTimeframe[] = [1, 5, 15];
 
+/**
+ * Bars per timeframe so a round lasts roughly the same market time (about ten days
+ * at 5m). A short round ends before a player who is behind can trade back.
+ */
+const BARS_BY_TIMEFRAME: Partial<Record<SyntheticTimeframe, number>> = {
+  1: 5_000, // the generator cap: ~3.5 days
+  5: 2_880,
+  15: 960,
+};
+
 /** FNV-1a. Stable across runs and browsers; the day string is the whole input. */
 function fnv1a(text: string): number {
   let hash = 0x811c9dc5;
@@ -45,11 +55,12 @@ export function challengeForDay(day: string): Challenge | null {
     return null;
   }
   const hash = fnv1a(`perpdrill-daily:${day}`);
+  const timeframeMin = TIMEFRAMES[(hash >>> 8) % TIMEFRAMES.length] ?? 15;
   return {
     day,
     market: SAMPLE_MARKETS[hash % SAMPLE_MARKETS.length] ?? SAMPLE_MARKETS[0],
-    timeframeMin: TIMEFRAMES[(hash >>> 8) % TIMEFRAMES.length] ?? 15,
-    bars: DEFAULT_SYNTHETIC_BARS,
+    timeframeMin,
+    bars: BARS_BY_TIMEFRAME[timeframeMin] ?? DEFAULT_SYNTHETIC_BARS,
     seed: hash,
   };
 }
