@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.3.12 — 2026-10-29
+
+- The target is the only gate: the Distinction tier and its ten-trade requirement
+  are gone, so a run that reaches +3,000 always counts.
+- A breach, a manual end or running out of data no longer uses the day's ranked
+  attempt: only reaching the target records a result.
+
 ## 1.3.11 — 2026-10-29
 
 - The daily card says when the round turns over (08:00 HKT, UTC midnight), so a

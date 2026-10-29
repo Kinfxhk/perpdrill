@@ -18,10 +18,7 @@ export const EXAM_FORM_URL =
 const ENTRY = { token: "entry.1153110697" } as const;
 
 /** Must equal the option text in the campaign form, or the prefill is dropped. */
-export const EXAM_TIER_LABEL = {
-  pass: "Pass 合格",
-  distinction: "Distinction 優異（≥ 10 筆交易）",
-} as const;
+export const EXAM_TIER_LABEL = { pass: "Pass 合格" } as const;
 
 export type ExamTier = keyof typeof EXAM_TIER_LABEL;
 
@@ -62,12 +59,11 @@ export function examPreset(): PracticePreset {
 }
 
 /**
- * A run only counts when it actually made the target; Distinction then needs a real
- * sample of trades. Drawdown is a ranking input, not a gate.
+ * A run only counts when it actually made the target. Drawdown, size and trade count
+ * are ranking inputs, never gates.
  */
-export function examTier(net: number, trades: number): ExamTier | null {
-  if (!(net >= 3_000)) return null;
-  return trades >= 10 ? "distinction" : "pass";
+export function examTier(net: number): ExamTier | null {
+  return net >= 3_000 ? "pass" : null;
 }
 
 function fnv1a(text: string): number {
@@ -122,7 +118,7 @@ export function examResult(input: {
 }): ExamResult {
   const net = Math.round(input.net * 100) / 100;
   const maxDrawdownUsd = Math.round(input.maxDrawdownUsd * 100) / 100;
-  const tier = examTier(net, input.trades);
+  const tier = examTier(net);
   const winRatePct = input.winRatePct ?? null;
   const rrr = input.rrr ?? null;
   const lots = input.lots ?? "—";
@@ -147,7 +143,7 @@ export function examToken(result: ExamResult): string {
   const fields = [
     "KFX1",
     "PD",
-    result.tier === "distinction" ? "DIST" : "PASS",
+    "PASS",
     String(result.net),
     String(result.maxDrawdownUsd),
     String(result.trades),
@@ -187,7 +183,7 @@ export function readSubmitted(): Submitted | null {
     if (typeof raw !== "object" || raw === null) return null;
     const value = raw as Record<string, unknown>;
     if (typeof value.at !== "number" || typeof value.code !== "string") return null;
-    const tier: ExamTier = value.tier === "distinction" ? "distinction" : "pass";
+    const tier: ExamTier = "pass";
     return { at: value.at, tier, code: value.code };
   } catch {
     return null;
@@ -224,10 +220,9 @@ export function readBest(): ExamResult | null {
 export function recordBest(result: ExamResult): void {
   const best = readBest();
   const better =
-    best === null || result.tier !== best.tier
-      ? result.tier === "distinction"
-      : result.maxDrawdownUsd < best.maxDrawdownUsd ||
-        (result.maxDrawdownUsd === best.maxDrawdownUsd && result.net > best.net);
+    best === null ||
+    result.maxDrawdownUsd < best.maxDrawdownUsd ||
+    (result.maxDrawdownUsd === best.maxDrawdownUsd && result.net > best.net);
   if (!better) return;
   try {
     localStorage.setItem(
