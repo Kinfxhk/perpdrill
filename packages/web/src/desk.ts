@@ -213,6 +213,8 @@ type DeskState = {
   stopLossText: string;
   takeProfitText: string;
   endedAt: number | null;
+  /** True when the player ended the run themselves, so it is practice, not a result. */
+  endedByUser: boolean;
   market: MarketId;
   side: Side;
   leverage: number;
@@ -460,6 +462,7 @@ export function mountDesk(root: HTMLElement): void {
     stopLossText: "",
     takeProfitText: "",
     endedAt: null,
+    endedByUser: false,
     market: opening.market,
     side: "long",
     leverage: 10,
@@ -759,12 +762,26 @@ export function mountDesk(root: HTMLElement): void {
         challenge !== null &&
         matchesChallenge(state.setup, challenge)
       ) {
+        // Score a finished run: close whatever is still open at the mark.
+        if (frame.position !== null) {
+          state.actions = [
+            ...state.actions,
+            {
+              kind: "close",
+              barIndex: state.cursor,
+              powerPct: 100,
+              slipToleranceBps: state.slipToleranceBps,
+              realizedImpactBps: state.realizedImpactBps,
+            },
+          ];
+        }
+        const settled = currentFrame();
         const metrics = reviewMetrics({
-          fills: frame.fills,
-          equityCurve: frame.equityCurve,
+          fills: settled.fills,
+          equityCurve: settled.equityCurve,
           startingBalance: startingBalance(),
         });
-        const leverage = maxLeverage(frame.fills, startingBalance());
+        const leverage = maxLeverage(settled.fills, startingBalance());
         const result = examResult({
           net: metrics.netPnl,
           maxDrawdownUsd: (metrics.maxDrawdownPct / 100) * startingBalance(),
@@ -801,6 +818,7 @@ export function mountDesk(root: HTMLElement): void {
     state.cursor = firstCursor();
     state.actions = [];
     state.endedAt = null;
+    state.endedByUser = false;
     state.stopLossText = "";
     state.takeProfitText = "";
     state.tab = "positions";
@@ -2985,7 +3003,9 @@ export function mountDesk(root: HTMLElement): void {
         : frame.phase === "target"
           ? t("review.passed")
           : frame.phase === "practice"
-            ? t("review.dataEnd")
+            ? state.endedByUser
+              ? t("review.endedByUser")
+              : t("review.dataEnd")
             : `${t("review.failed")} · ${t(phaseKey(frame.phase))}`;
     const curve = frame.equityCurve;
     const lo = Math.min(...curve, startingBalance());
@@ -3196,7 +3216,12 @@ export function mountDesk(root: HTMLElement): void {
       render();
     });
     const finish = actionButton(t("replay.finish"), "ghost", () => {
+      const daily = state.challenge !== null && matchesChallenge(state.setup, state.challenge);
+      if (daily && currentFrame().phase === "practice" && !window.confirm(t("replay.endConfirm"))) {
+        return;
+      }
       pausePlayback();
+      state.endedByUser = true;
       state.endedAt = state.cursor;
       state.tab = "review";
       state.drawerOpen = true;

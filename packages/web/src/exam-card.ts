@@ -135,10 +135,19 @@ export function showExamCard(options: Options): () => void {
   });
   document.addEventListener("keydown", onKey);
 
+  const reopen = el("a", "exam-reopen", t("exam.reopen"));
+  reopen.href = examSubmitUrl(options.result);
+  reopen.target = "_blank";
+  reopen.rel = "noopener";
+  reopen.hidden = options.submitted === null;
+  submit.addEventListener("click", () => {
+    reopen.hidden = false;
+  });
+
   actions.append(submit, skip);
   overlay.append(cert, note);
   if (bestLine !== null) overlay.append(bestLine);
-  overlay.append(actions, el("p", "exam-privacy", t("exam.privacy")));
+  overlay.append(actions, reopen, el("p", "exam-privacy", t("exam.privacy")));
   document.body.append(overlay);
   skip.focus();
   return close;
