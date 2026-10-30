@@ -47,7 +47,7 @@ function fakeStorage(): Storage {
 }
 
 const base: SessionSetup = {
-  market: "SYNTH-NQ",
+  market: "SYNTH-IDX1",
   timeframeMin: 15,
   bars: 600,
   seed: 1,

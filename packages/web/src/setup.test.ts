@@ -22,7 +22,10 @@ describe("session setup", () => {
       rulesMode: "custom",
       custom: { maxDrawdownPct: 500, maxLeverage: 999, drawdownMode: "weird" },
     });
-    expect(setup.market).toBe("SYNTH-NQ");
+    expect(setup.market).toBe("SYNTH-IDX1");
+    expect(sanitizeSetup({ market: "SYNTH-NQ" }).market).toBe("SYNTH-IDX1");
+    expect(sanitizeSetup({ market: "SYNTH-ES" }).market).toBe("SYNTH-IDX2");
+    expect(sanitizeSetup({ market: "SYNTH-GC" }).market).toBe("SYNTH-METAL1");
     expect(setup.timeframeMin).toBe(15);
     expect(sanitizeSetup({ timeframeMin: 3 }).timeframeMin).toBe(3);
     expect(setup.bars).toBe(5_000);
@@ -78,10 +81,10 @@ describe("plan presets", () => {
     expect(picked.dailyLossLimitPct).toBe(4);
     const bogus = applyPresetChoices(parsed.preset, { ...base, presetDailyPct: 7 });
     expect(bogus.dailyLossLimitPct).toBeNull();
-    expect(leverageCap(parsed.preset, "SYNTH-NQ")).toBe(25);
-    expect(leverageCap(parsed.preset, "SYNTH-GC")).toBe(15);
-    expect(setupMarkets(parsed.preset)).toEqual(["SYNTH-NQ", "SYNTH-GC"]);
-    expect(setupMarkets(null)).toEqual(["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES", "SYNTH-BTC"]);
+    expect(leverageCap(parsed.preset, "SYNTH-IDX1")).toBe(25);
+    expect(leverageCap(parsed.preset, "SYNTH-METAL1")).toBe(15);
+    expect(setupMarkets(parsed.preset)).toEqual(["SYNTH-IDX1", "SYNTH-METAL1"]);
+    expect(setupMarkets(null)).toEqual(["SYNTH-IDX1", "SYNTH-METAL1", "SYNTH-IDX2", "SYNTH-BTC"]);
     expect(setupMarkets(customPreset(base.custom))).toContain("SYNTH-BTC");
     const btc = sanitizeSetup({ market: "SYNTH-BTC", seed: 7 });
     expect(btc.market).toBe("SYNTH-BTC");

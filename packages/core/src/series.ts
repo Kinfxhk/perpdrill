@@ -37,11 +37,11 @@ const SAMPLE_CLOSES = [
 
 function sampleScale(market: MarketId): number {
   switch (market) {
-    case "SYNTH-NQ":
+    case "SYNTH-IDX1":
       return 1;
-    case "SYNTH-GC":
+    case "SYNTH-METAL1":
       return 0.25;
-    case "SYNTH-ES":
+    case "SYNTH-IDX2":
       return 0.5;
     case "SYNTH-BTC":
       return 6;

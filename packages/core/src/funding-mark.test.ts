@@ -102,9 +102,9 @@ describe("synthetic marks", () => {
 
 describe("funding settlement in the engine", () => {
   it("charges a long the positive window total at the settlement bar", () => {
-    const series = syntheticSeries({ market: "SYNTH-NQ", seed: 1, bars: 100, timeframeMin: 60 });
+    const series = syntheticSeries({ market: "SYNTH-IDX1", seed: 1, bars: 100, timeframeMin: 60 });
     const frame = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series,
       preset: preset(),
       actions: [open(0)],
@@ -120,9 +120,9 @@ describe("funding settlement in the engine", () => {
   });
 
   it("pays a short when the window total is positive", () => {
-    const series = syntheticSeries({ market: "SYNTH-NQ", seed: 1, bars: 100, timeframeMin: 60 });
+    const series = syntheticSeries({ market: "SYNTH-IDX1", seed: 1, bars: 100, timeframeMin: 60 });
     const frame = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series,
       preset: preset(),
       actions: [short(0)],
@@ -136,8 +136,8 @@ describe("funding settlement in the engine", () => {
 
   it("is zero outside settlement bars", () => {
     const frame = replaySession({
-      market: "SYNTH-NQ",
-      series: syntheticSeries({ market: "SYNTH-NQ", seed: 1, bars: 100, timeframeMin: 60 }),
+      market: "SYNTH-IDX1",
+      series: syntheticSeries({ market: "SYNTH-IDX1", seed: 1, bars: 100, timeframeMin: 60 }),
       preset: preset(),
       actions: [open(0)],
       cursor: 0,
@@ -150,11 +150,11 @@ describe("funding settlement in the engine", () => {
 
 describe("mark price in the engine", () => {
   it("marks equity and PnL on the mark, not the last price", () => {
-    const series = syntheticSeries({ market: "SYNTH-NQ", seed: 1, bars: 100, timeframeMin: 60 });
+    const series = syntheticSeries({ market: "SYNTH-IDX1", seed: 1, bars: 100, timeframeMin: 60 });
     const marks = series.map((bar) => bar.close);
     marks[1] = (marks[1] ?? 0) + 500;
     const frame = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series,
       preset: preset({ costModel: "off" }),
       actions: [open(0)],
@@ -170,14 +170,14 @@ describe("mark price in the engine", () => {
 
   it("falls back to the bar close without a mark series", () => {
     const frame = replaySession({
-      market: "SYNTH-NQ",
-      series: syntheticSeries({ market: "SYNTH-NQ", seed: 1, bars: 100, timeframeMin: 60 }),
+      market: "SYNTH-IDX1",
+      series: syntheticSeries({ market: "SYNTH-IDX1", seed: 1, bars: 100, timeframeMin: 60 }),
       preset: preset({ costModel: "off" }),
       actions: [open(0)],
       cursor: 1,
     });
     expect(frame.mark).toBe(
-      syntheticSeries({ market: "SYNTH-NQ", seed: 1, bars: 100, timeframeMin: 60 })[1]?.close,
+      syntheticSeries({ market: "SYNTH-IDX1", seed: 1, bars: 100, timeframeMin: 60 })[1]?.close,
     );
   });
 });

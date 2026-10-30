@@ -18,10 +18,10 @@
   "takerBps": 1,
   "makerBps": 0,
   "maxLeverage": {
-    "SYNTH-NQ": 25,
-    "SYNTH-GC": 15
+    "SYNTH-IDX1": 25,
+    "SYNTH-METAL1": 15
   },
-  "markets": ["SYNTH-NQ", "SYNTH-GC"],
+  "markets": ["SYNTH-IDX1", "SYNTH-METAL1"],
   "group": "Instant",
   "displayName": "Teaching · Instant 5k",
   "startingBalanceUsd": 5000,
@@ -29,6 +29,6 @@
   "maxDrawdownUsd": 200,
   "profitTargetPct": null,
   "dailyLossLimitPct": null,
-  "note": "$5,000 capital, no evaluation and no profit target. Static max drawdown $200 (starting balance minus that amount; it does not trail) on equity. No daily loss limit. Taker 1 bp. Leverage caps SYNTH-NQ 25×, SYNTH-GC 15×. Profit split 95% is not simulated.",
+  "note": "$5,000 capital, no evaluation and no profit target. Static max drawdown $200 (starting balance minus that amount; it does not trail) on equity. No daily loss limit. Taker 1 bp. Leverage caps SYNTH-IDX1 25×, SYNTH-METAL1 15×. Profit split 95% is not simulated.",
   "id": "plan-instant-5k"
 }

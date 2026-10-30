@@ -45,7 +45,7 @@ describe("desk i18n", () => {
     const bare = ["NQ", "GC", "ES", "BTC", "ETH", "BTC-PERP", "ETH-PERP"];
     for (const lang of SUPPORTED_LANGS) {
       const labels = SAMPLE_MARKETS.map((market) => sampleMarketLabel(lang, market));
-      expect(labels).toEqual(["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES", "SYNTH-BTC"]);
+      expect(labels).toEqual(["SYNTH-IDX1", "SYNTH-METAL1", "SYNTH-IDX2", "SYNTH-BTC"]);
       for (const label of labels) {
         expect(bare).not.toContain(label);
         expect(translate(lang, "setup.dataHint")).toContain(label);
