@@ -1,4 +1,4 @@
-import { TEACHING_MAX_LEVERAGE, isMarketId, type MarketId } from "./constants.ts";
+import { TEACHING_MAX_LEVERAGE, resolveMarketId, type MarketId } from "./constants.ts";
 import type { DailyReset } from "./prop.ts";
 import {
   PROP_RULE_PRESET_FORMAT,
@@ -201,10 +201,15 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
     } else if (isRecord(value.maxLeverage)) {
       const caps: Partial<Record<MarketId, number>> = {};
       for (const [market, cap] of Object.entries(value.maxLeverage)) {
-        if (!isMarketId(market) || !leverageOk(cap)) {
+        const canonical = resolveMarketId(market);
+        if (canonical === null || !leverageOk(cap)) {
           return { ok: false, error: "max leverage is invalid" };
         }
-        caps[market] = cap;
+        const existing = caps[canonical];
+        if (existing !== undefined && existing !== cap) {
+          return { ok: false, error: "max leverage is invalid" };
+        }
+        caps[canonical] = cap;
       }
       maxLeverage = caps;
     } else {
@@ -307,10 +312,13 @@ export function parsePracticePreset(value: unknown): PresetParseResult {
     }
     const parsed: MarketId[] = [];
     for (const market of value.markets) {
-      if (typeof market !== "string" || !isMarketId(market)) {
+      const canonical = typeof market === "string" ? resolveMarketId(market) : null;
+      if (canonical === null) {
         return { ok: false, error: "markets are invalid" };
       }
-      parsed.push(market);
+      if (!parsed.includes(canonical)) {
+        parsed.push(canonical);
+      }
     }
     markets = parsed;
   }

@@ -22,10 +22,10 @@
   "takerBps": 1,
   "makerBps": 0,
   "maxLeverage": {
-    "SYNTH-NQ": 25,
-    "SYNTH-GC": 15
+    "SYNTH-IDX1": 25,
+    "SYNTH-METAL1": 15
   },
-  "markets": ["SYNTH-NQ", "SYNTH-GC"],
+  "markets": ["SYNTH-IDX1", "SYNTH-METAL1"],
   "group": "2-Step",
   "displayName": "Teaching · 2-Step Gold",
   "startingBalanceUsd": 10000,
@@ -37,6 +37,6 @@
     "profitTargetPct": [10, 5],
     "dailyLossLimitPct": null
   },
-  "note": "$10,000 capital. Two steps: pick 10% for step 1, then start a new session with 5% for step 2. Daily loss limit 3% fixed (reset 20:00 New York, realized base, equity checked). Static max drawdown $600 (starting balance minus that amount; it does not trail). Taker 1 bp. Leverage caps SYNTH-NQ 25×, SYNTH-GC 15×. Profit split 80% is not simulated.",
+  "note": "$10,000 capital. Two steps: pick 10% for step 1, then start a new session with 5% for step 2. Daily loss limit 3% fixed (reset 20:00 New York, realized base, equity checked). Static max drawdown $600 (starting balance minus that amount; it does not trail). Taker 1 bp. Leverage caps SYNTH-IDX1 25×, SYNTH-METAL1 15×. Profit split 80% is not simulated.",
   "id": "plan-2step-gold"
 }
