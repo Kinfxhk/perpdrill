@@ -4,9 +4,9 @@ import type { Bar } from "./series.ts";
 /**
  * Seeded synthetic bars. Volatility clusters, trends drift and rare jumps
  * make the path look like a 24/7 market. It is not a model of any real venue
- * and it does not read a live feed. SYNTH-NQ and SYNTH-GC keep the two anchors
- * this desk already generated. All profiles are fictional teaching parameters,
- * not calibrated exchange history or contract specifications.
+ * and it does not read a live feed. SYNTH-IDX1 and SYNTH-METAL1 keep the two
+ * anchors this desk already generated. All profiles are fictional teaching
+ * parameters, not calibrated exchange history or contract specifications.
  */
 /** Bar sizes the generator emits. 3m is its own series, not a relabeled 1m or 5m run. */
 export const SYNTHETIC_TIMEFRAMES_MIN = [1, 3, 5, 15, 60, 240] as const;
@@ -27,9 +27,9 @@ export type SyntheticSpec = {
 };
 
 const MARKET_PROFILE: Record<MarketId, { price: number; tick: number; annualVol: number }> = {
-  "SYNTH-NQ": { price: 65_000, tick: 0.1, annualVol: 0.6 },
-  "SYNTH-GC": { price: 3_200, tick: 0.01, annualVol: 0.75 },
-  "SYNTH-ES": { price: 5_000, tick: 0.25, annualVol: 0.2 },
+  "SYNTH-IDX1": { price: 65_000, tick: 0.1, annualVol: 0.6 },
+  "SYNTH-METAL1": { price: 3_200, tick: 0.01, annualVol: 0.75 },
+  "SYNTH-IDX2": { price: 5_000, tick: 0.25, annualVol: 0.2 },
   "SYNTH-BTC": { price: 60_000, tick: 0.1, annualVol: 0.65 },
 };
 

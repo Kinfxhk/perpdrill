@@ -13,9 +13,9 @@ test("generates and trades the fourth synthetic BTC market without exchange data
   });
   await page.goto("/");
   await expect(page.locator("#setup-market option")).toHaveText([
-    "SYNTH-NQ",
-    "SYNTH-GC",
-    "SYNTH-ES",
+    "SYNTH-IDX1",
+    "SYNTH-METAL1",
+    "SYNTH-IDX2",
     "SYNTH-BTC",
   ]);
   await page.locator("#setup-rules").selectOption({ label: "No rules (free practice)" });

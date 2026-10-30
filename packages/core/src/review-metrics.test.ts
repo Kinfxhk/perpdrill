@@ -24,9 +24,9 @@ function close(barIndex: number): SessionAction {
 
 describe("review metrics", () => {
   it("computes sharpe, sortino, calmar and average hold", () => {
-    const series = syntheticSeries({ market: "SYNTH-NQ", seed: 5, bars: 100, timeframeMin: 60 });
+    const series = syntheticSeries({ market: "SYNTH-IDX1", seed: 5, bars: 100, timeframeMin: 60 });
     const frame = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series,
       preset: null,
       actions: [open(0), close(20), open(40), close(60)],
@@ -56,9 +56,9 @@ describe("review metrics", () => {
 
 describe("margin mode", () => {
   it("gives cross margin a wider liquidation cushion than isolated", () => {
-    const series = syntheticSeries({ market: "SYNTH-NQ", seed: 5, bars: 100, timeframeMin: 60 });
+    const series = syntheticSeries({ market: "SYNTH-IDX1", seed: 5, bars: 100, timeframeMin: 60 });
     const input = {
-      market: "SYNTH-NQ" as const,
+      market: "SYNTH-IDX1" as const,
       series,
       preset: null,
       actions: [open(0)],
@@ -76,9 +76,9 @@ describe("margin mode", () => {
 
 describe("stress data", () => {
   it("moves more than the normal generator for the same seed", () => {
-    const normal = syntheticSeries({ market: "SYNTH-NQ", seed: 9, bars: 400, timeframeMin: 15 });
+    const normal = syntheticSeries({ market: "SYNTH-IDX1", seed: 9, bars: 400, timeframeMin: 15 });
     const stress = syntheticSeries({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       seed: 9,
       bars: 400,
       timeframeMin: 15,

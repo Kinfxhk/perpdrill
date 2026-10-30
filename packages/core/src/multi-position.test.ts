@@ -36,7 +36,7 @@ function close(barIndex: number, powerPct?: 25 | 50 | 75 | 100): SessionAction {
 }
 
 const run = (actions: readonly SessionAction[], cursor: number) =>
-  replaySession({ market: "SYNTH-NQ", series, preset: null, actions, cursor });
+  replaySession({ market: "SYNTH-IDX1", series, preset: null, actions, cursor });
 
 describe("adding, reducing and reversing", () => {
   it("adds a same-side market entry to the position", () => {

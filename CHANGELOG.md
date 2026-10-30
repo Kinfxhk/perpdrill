@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Public synthetic sample ids are SYNTH-IDX1, SYNTH-METAL1, SYNTH-IDX2, and
+  SYNTH-BTC. Saved setups that still store a previous sample id resolve through
+  an internal legacy alias map. The desk, presets, and docs show the current
+  ids only.
+- The practice disclaimer states this is synthetic practice only: not an
+  index-licensed product, not exchange, CME, or Nasdaq data, and not affiliated.
+
 ## 1.3.12 — 2026-10-29
 
 - The target is the only gate: the Distinction tier and its ten-trade requirement
@@ -80,7 +87,7 @@
 
 ## 1.3.1 — 2026-10-29
 
-- A one-week campaign exam: one frozen round (SYNTH-NQ, 15m, 600 bars, fixed
+- A one-week campaign exam: one frozen round (SYNTH-IDX1, 15m, 600 bars, fixed
   seed) with a 50,000 account, +3,000 target, 2,000 static max drawdown and a
   5x leverage cap. Reaching the target shows a simulated certificate; a
   Distinction needs half the drawdown budget left and at least 10 closed
@@ -177,9 +184,9 @@
 - Three more desk themes complete the set of eight: Dusk (warm ember night),
   Dark (neutral near-black), and Slate (gray-blue stone). Each keeps the
   original cool-green accent and the saved header-menu choice.
-- Generate data names the samples SYNTH-NQ, SYNTH-GC, and SYNTH-ES. The seeded
-  generator is unchanged. SYNTH-NQ and SYNTH-GC keep the previous two price
-  anchors. Plan leverage stays 25× and 15× on those two names. SYNTH-ES is a
+- Generate data names the samples SYNTH-IDX1, SYNTH-METAL1, and SYNTH-IDX2. The seeded
+  generator is unchanged. SYNTH-IDX1 and SYNTH-METAL1 keep the previous two price
+  anchors. Plan leverage stays 25× and 15× on those two names. SYNTH-IDX2 is a
   third anchor for custom rules and free practice.
 - Cancel and New session during the 3-2-1 intro stop it without advancing bars.
   That data set still counts down on the next start. Skip starts playback.

@@ -74,7 +74,7 @@ describe("practice preset parser", () => {
       makerBps: 30,
       swapDailyRatePct: 0.03,
       venueFundingChangesBalance: false,
-      markets: ["SYNTH-NQ"],
+      markets: ["SYNTH-IDX1"],
     });
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) {
@@ -83,6 +83,29 @@ describe("practice preset parser", () => {
     expect(parsed.preset.takerBps).toBe(30);
     expect(parsed.preset.startingBalanceUsd).toBeNull();
     expect(parsed.preset.maxDrawdownUsd).toBeNull();
+    expect(parsed.preset.markets).toEqual(["SYNTH-IDX1"]);
+  });
+
+  it("canonicalizes a legacy sample alias in saved preset markets", () => {
+    const parsed = parsePracticePreset({
+      format: "perps-prop-profile",
+      version: 1,
+      id: "example-eval",
+      displayName: "Example Eval (community)",
+      disclaimer: unofficial,
+      sourceUrls: ["https://example.com/rules"],
+      profitTargetPct: 12,
+      maxDrawdownPct: 5,
+      costModel: "off",
+      maxLeverage: { "SYNTH-NQ": 25, "SYNTH-GC": 15 },
+      markets: ["SYNTH-NQ", "SYNTH-IDX1", "SYNTH-GC"],
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) {
+      return;
+    }
+    expect(parsed.preset.markets).toEqual(["SYNTH-IDX1", "SYNTH-METAL1"]);
+    expect(parsed.preset.maxLeverage).toEqual({ "SYNTH-IDX1": 25, "SYNTH-METAL1": 15 });
   });
 
   it("rejects a max drawdown amount that is not a positive loss under the starting balance", () => {

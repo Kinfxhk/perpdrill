@@ -17,12 +17,33 @@ export const MAX_REALIZED_IMPACT_BPS = 1_000;
 export const MAINTENANCE_OF_INITIAL = 0.5;
 
 /** Practice ids shown in the desk. Not exchange tickers. */
-export const SAMPLE_MARKETS = ["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES", "SYNTH-BTC"] as const;
+export const SAMPLE_MARKETS = ["SYNTH-IDX1", "SYNTH-METAL1", "SYNTH-IDX2", "SYNTH-BTC"] as const;
 
 export type MarketId = (typeof SAMPLE_MARKETS)[number];
+
+/**
+ * Legacy alias map for saved configs and deep links. Not a public sample list.
+ * resolveMarketId maps these onto the current ids. Do not show them in the UI.
+ */
+export const LEGACY_SAMPLE_ALIASES = {
+  "SYNTH-NQ": "SYNTH-IDX1",
+  "SYNTH-ES": "SYNTH-IDX2",
+  "SYNTH-GC": "SYNTH-METAL1",
+} as const satisfies Record<string, MarketId>;
 
 export const SAMPLE_BAR_MS = 3_600_000;
 
 export function isMarketId(value: string): value is MarketId {
   return (SAMPLE_MARKETS as readonly string[]).includes(value);
+}
+
+/** Current sample id, or the current id for a legacy alias. */
+export function resolveMarketId(value: string): MarketId | null {
+  if (isMarketId(value)) {
+    return value;
+  }
+  if (!Object.hasOwn(LEGACY_SAMPLE_ALIASES, value)) {
+    return null;
+  }
+  return LEGACY_SAMPLE_ALIASES[value as keyof typeof LEGACY_SAMPLE_ALIASES];
 }
