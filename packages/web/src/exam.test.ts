@@ -23,7 +23,7 @@ describe("exam preset", () => {
     expect(preset.drawdownMode).toBe("static");
     expect(preset.dailyLossLimitPct).toBeNull();
     expect(preset.maxLeverage).toBe(5);
-    expect(preset.markets).toEqual(["SYNTH-NQ"]);
+    expect(preset.markets).toEqual(["SYNTH-IDX1"]);
   });
 
   it("is the rule set the daily round runs", () => {

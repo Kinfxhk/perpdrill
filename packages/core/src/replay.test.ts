@@ -41,7 +41,7 @@ function preset(overrides: Partial<PracticePreset> = {}): PracticePreset {
     fundingIntervalHours: null,
     venueFundingChangesBalance: false,
     startingBalanceUsd: 10_000,
-    markets: ["SYNTH-NQ", "SYNTH-GC"],
+    markets: ["SYNTH-IDX1", "SYNTH-METAL1"],
     note: "",
     ...overrides,
   };
@@ -69,7 +69,7 @@ describe("replay", () => {
     // The desk marks the account on a smoothed index, which lags the close.
     const marks = [10_400, 10_400];
     const frame = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series,
       marks,
       preset: preset({ maxDrawdownPct: 90, profitTargetPct: 50 }),
@@ -85,7 +85,7 @@ describe("replay", () => {
     // The mark sits under the 9,500 floor; a close-priced fill would breach instantly.
     const marks = [9_400, 9_400];
     const frame = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series,
       marks,
       preset: preset(),
@@ -99,7 +99,7 @@ describe("replay", () => {
   it("keeps the prop fail price off the liquidation line", () => {
     const series = [bar(0, 10_000), bar(3_600_000, 9_950)];
     const opened = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series,
       preset: preset(),
       actions: [open(0, 100)],
@@ -112,7 +112,7 @@ describe("replay", () => {
     expect(opened.phase).toBe("practice");
 
     const breached = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series,
       preset: preset(),
       actions: [open(0, 100)],
@@ -131,7 +131,7 @@ describe("replay", () => {
     const liq = estimatedLiqPrice(entry, 10, "long");
     const series = [bar(0, entry), bar(3_600_000, liq)];
     const frame = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series,
       preset: preset({ maxDrawdownPct: 90, profitTargetPct: 50 }),
       actions: [open(0, 100)],
@@ -146,7 +146,7 @@ describe("replay", () => {
 
   it("rejects an over-tolerance market order without opening", () => {
     const frame = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series: [bar(0, 10_000)],
       preset: null,
       actions: [
@@ -176,14 +176,14 @@ describe("replay", () => {
       venueFundingChangesBalance: false,
     });
     const long = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series,
       preset: swap,
       actions: [open(0, 25, "long")],
       cursor: 1,
     });
     const short = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series,
       preset: swap,
       actions: [open(0, 25, "short")],
@@ -194,7 +194,7 @@ describe("replay", () => {
     expect(long.cash).toBeLessThan(7_500);
 
     const funding = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series,
       preset: preset({
         costModel: "funding",
@@ -240,13 +240,13 @@ describe("replay", () => {
   });
 
   it("builds a deterministic synthetic sample whose mark is the close", () => {
-    const series = sampleSeries("SYNTH-NQ");
+    const series = sampleSeries("SYNTH-IDX1");
     expect(series.length).toBeGreaterThan(12);
     expect(series[0]?.close).toBe(10_000);
     expect(series[1]?.timeMs).toBe((series[0]?.timeMs ?? 0) + 3_600_000);
-    const eth = sampleSeries("SYNTH-GC");
+    const eth = sampleSeries("SYNTH-METAL1");
     expect(eth[0]?.close).toBe(2_500);
-    expect(sampleSeries("SYNTH-ES")[0]?.close).toBe(5_000);
+    expect(sampleSeries("SYNTH-IDX2")[0]?.close).toBe(5_000);
     for (const bar of series) {
       expect(markPrice(bar)).toBe(bar.close);
       expect(bar.low).toBeLessThanOrEqual(bar.open);

@@ -19,6 +19,7 @@ import {
   TRADING_POWER_LABEL,
   isBuyingPowerPct,
   isMarketId,
+  resolveMarketId,
 } from "./index.ts";
 
 describe("perpdrill core identity", () => {
@@ -61,13 +62,20 @@ describe("perpdrill core identity", () => {
   });
 
   it("names sample markets SYNTH-* and refuses bare exchange symbols", () => {
-    expect(SAMPLE_MARKETS).toEqual(["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES", "SYNTH-BTC"]);
+    expect(SAMPLE_MARKETS).toEqual(["SYNTH-IDX1", "SYNTH-METAL1", "SYNTH-IDX2", "SYNTH-BTC"]);
     for (const market of SAMPLE_MARKETS) {
       expect(market.startsWith("SYNTH-")).toBe(true);
       expect(isMarketId(market)).toBe(true);
+      expect(resolveMarketId(market)).toBe(market);
     }
+    // Legacy alias map only. These ids are not public sample names.
+    expect(isMarketId("SYNTH-NQ")).toBe(false);
+    expect(resolveMarketId("SYNTH-NQ")).toBe("SYNTH-IDX1");
+    expect(resolveMarketId("SYNTH-ES")).toBe("SYNTH-IDX2");
+    expect(resolveMarketId("SYNTH-GC")).toBe("SYNTH-METAL1");
     for (const bare of ["NQ", "GC", "ES", "BTC", "ETH", "BTC-PERP", "ETH-PERP"]) {
       expect(isMarketId(bare)).toBe(false);
+      expect(resolveMarketId(bare)).toBeNull();
     }
   });
 });

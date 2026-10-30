@@ -7,9 +7,9 @@ import {
   PROP_RULE_PRESET_SCHEMA_VERSION,
   SAMPLE_MARKETS,
   TEACHING_MAX_LEVERAGE,
-  isMarketId,
   isSyntheticTimeframe,
   randomSeed,
+  resolveMarketId,
   type DrawdownMode,
   type MarketId,
   type PracticePreset,
@@ -137,9 +137,9 @@ export function sanitizeSetup(raw: unknown): SessionSetup {
     typeof value.custom === "object" && value.custom !== null ? value.custom : {}
   ) as Record<string, unknown>;
   const d = DEFAULT_CUSTOM_RULES;
+  const storedMarket = typeof value.market === "string" ? resolveMarketId(value.market) : null;
   return {
-    market:
-      typeof value.market === "string" && isMarketId(value.market) ? value.market : base.market,
+    market: storedMarket ?? base.market,
     timeframeMin:
       typeof value.timeframeMin === "number" && isSyntheticTimeframe(value.timeframeMin)
         ? value.timeframeMin

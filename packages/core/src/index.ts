@@ -6,10 +6,12 @@ export {
   MAX_SLIP_TOLERANCE_BPS,
   MIN_SLIP_TOLERANCE_BPS,
   PRACTICE_STARTING_BALANCE_USD,
+  LEGACY_SAMPLE_ALIASES,
   SAMPLE_MARKETS,
   TEACHING_MAX_LEVERAGE,
   TEACHING_MIN_LEVERAGE,
   isMarketId,
+  resolveMarketId,
 } from "./constants.ts";
 export type { MarketId } from "./constants.ts";
 export {

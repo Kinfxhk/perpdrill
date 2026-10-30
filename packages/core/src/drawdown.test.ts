@@ -41,7 +41,7 @@ function openAt(barIndex: number): SessionAction {
 
 function replayAt(preset: PracticePreset, mark: number) {
   return replaySession({
-    market: "SYNTH-NQ",
+    market: "SYNTH-IDX1",
     series: [flat(0, 100), flat(1, mark)],
     preset,
     actions: [openAt(0)],
@@ -55,7 +55,7 @@ function replayAt(preset: PracticePreset, mark: number) {
  */
 function markForFloor(preset: PracticePreset, floor: number): number {
   const opened = replaySession({
-    market: "SYNTH-NQ",
+    market: "SYNTH-IDX1",
     series: [flat(0, 100)],
     preset,
     actions: [openAt(0)],
@@ -109,7 +109,7 @@ describe("static USD max drawdown", () => {
     expectFullLoss(preset, 2_000, 48_000);
 
     const opened = replaySession({
-      market: "SYNTH-NQ",
+      market: "SYNTH-IDX1",
       series: [flat(0, 100)],
       preset,
       actions: [openAt(0)],

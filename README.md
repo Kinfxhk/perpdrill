@@ -12,7 +12,7 @@
 
 <sub>所有截圖使用生成的合成示範資料，並非真實市價。</sub>
 
-生成數據提供 **SYNTH-NQ、SYNTH-GC、SYNTH-ES、SYNTH-BTC，共四組**，可於自由練習或自訂規則選用。這些是本機種子生成的虛構樣本，不是 CME／交易所歷史行情，也不是相應期貨合約模型；原有 NQ／GC 名稱保留舊版參數以維持重現性，BTC 使用獨立設定。預設方案仍只顯示其原本允許的市場。第三方真實行情有獨立條款，不因程式採 AGPL 就可任意再分發。
+生成數據提供 **SYNTH-IDX1、SYNTH-METAL1、SYNTH-IDX2、SYNTH-BTC，共四組**，可於自由練習或自訂規則選用。這些是本機種子生成的虛構樣本，只供合成練習：不是指數授權產品，不是交易所、CME 或 Nasdaq 數據，也與任何交易所或指數機構沒有附屬、背書或授權關係。SYNTH-IDX1 與 SYNTH-METAL1 沿用先前兩組價格錨點以維持重現性，SYNTH-BTC 使用獨立設定。預設方案仍只顯示其原本允許的市場。第三方真實行情有獨立條款，不因程式採 AGPL 就可任意再分發。
 
 1. **設定 → 開始回測**：揀市場、時框、K 線數量同規則（自訂／社群預設／無規則）。資料源可揀合成、CSV 檔案或 Binance 實時行情。每組資料第一次開始前有 3-2-1 倒數，可以 **Skip**（立即開始）或 **Cancel**（返回設定）。撳 **Start backtest**。
 
@@ -88,6 +88,7 @@ npm start
 ## 教育聲明與非附屬
 
 - 教育與練習工具，不是投資建議。
+- 不是指數授權產品。樣本序列只供合成練習，不是交易所、CME 或 Nasdaq 行情，perpdrill 與這些場所或指數機構沒有附屬、背書或授權關係。
 - 模擬成績不等於真實成交，也不等於任何 prop 評測的官方結果。
 - 成交是教學近似。OHLC／標記模型有先天限制。
 - 不保證任何人通過任何評測。
@@ -136,7 +137,7 @@ Online desk (GitHub Pages, the same build; phone, tablet and desktop layouts): <
 
 <sub>All screenshots use generated synthetic sample data, not real prices.</sub>
 
-Generate data offers **four samples: SYNTH-NQ, SYNTH-GC, SYNTH-ES and SYNTH-BTC** for free practice or custom rules. They are local seeded fictional profiles, not CME/exchange history or futures contract models. The legacy NQ/GC ids retain their previous parameters for reproducibility; BTC has a separate profile. Plan presets keep their original allowed markets. Third-party quotes have separate terms: the AGPL source-code license does not grant unrestricted data redistribution.
+Generate data offers **four samples: SYNTH-IDX1, SYNTH-METAL1, SYNTH-IDX2 and SYNTH-BTC** for free practice or custom rules. They are local seeded fictional profiles for synthetic practice only: not an index-licensed product, not exchange, CME, or Nasdaq data, and not affiliated with, endorsed by, or licensed by any exchange or index provider. SYNTH-IDX1 and SYNTH-METAL1 keep the previous two price anchors for reproducibility; SYNTH-BTC has a separate profile. Plan presets keep their original allowed markets. Third-party quotes have separate terms: the AGPL source-code license does not grant unrestricted data redistribution.
 
 1. **Set up, then Start backtest**: pick the market, timeframe, bar count and rules (custom / community preset / none). The data source can be synthetic, a CSV file, or live Binance quotes. The first run of each data set counts down 3-2-1; **Skip** starts at once, **Cancel** returns to setup. Press **Start backtest**.
 
@@ -204,6 +205,7 @@ npm start
 ## Educational disclaimer and non-affiliation
 
 - Educational practice tool. Not investment advice.
+- Not an index-licensed product. The sample series are synthetic practice data only. They are not exchange, CME, or Nasdaq market data, and perpsdrill is not affiliated with, endorsed by, or licensed by those venues or index providers.
 - A simulated result is not a live fill and not an official prop-firm result.
 - Fills are a teaching approximation. An OHLC / mark model is still an approximation.
 - Nothing here promises a passing evaluation.

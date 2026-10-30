@@ -50,7 +50,7 @@ export function examPreset(): PracticePreset {
     fundingIntervalHours: null,
     venueFundingChangesBalance: false,
     startingBalanceUsd: 50_000,
-    markets: ["SYNTH-NQ"],
+    markets: ["SYNTH-IDX1"],
     note: "50,000 account. +3,000 target, 2,000 static max drawdown, 5x leverage cap, no daily limit.",
     dailyBase: "equity",
     group: "Exam",

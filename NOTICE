@@ -27,15 +27,16 @@ liquidation price.
 Synthetic practice data
 -----------------------
 
-SYNTH-NQ, SYNTH-GC, SYNTH-ES and SYNTH-BTC are fictional practice ids.
-The seeded generator runs locally without a market-data feed. Its price,
-tick and volatility settings are teaching assumptions, not calibrated
-exchange history, index replicas or futures contract specifications.
-The legacy NQ/GC ids preserve earlier crypto-like profiles for replay
-compatibility. SYNTH-BTC is a separate Bitcoin-like fictional profile,
-not a CME contract, an exchange feed or a record of Bitcoin prices.
-No exchange logos or endorsement are implied. Third-party market data
-has its own terms; the source-code license does not relicense that data.
+SYNTH-IDX1, SYNTH-METAL1, SYNTH-IDX2 and SYNTH-BTC are fictional practice
+ids. The seeded generator runs locally without a market-data feed. Its
+price, tick and volatility settings are teaching assumptions. This is
+synthetic practice only: not an index-licensed product, not exchange, CME,
+or Nasdaq data, and not a futures contract specification. perpsdrill is
+not affiliated with, endorsed by, or licensed by any exchange or index
+provider. SYNTH-BTC is a separate Bitcoin-like fictional profile, not an
+exchange feed or a record of Bitcoin prices. No exchange logos or
+endorsement are implied. Third-party market data has its own terms; the
+source-code license does not relicense that data.
 
 Live market data
 ----------------

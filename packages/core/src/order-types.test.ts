@@ -52,7 +52,7 @@ function open(barIndex: number): SessionAction {
 }
 
 const run = (actions: readonly SessionAction[], cursor: number) =>
-  replaySession({ market: "SYNTH-NQ", series, preset: null, actions, cursor });
+  replaySession({ market: "SYNTH-IDX1", series, preset: null, actions, cursor });
 
 describe("limit and stop orders", () => {
   it("fills a buy limit intrabar at the limit price", () => {

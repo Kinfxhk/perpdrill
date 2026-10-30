@@ -5,16 +5,16 @@ import { sampleSeries } from "./series.ts";
 import { SYNTHETIC_TIMEFRAMES_MIN, syntheticSeries } from "./synthetic.ts";
 
 const LEGACY_DIGESTS = {
-  "SYNTH-NQ": "46e5072e77dd152ea42d579b4b141f76f12464074a7ab958dee57fe431e0af4d",
-  "SYNTH-GC": "d40c92d9cd422dd1a2210c29b94d091b7d1c49ed7df77f1bb54483dd422aac54",
-  "SYNTH-ES": "4ed6789f9e8286c3b793a587ccecaff72c6f2bae6b88f8cdb1cda5aa6ae08e5e",
+  "SYNTH-IDX1": "46e5072e77dd152ea42d579b4b141f76f12464074a7ab958dee57fe431e0af4d",
+  "SYNTH-METAL1": "d40c92d9cd422dd1a2210c29b94d091b7d1c49ed7df77f1bb54483dd422aac54",
+  "SYNTH-IDX2": "4ed6789f9e8286c3b793a587ccecaff72c6f2bae6b88f8cdb1cda5aa6ae08e5e",
 } as const;
 
 describe("synthetic markets", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("offers BTC as the fourth synthetic market", () => {
-    expect(SAMPLE_MARKETS).toEqual(["SYNTH-NQ", "SYNTH-GC", "SYNTH-ES", "SYNTH-BTC"]);
+    expect(SAMPLE_MARKETS).toEqual(["SYNTH-IDX1", "SYNTH-METAL1", "SYNTH-IDX2", "SYNTH-BTC"]);
   });
 
   it.each(SYNTHETIC_TIMEFRAMES_MIN)(
@@ -31,7 +31,7 @@ describe("synthetic markets", () => {
         const bars = syntheticSeries(spec);
         expect(bars).toEqual(syntheticSeries(spec));
         expect(bars).toHaveLength(600);
-        expect(bars).not.toEqual(syntheticSeries({ ...spec, market: "SYNTH-NQ" }));
+        expect(bars).not.toEqual(syntheticSeries({ ...spec, market: "SYNTH-IDX1" }));
         for (const [index, bar] of bars.entries()) {
           expect(Object.values(bar).every(Number.isFinite)).toBe(true);
           expect(bar.low).toBeGreaterThan(0);
