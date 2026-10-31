@@ -233,7 +233,7 @@ const en = {
   "exam.legal":
     "Computed in your browser, self-reported and unverified. Not affiliated with any prop firm; not an official evaluation or payout proof.",
   "exam.privacy":
-    "Your email is used only for this campaign: score statistics, contact and prizes. No other marketing, never sold, kept 12 months, deleted on request to kinfxhk@gmail.com.",
+    "Your email is used only for this campaign: score statistics, contact and prizes. No other marketing, never sold, kept 12 months, deleted on request to kinfxhk+perpdrill@gmail.com.",
   "review.worst": "Worst trade",
   "setup.balance": "Starting balance",
   "setup.bars": "Bars",
@@ -537,7 +537,7 @@ const zhHant = catalog({
   "exam.legal":
     "由你的瀏覽器計算，屬自報成績、未經核實。與任何 prop firm 無關，不是官方評核或出金證明。",
   "exam.privacy":
-    "你的 email 只用於本次活動：成績統計、聯絡及獎品安排。不作其他推廣、不出售，保留 12 個月，可電郵 kinfxhk@gmail.com 要求刪除。",
+    "你的 email 只用於本次活動：成績統計、聯絡及獎品安排。不作其他推廣、不出售，保留 12 個月，可電郵 kinfxhk+perpdrill@gmail.com 要求刪除。",
   "review.worst": "最差交易",
   "setup.balance": "起始資金",
   "setup.bars": "K 線數量",
@@ -833,7 +833,7 @@ const zhHans = catalog({
   "exam.legal":
     "由你的浏览器计算，属自报成绩、未经核实。与任何 prop firm 无关，不是官方评估或出金证明。",
   "exam.privacy":
-    "你的 email 只用于本次活动：成绩统计、联络及奖品安排。不作其他推广、不出售，保留 12 个月，可电邮 kinfxhk@gmail.com 要求删除。",
+    "你的 email 只用于本次活动：成绩统计、联络及奖品安排。不作其他推广、不出售，保留 12 个月，可电邮 kinfxhk+perpdrill@gmail.com 要求删除。",
   "review.worst": "最差交易",
   "setup.balance": "起始资金",
   "setup.bars": "K 线数量",
@@ -1132,7 +1132,7 @@ const ja = catalog({
   "exam.legal":
     "ブラウザ上で計算された自己申告の成績で、検証されていません。prop firm とは無関係で、公式評価や出金証明ではありません。",
   "exam.privacy":
-    "メールアドレスは本キャンペーンの成績集計・連絡・賞品手配にのみ使用します。他の宣伝には使わず、販売もせず、12 か月保存し、kinfxhk@gmail.com への連絡で削除します。",
+    "メールアドレスは本キャンペーンの成績集計・連絡・賞品手配にのみ使用します。他の宣伝には使わず、販売もせず、12 か月保存し、kinfxhk+perpdrill@gmail.com への連絡で削除します。",
   "review.worst": "最大損失",
   "setup.balance": "初期資金",
   "setup.bars": "本数",
@@ -1433,7 +1433,7 @@ const ko = catalog({
   "exam.legal":
     "브라우저에서 계산된 자기 신고 성적이며 검증되지 않았습니다. 어떤 prop firm과도 무관하며 공식 평가나 출금 증명이 아닙니다.",
   "exam.privacy":
-    "이메일은 이 캠페인의 성적 집계, 연락, 상품 안내에만 사용합니다. 다른 홍보에 쓰지 않고 판매하지 않으며 12개월 보관 후 kinfxhk@gmail.com 요청 시 삭제합니다.",
+    "이메일은 이 캠페인의 성적 집계, 연락, 상품 안내에만 사용합니다. 다른 홍보에 쓰지 않고 판매하지 않으며 12개월 보관 후 kinfxhk+perpdrill@gmail.com 요청 시 삭제합니다.",
   "review.worst": "최악 거래",
   "setup.balance": "시작 잔고",
   "setup.bars": "봉 개수",
