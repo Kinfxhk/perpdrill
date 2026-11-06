@@ -127,18 +127,6 @@ import {
   type DailyResults,
 } from "./challenge.ts";
 import { loadCommunityPresets } from "./preset-loader.ts";
-import { showExamCard } from "./exam-card.ts";
-import {
-  examOpen,
-  examPreset,
-  examResult,
-  markSubmitted,
-  maxLeverage,
-  rewardRisk,
-  readBest,
-  readSubmitted,
-  recordBest,
-} from "./exam.ts";
 import {
   MAX_RULE_DRAWDOWN_PCT,
   applyPresetChoices,
@@ -548,9 +536,6 @@ export function mountDesk(root: HTMLElement): void {
       case "custom":
         return customPreset(setup.custom);
       case "preset": {
-        if (setup.presetId === examPreset().id) {
-          return examPreset();
-        }
         const found = state.presets.find((item) => item.id === setup.presetId);
         return found === undefined ? null : applyPresetChoices(found, setup);
       }
@@ -758,59 +743,6 @@ export function mountDesk(root: HTMLElement): void {
       state.tab = "review";
       state.drawerOpen = true;
       recordChallenge(frame);
-      const challenge = state.challenge;
-      if (
-        frame.phase === "target" &&
-        challenge !== null &&
-        matchesChallenge(state.setup, challenge)
-      ) {
-        // Score a finished run: close whatever is still open at the mark.
-        if (frame.position !== null) {
-          state.actions = [
-            ...state.actions,
-            {
-              kind: "close",
-              barIndex: state.cursor,
-              powerPct: 100,
-              slipToleranceBps: state.slipToleranceBps,
-              realizedImpactBps: state.realizedImpactBps,
-            },
-          ];
-        }
-        const settled = currentFrame();
-        const metrics = reviewMetrics({
-          fills: settled.fills,
-          equityCurve: settled.equityCurve,
-          startingBalance: startingBalance(),
-        });
-        const leverage = maxLeverage(settled.fills, startingBalance());
-        const result = examResult({
-          net: metrics.netPnl,
-          maxDrawdownUsd: (metrics.maxDrawdownPct / 100) * startingBalance(),
-          trades: metrics.trades,
-          winRatePct: metrics.winRate === null ? null : Math.round(metrics.winRate * 10) / 10,
-          rrr: rewardRisk(metrics.avgWin, metrics.avgLoss),
-          lots: leverage === null ? "—" : `${leverage}×`,
-        });
-        // A certificate needs the target, not just the engine's phase.
-        if (result.tier !== null) {
-          recordBest(result);
-          showExamCard({
-            result,
-            best: readBest(),
-            submitted: readSubmitted(),
-            open: examOpen(),
-            lang: state.lang,
-            t,
-            onSubmit: () => {
-              markSubmitted(result);
-            },
-            onClose: () => {
-              render();
-            },
-          });
-        }
-      }
     }
   };
 
@@ -882,7 +814,6 @@ export function mountDesk(root: HTMLElement): void {
     state.screen = "play";
     // A scored round pays taker fees, not a 25 bp impact on every fill: twenty
     // round trips would cost more than the whole drawdown allowance.
-    state.realizedImpactBps = setup.presetId === examPreset().id ? 0 : state.realizedImpactBps;
     resetSession();
     const key = dataKey({ ...setup, market: state.market });
     if (countdownPending(key)) {
@@ -1710,7 +1641,7 @@ export function mountDesk(root: HTMLElement): void {
       { className: "setup-card", attrs: { "aria-label": t("challenge.title") } },
       [
         el("h2", { text: t("challenge.title") }),
-        el("p", { className: "hint", text: t("exam.note") }),
+        el("p", { className: "hint", text: t("challenge.note") }),
         quoteRow(t("setup.market"), sampleMarketLabel(state.lang, shown.market)),
         quoteRow(t("setup.timeframe"), formatTimeframe(shown.timeframeMin)),
         quoteRow(

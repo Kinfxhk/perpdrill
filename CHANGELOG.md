@@ -9,6 +9,12 @@
 - The practice disclaimer states this is synthetic practice only: not an
   index-licensed product, not exchange, CME, or Nasdaq data, and not affiliated.
 
+## 1.3.13 — 2026-11-06
+
+- Remove the one-week campaign exam, its victory certificate, score submission and
+  the exam-rules daily round, after the campaign closed on 2026-11-05. The daily
+  challenge runs the standard custom rules again.
+
 ## 1.3.12 — 2026-10-29
 
 - The target is the only gate: the Distinction tier and its ten-trade requirement
