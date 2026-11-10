@@ -1,4 +1,4 @@
-# Contributing to perpsdrill
+# Contributing to perpdrill
 
 perpdrill is AGPL-3.0-or-later. Contributions are accepted under that
 license. The intended public repository is

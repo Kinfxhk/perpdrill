@@ -15,7 +15,7 @@ inherits conceptually from CandleDrill, also by KINFX / Kinfxhk:
 https://github.com/Kinfxhk/candledrill
 
 CandleDrill is licensed under the GNU Affero General Public License,
-version 3 or later (AGPL-3.0-or-later). perpsdrill is a separate work.
+version 3 or later (AGPL-3.0-or-later). perpdrill is a separate work.
 It does not copy CandleDrill's interface, palette, or futures contract
 model, and it is not a release of that repository.
 
@@ -31,7 +31,7 @@ SYNTH-IDX1, SYNTH-METAL1, SYNTH-IDX2 and SYNTH-BTC are fictional practice
 ids. The seeded generator runs locally without a market-data feed. Its
 price, tick and volatility settings are teaching assumptions. This is
 synthetic practice only: not an index-licensed product, not exchange, CME,
-or Nasdaq data, and not a futures contract specification. perpsdrill is
+or Nasdaq data, and not a futures contract specification. perpdrill is
 not affiliated with, endorsed by, or licensed by any exchange or index
 provider. SYNTH-BTC is a separate Bitcoin-like fictional profile, not an
 exchange feed or a record of Bitcoin prices. No exchange logos or
@@ -57,7 +57,7 @@ official documents. Logos are not used.
 Network use (AGPL section 13)
 -----------------------------
 
-If you modify perpsdrill and let users interact with it over a network,
+If you modify perpdrill and let users interact with it over a network,
 you must offer them the corresponding source. The web scaffold shows a
 source link for that purpose. The intended public repository is:
 
