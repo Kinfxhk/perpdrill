@@ -3,7 +3,7 @@ Third-party notices
 
 perpdrill does not vendor third-party application source. The tools below
 are installed from the npm registry by `npm ci`. Their licenses apply to
-those tools. perpsdrill itself is AGPL-3.0-or-later.
+those tools. perpdrill itself is AGPL-3.0-or-later.
 
 Direct tooling:
 

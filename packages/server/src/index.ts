@@ -56,6 +56,6 @@ if (arg === undefined || arg === "print" || arg === "--version") {
     listen(port, host);
   }
 } else {
-  process.stderr.write("usage: perpsdrill-server [print|listen]\n");
+  process.stderr.write("usage: npm start, or npm run listen\n");
   process.exitCode = 1;
 }

@@ -1,10 +1,10 @@
-# perpsdrill
+# perpdrill
 
 **[☕ Buy Me a Coffee](https://buymeacoffee.com/kinfxhk)** · [GitHub Sponsors](https://github.com/sponsors/Kinfxhk)
 
 本機優先的教育用模擬／回放練習台骨架，用來對照加密永續合約、類 prop 規則做練習。這不是交易所客戶端，也不會下真單。
 
-**狀態：1.3.0 練習台。** 生成合成數據或載入真實行情（CSV／Binance 公開資料），設定規則（自訂／社群預設／無），逐根播放、下市價／限價／觸價單、加減倉、資金費結算、mark price 強平，圖表有十字游標、O/H/L/C 讀數與可拖拉縮放的價格軸，檢討有完整指標與蒙特卡羅穩健性參考。強平仍是隔離教學近似，不是交易所公式，也不是官方評測結果。
+**狀態：1.3.13 練習台。** 生成合成數據或載入真實行情（CSV／Binance 公開資料），設定規則（自訂／社群預設／無），逐根播放、下市價／限價／觸價單、加減倉、資金費結算、mark price 強平，圖表有十字游標、O/H/L/C 讀數與可拖拉縮放的價格軸，檢討有完整指標與蒙特卡羅穩健性參考。強平仍是隔離教學近似，不是交易所公式，也不是官方評測結果。
 
 儲存庫：<https://github.com/Kinfxhk/perpdrill>
 
@@ -95,7 +95,7 @@ npm start
 - 成交是教學近似。OHLC／標記模型有先天限制。
 - 不保證任何人通過任何評測。
 - 永續與槓桿可以虧光保證金。介面上的強平價是估計，不是交易所的封閉公式。
-- perpsdrill 與任何交易場所、prop 廠商沒有附屬、背書或客戶關係。請勿把本專案當成他們的官方軟體。
+- perpdrill 與任何交易場所、prop 廠商沒有附屬、背書或客戶關係。請勿把本專案當成他們的官方軟體。
 - 專案方向是不加廣告、不收集遙測、不以付費牆當作使用條件。
 
 ## 真實資料（選用）
@@ -129,7 +129,7 @@ npm start
 
 Local-first educational simulator and replay desk for crypto perpetuals and prop-style rules. It is not an exchange client and it does not send live orders.
 
-**Status: 1.3.0 practice desk.** Generate synthetic data or load real quotes (CSV / Binance public data), set rules (custom, community preset, or none), then play bar by bar with market, limit and stop orders, stack and reduce positions, settle funding, liquidate on mark price, read the chart with a crosshair, an O/H/L/C readout, and a draggable price axis, and read the review with full metrics and a Monte Carlo stability gauge. Liquidation is an isolated teaching approximation, not an exchange formula and not an official evaluation result.
+**Status: 1.3.13 practice desk.** Generate synthetic data or load real quotes (CSV / Binance public data), set rules (custom, community preset, or none), then play bar by bar with market, limit and stop orders, stack and reduce positions, settle funding, liquidate on mark price, read the chart with a crosshair, an O/H/L/C readout, and a draggable price axis, and read the review with full metrics and a Monte Carlo stability gauge. Liquidation is an isolated teaching approximation, not an exchange formula and not an official evaluation result.
 
 Repository: <https://github.com/Kinfxhk/perpdrill>
 
@@ -207,12 +207,12 @@ npm start
 ## Educational disclaimer and non-affiliation
 
 - Educational practice tool. Not investment advice.
-- Not an index-licensed product. The sample series are synthetic practice data only. They are not exchange, CME, or Nasdaq market data, and perpsdrill is not affiliated with, endorsed by, or licensed by those venues or index providers.
+- Not an index-licensed product. The sample series are synthetic practice data only. They are not exchange, CME, or Nasdaq market data, and perpdrill is not affiliated with, endorsed by, or licensed by those venues or index providers.
 - A simulated result is not a live fill and not an official prop-firm result.
 - Fills are a teaching approximation. An OHLC / mark model is still an approximation.
 - Nothing here promises a passing evaluation.
 - Perps and leverage can consume the whole margin balance. The liquidation price on screen is an estimate, not an exchange's closed form.
-- perpsdrill is not affiliated with, endorsed by, or a client of any trading venue or prop firm. Do not treat it as their software.
+- perpdrill is not affiliated with, endorsed by, or a client of any trading venue or prop firm. Do not treat it as their software.
 - The project commits to no ads, no telemetry, and no paywall as a condition of use.
 
 ## Real data (optional)
@@ -242,8 +242,8 @@ See [docs/DESIGN-MVP.md](docs/DESIGN-MVP.md) for liquidation versus prop drawdow
 
 ## Packages
 
-| Package             | Role                                                                              |
-| ------------------- | --------------------------------------------------------------------------------- |
-| `@perpdrill/core`   | Teaching margin, slippage gate, sizing, carry, replay, and the preset parser.     |
-| `@perpdrill/web`    | Practice desk. Content-Security-Policy `default-src 'self'`.                      |
-| `@perpdrill/server` | Prints `perpdrill 0.1.1 (teaching)`. Optional localhost listener. No trading API. |
+| Package             | Role                                                                               |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| `@perpdrill/core`   | Teaching margin, slippage gate, sizing, carry, replay, and the preset parser.      |
+| `@perpdrill/web`    | Practice desk. Content-Security-Policy `default-src 'self'`.                       |
+| `@perpdrill/server` | Prints `perpdrill 1.3.13 (teaching)`. Optional localhost listener. No trading API. |
