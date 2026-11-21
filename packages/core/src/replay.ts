@@ -374,15 +374,20 @@ export function replaySession(input: SessionInput): Frame {
     const whole = fraction >= 1 - 1e-9;
     const qty = whole ? position.qty : position.qty * fraction;
     const rawPnl = unrealizedPnl(position.side, qty, position.entry, price);
-    // Isolated: no exit (gap, slipped stop) can lose more than the position margin.
+    // Isolated caps loss at the position's margin share; cross can draw on free cash.
     const marginShare = whole ? position.isolatedMargin : position.isolatedMargin * fraction;
-    const pricePnl = Math.max(rawPnl, -marginShare);
-    const fee =
-      kind === "liquidation"
-        ? 0
-        : Math.min(qty * price * (takerBps / 10_000), marginShare + pricePnl);
-    const back = Math.max(0, marginShare + pricePnl - fee);
-    cash += back;
+    const maxLoss = marginMode === "cross" ? marginShare + cash : marginShare;
+    const pricePnl = Math.max(rawPnl, -maxLoss);
+    const netBeforeFee = marginShare + pricePnl;
+    const feeCap =
+      marginMode === "cross" ? Math.max(0, cash + netBeforeFee) : Math.max(0, netBeforeFee);
+    const fee = kind === "liquidation" ? 0 : Math.min(qty * price * (takerBps / 10_000), feeCap);
+    if (marginMode === "cross") {
+      cash = Math.max(0, cash + netBeforeFee - fee);
+    } else {
+      const back = Math.max(0, netBeforeFee - fee);
+      cash += back;
+    }
     feesPaid += fee;
     fills.push({
       barIndex: index,
@@ -563,6 +568,7 @@ export function replaySession(input: SessionInput): Frame {
           openedAtMs: bar.timeMs,
           openedAtBar: index,
         };
+        position.liqPrice = actualLiqPrice(position, marginMode, cash);
         fills.push({
           barIndex: index,
           timeMs: bar.timeMs,
@@ -665,6 +671,7 @@ export function replaySession(input: SessionInput): Frame {
               openedAtMs: bar.timeMs,
               openedAtBar: index,
             };
+            position.liqPrice = actualLiqPrice(position, marginMode, cash);
           }
           fills.push({
             barIndex: index,

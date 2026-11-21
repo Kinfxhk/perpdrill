@@ -63,16 +63,27 @@ type ZonedParts = {
   readonly minute: number;
 };
 
+const zonedFormatterCache = new Map<string, Intl.DateTimeFormat>();
+
+function getZonedFormatter(timeZone: string): Intl.DateTimeFormat {
+  let fmt = zonedFormatterCache.get(timeZone);
+  if (fmt === undefined) {
+    fmt = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    });
+    zonedFormatterCache.set(timeZone, fmt);
+  }
+  return fmt;
+}
+
 function zonedParts(timeMs: number, timeZone: string): ZonedParts {
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  });
+  const fmt = getZonedFormatter(timeZone);
   const parts = fmt.formatToParts(new Date(timeMs));
   const read = (type: Intl.DateTimeFormatPartTypes): number => {
     const value = parts.find((part) => part.type === type)?.value;
