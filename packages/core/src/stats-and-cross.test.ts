@@ -246,6 +246,112 @@ describe("cross margin accounting", () => {
       (exitFill?.pricePnl ?? 0);
     expect(cross.cash).toBeCloseTo(expectedCash, 6);
   });
+
+  // 20x, 50% power posts half the account. A drop to 93 loses more than that
+  // margin but stays above the cross liquidation price (~92.5). Isolated, whose
+  // liquidation price is ~97.5, is stopped out before the reverse.
+  const EXACT = { slipToleranceBps: 50, realizedImpactBps: 0 } as const;
+
+  function losingReverse(price: number, marginMode: "isolated" | "cross") {
+    const actions: readonly SessionAction[] = [
+      { kind: "open", barIndex: 0, side: "long", leverage: 20, powerPct: 50, ...EXACT },
+      { kind: "open", barIndex: 1, side: "short", leverage: 20, powerPct: 100, ...EXACT },
+    ];
+    return replaySession({
+      market: "SYNTH-IDX1",
+      series: [flatBar(0, 100), flatBar(1, price)],
+      preset: null,
+      actions,
+      cursor: 1,
+      marginMode,
+    });
+  }
+
+  it("sizes a losing cross-margin reverse from the cash left after the close", () => {
+    const frame = losingReverse(93, "cross");
+    expect(frame.liquidated).toBe(false);
+    expect(frame.rejects).toEqual([]);
+    expect(frame.fills.map((fill) => fill.kind)).toEqual(["open", "close", "open"]);
+    const opened = frame.fills[0];
+    const closed = frame.fills[1];
+    const reversed = frame.fills[2];
+    expect(opened).toBeDefined();
+    expect(closed).toBeDefined();
+    expect(reversed).toBeDefined();
+    if (opened === undefined || closed === undefined || reversed === undefined) {
+      return;
+    }
+
+    const longMargin = (opened.qty * opened.price) / 20;
+    const preCloseCash = PRACTICE_STARTING_BALANCE_USD - opened.fee - longMargin;
+    const equityAfterClose =
+      PRACTICE_STARTING_BALANCE_USD - opened.fee + closed.pricePnl - closed.fee;
+    // The close drew free cash, so a quote from the pre-close balance is too big.
+    expect(closed.pricePnl).toBeLessThan(-longMargin);
+    expect(equityAfterClose).toBeLessThan(preCloseCash);
+    expect(equityAfterClose).toBeGreaterThan(0);
+
+    expect(frame.position?.side).toBe("short");
+    expect(frame.cash).toBeGreaterThanOrEqual(0);
+    expect(frame.position?.initialMargin).toBeLessThan(preCloseCash);
+    // 100% of the cash that survived the close, not 100% of the pre-close cash.
+    expect((frame.position?.initialMargin ?? 0) + reversed.fee).toBeCloseTo(equityAfterClose, 6);
+    expect(frame.cash).toBeCloseTo(
+      equityAfterClose - (frame.position?.initialMargin ?? 0) - reversed.fee,
+      6,
+    );
+    expect(frame.position?.qty).toBeCloseTo((equityAfterClose * 20) / 93, 4);
+    expect(frame.equity).toBeCloseTo(equityAfterClose + frame.unrealizedPnl, 4);
+  });
+
+  it("keeps an isolated reverse inside the posted margin", () => {
+    const wiped = losingReverse(93, "isolated");
+    expect(wiped.liquidated).toBe(true);
+    expect(wiped.position).toBeNull();
+    expect(wiped.cash).toBeGreaterThanOrEqual(0);
+    const opened = wiped.fills[0];
+    const liquidation = wiped.fills.find((fill) => fill.kind === "liquidation");
+    expect(opened).toBeDefined();
+    expect(liquidation).toBeDefined();
+    if (opened === undefined || liquidation === undefined) {
+      return;
+    }
+    const longMargin = (opened.qty * opened.price) / 20;
+    // Loss stops at the position margin. Free cash is not drawn, and the reverse
+    // never opens on a frozen account.
+    expect(liquidation.pricePnl).toBeCloseTo(-longMargin, 6);
+    expect(liquidation.pricePnl).toBeGreaterThan(opened.qty * (93 - opened.price));
+    expect(wiped.cash).toBeCloseTo(PRACTICE_STARTING_BALANCE_USD - opened.fee - longMargin, 6);
+    expect(wiped.rejects).toContainEqual({ barIndex: 1, reason: "account-frozen" });
+    expect(wiped.fills.some((fill) => fill.kind === "open" && fill.side === "short")).toBe(false);
+
+    // Above the isolated liquidation price the reverse still fills, sized from
+    // cash after the capped close, and does not spend free cash on the loss.
+    const held = losingReverse(99, "isolated");
+    expect(held.liquidated).toBe(false);
+    expect(held.rejects).toEqual([]);
+    expect(held.position?.side).toBe("short");
+    expect(held.cash).toBeGreaterThanOrEqual(0);
+    const heldOpen = held.fills[0];
+    const heldClose = held.fills[1];
+    const heldReverse = held.fills[2];
+    expect(heldOpen).toBeDefined();
+    expect(heldClose).toBeDefined();
+    expect(heldReverse).toBeDefined();
+    if (heldOpen === undefined || heldClose === undefined || heldReverse === undefined) {
+      return;
+    }
+    const heldMargin = (heldOpen.qty * heldOpen.price) / 20;
+    const equityAfterClose =
+      PRACTICE_STARTING_BALANCE_USD - heldOpen.fee + heldClose.pricePnl - heldClose.fee;
+    expect(heldClose.pricePnl).toBeGreaterThan(-heldMargin);
+    expect(heldClose.pricePnl).toBeLessThan(0);
+    expect((held.position?.initialMargin ?? 0) + heldReverse.fee).toBeCloseTo(equityAfterClose, 6);
+    expect(held.cash).toBeCloseTo(
+      equityAfterClose - (held.position?.initialMargin ?? 0) - heldReverse.fee,
+      6,
+    );
+  });
 });
 
 describe("reviewMetrics sharpe/sortino scaling", () => {
