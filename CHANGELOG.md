@@ -9,6 +9,25 @@
 - The practice disclaimer states this is synthetic practice only: not an
   index-licensed product, not exchange, CME, or Nasdaq data, and not affiliated.
 
+## 1.3.14 — 2026-11-21
+
+- Trade pairing now counts a market open, a limit fill, and a stop entry, and a
+  same-side add joins that trade. Partial closes stay one round trip until the
+  position is flat, keeping the fees and realised P&L from every fill.
+- A cross-margin exit can lose more than the posted margin and draw the rest
+  from free cash, stopping at zero. An isolated exit still cannot lose more
+  than that position's margin. The liquidation price is written on the bar the
+  position opens.
+- Sharpe and Sortino are no longer multiplied by the square root of the bar
+  count, so trailing flat bars do not inflate them. Sharpe's variance divides
+  by one less than the number of bars.
+- The timezone formatter used for the daily key is cached per zone.
+- A reverse market open flattens first, then sizes and quotes the new position
+  from the cash left after the exit. Cross mode cannot go to negative cash or
+  open a position larger than that cash can fund. If the remaining cash cannot
+  fund the order, the open is rejected and the account stays flat. Isolated
+  losses stay capped at the posted margin.
+
 ## 1.3.13 — 2026-11-06
 
 - Remove the one-week campaign exam, its victory certificate, score submission and
