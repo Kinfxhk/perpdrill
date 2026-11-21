@@ -1,6 +1,7 @@
 import { PRACTICE_STARTING_BALANCE_USD, SAMPLE_BAR_MS, type MarketId } from "./constants.ts";
 import {
   closePriceFromMark,
+  fillPriceFromMark,
   quoteClose,
   quoteOpen,
   type RejectReason,
@@ -374,15 +375,20 @@ export function replaySession(input: SessionInput): Frame {
     const whole = fraction >= 1 - 1e-9;
     const qty = whole ? position.qty : position.qty * fraction;
     const rawPnl = unrealizedPnl(position.side, qty, position.entry, price);
-    // Isolated: no exit (gap, slipped stop) can lose more than the position margin.
+    // Isolated caps loss at the position's margin share; cross can draw on free cash.
     const marginShare = whole ? position.isolatedMargin : position.isolatedMargin * fraction;
-    const pricePnl = Math.max(rawPnl, -marginShare);
-    const fee =
-      kind === "liquidation"
-        ? 0
-        : Math.min(qty * price * (takerBps / 10_000), marginShare + pricePnl);
-    const back = Math.max(0, marginShare + pricePnl - fee);
-    cash += back;
+    const maxLoss = marginMode === "cross" ? marginShare + cash : marginShare;
+    const pricePnl = Math.max(rawPnl, -maxLoss);
+    const netBeforeFee = marginShare + pricePnl;
+    const feeCap =
+      marginMode === "cross" ? Math.max(0, cash + netBeforeFee) : Math.max(0, netBeforeFee);
+    const fee = kind === "liquidation" ? 0 : Math.min(qty * price * (takerBps / 10_000), feeCap);
+    if (marginMode === "cross") {
+      cash = Math.max(0, cash + netBeforeFee - fee);
+    } else {
+      const back = Math.max(0, netBeforeFee - fee);
+      cash += back;
+    }
     feesPaid += fee;
     fills.push({
       barIndex: index,
@@ -563,6 +569,7 @@ export function replaySession(input: SessionInput): Frame {
           openedAtMs: bar.timeMs,
           openedAtBar: index,
         };
+        position.liqPrice = actualLiqPrice(position, marginMode, cash);
         fills.push({
           barIndex: index,
           timeMs: bar.timeMs,
@@ -601,30 +608,27 @@ export function replaySession(input: SessionInput): Frame {
             rejects.push({ barIndex: index, reason: "invalid-leverage" });
             continue;
           }
-          const quote = quoteOpen({
-            side: action.side,
-            leverage: action.leverage,
-            powerPct: action.powerPct,
-            cash,
-            mark,
-            takerBps,
-            slipToleranceBps: action.slipToleranceBps,
-            realizedImpactBps: action.realizedImpactBps,
-          });
-          if (!quote.ok) {
-            rejects.push({ barIndex: index, reason: quote.reason });
-            continue;
-          }
-          if (!bracketValid(action.side, quote.fillPrice, action)) {
-            rejects.push({ barIndex: index, reason: "invalid-bracket" });
-            continue;
-          }
-          // A market entry against the held side reverses: flat first, then open.
-          if (position !== null && position.side !== action.side) {
+          // A market entry against the held side reverses: flat first, then size
+          // the new position from the cash that remains. Quoting before the close
+          // uses pre-close cash, and a cross-margin loss can already spend it.
+          const held = position;
+          const reversing = held !== null && held.side !== action.side;
+          const quoteFor = (balance: number) =>
+            quoteOpen({
+              side: action.side,
+              leverage: action.leverage,
+              powerPct: action.powerPct,
+              cash: balance,
+              mark,
+              takerBps,
+              slipToleranceBps: action.slipToleranceBps,
+              realizedImpactBps: action.realizedImpactBps,
+            });
+          if (held !== null && held.side !== action.side) {
             const close = quoteClose({
-              side: position.side,
-              qty: position.qty,
-              entry: position.entry,
+              side: held.side,
+              qty: held.qty,
+              entry: held.entry,
               mark,
               takerBps,
               slipToleranceBps: action.slipToleranceBps,
@@ -634,7 +638,28 @@ export function replaySession(input: SessionInput): Frame {
               rejects.push({ barIndex: index, reason: close.reason });
               continue;
             }
+            const openingFill = fillPriceFromMark(mark, action.side, action.realizedImpactBps);
+            if (!bracketValid(action.side, openingFill, action)) {
+              rejects.push({ barIndex: index, reason: "invalid-bracket" });
+              continue;
+            }
+            // Slip, leverage, and power must fail while the old position is still open.
+            // A fully margined account has no free cash, so probe with at least $1.
+            const probe = quoteFor(Math.max(cash, 1));
+            if (!probe.ok) {
+              rejects.push({ barIndex: index, reason: probe.reason });
+              continue;
+            }
             exit(index, bar, "close", close.fillPrice);
+          }
+          const quote = quoteFor(cash);
+          if (!quote.ok) {
+            rejects.push({ barIndex: index, reason: quote.reason });
+            continue;
+          }
+          if (!reversing && !bracketValid(action.side, quote.fillPrice, action)) {
+            rejects.push({ barIndex: index, reason: "invalid-bracket" });
+            continue;
           }
           cash -= quote.initialMargin + quote.fee;
           feesPaid += quote.fee;
@@ -665,6 +690,7 @@ export function replaySession(input: SessionInput): Frame {
               openedAtMs: bar.timeMs,
               openedAtBar: index,
             };
+            position.liqPrice = actualLiqPrice(position, marginMode, cash);
           }
           fills.push({
             barIndex: index,

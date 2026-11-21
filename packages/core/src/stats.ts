@@ -1,5 +1,5 @@
 import { createRng } from "./synthetic.ts";
-import type { FillEvent } from "./replay.ts";
+import type { FillEvent, FillKind } from "./replay.ts";
 
 export type MonteCarloResult = {
   /** Fraction of shuffles whose running equity breached the floor. */
@@ -96,34 +96,80 @@ export type SessionStats = {
   readonly returnPct: number;
 };
 
+function isEntryFill(kind: FillKind): boolean {
+  return kind === "open" || kind === "limit" || kind === "stop-entry";
+}
+
+type OpenTradeAcc = {
+  side: FillEvent["side"];
+  openBar: number;
+  openQty: number;
+  entryQty: number;
+  entryValue: number;
+  exitQty: number;
+  exitValue: number;
+  totalFee: number;
+  totalPricePnl: number;
+};
+
+/**
+ * Pairs entry fills (market open, limit, stop-entry — including same-side
+ * adds) with their exit fills (partial or full closes, stops, targets,
+ * breaches, liquidations) into completed round-trip trades.
+ */
 export function pairTrades(fills: readonly FillEvent[]): readonly Trade[] {
   const trades: Trade[] = [];
-  let open: FillEvent | null = null;
+  let acc: OpenTradeAcc | null = null;
   for (const fill of fills) {
-    if (fill.kind === "open") {
-      open = fill;
+    if (isEntryFill(fill.kind)) {
+      if (acc === null) {
+        acc = {
+          side: fill.side,
+          openBar: fill.barIndex,
+          openQty: fill.qty,
+          entryQty: fill.qty,
+          entryValue: fill.qty * fill.price,
+          exitQty: 0,
+          exitValue: 0,
+          totalFee: fill.fee,
+          totalPricePnl: 0,
+        };
+      } else {
+        acc.openQty += fill.qty;
+        acc.entryQty += fill.qty;
+        acc.entryValue += fill.qty * fill.price;
+        acc.totalFee += fill.fee;
+      }
       continue;
     }
-    if (open === null) {
+    if (acc === null) {
       continue;
     }
-    trades.push({
-      side: open.side,
-      openBar: open.barIndex,
-      closeBar: fill.barIndex,
-      entry: open.price,
-      exit: fill.price,
-      qty: fill.qty,
-      exitKind: fill.kind,
-      netPnl: fill.pricePnl - fill.fee - open.fee,
-    });
-    open = null;
+    acc.openQty -= fill.qty;
+    acc.exitQty += fill.qty;
+    acc.exitValue += fill.qty * fill.price;
+    acc.totalFee += fill.fee;
+    acc.totalPricePnl += fill.pricePnl;
+    const closedAll = fill.kind !== "close" || acc.openQty <= Math.max(1e-9, acc.entryQty * 1e-9);
+    if (closedAll) {
+      trades.push({
+        side: acc.side,
+        openBar: acc.openBar,
+        closeBar: fill.barIndex,
+        entry: acc.entryQty > 0 ? acc.entryValue / acc.entryQty : fill.price,
+        exit: acc.exitQty > 0 ? acc.exitValue / acc.exitQty : fill.price,
+        qty: acc.entryQty,
+        exitKind: fill.kind,
+        netPnl: acc.totalPricePnl - acc.totalFee,
+      });
+      acc = null;
+    }
   }
   return trades;
 }
 
 export type ReviewMetrics = SessionStats & {
-  /** Per-session Sharpe over the bar returns (not annualized). */
+  /** Per-bar Sharpe over the session's bar returns (not annualized). */
   readonly sharpe: number | null;
   readonly sortino: number | null;
   readonly calmar: number | null;
@@ -147,19 +193,18 @@ export function reviewMetrics(input: {
   const count = returns.length;
   const mean = count === 0 ? 0 : returns.reduce((sum, value) => sum + value, 0) / count;
   const variance =
-    count === 0 ? 0 : returns.reduce((sum, value) => sum + (value - mean) ** 2, 0) / count;
+    count <= 1 ? 0 : returns.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (count - 1);
   const std = Math.sqrt(variance);
   const downside = Math.sqrt(
     returns.filter((value) => value < 0).reduce((sum, value) => sum + value * value, 0) /
       Math.max(1, count),
   );
-  const scale = Math.sqrt(count);
   const trades = pairTrades(input.fills);
   const holds = trades.map((trade) => trade.closeBar - trade.openBar);
   return {
     ...stats,
-    sharpe: std > 0 && count > 1 ? (mean / std) * scale : null,
-    sortino: downside > 0 && count > 1 ? (mean / downside) * scale : null,
+    sharpe: std > 0 && count > 1 ? mean / std : null,
+    sortino: downside > 0 && count > 1 ? mean / downside : null,
     calmar: stats.maxDrawdownPct > 0 ? stats.returnPct / stats.maxDrawdownPct : null,
     avgHoldBars:
       holds.length === 0 ? null : holds.reduce((sum, value) => sum + value, 0) / holds.length,
